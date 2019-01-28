@@ -4,6 +4,7 @@
 
 #include "int.h"
 #include "model.h"
+#include "scene.h"
 #include "global.h"
 
 internal void
@@ -61,8 +62,10 @@ main(int32 Argc
 	return(0);
     }
 
-    WindowData.Window = glfwCreateWindow(900
-			      , 600
+    WindowData.Width = 900;
+    WindowData.Height = 600;
+    WindowData.Window = glfwCreateWindow(WindowData.Width
+			      , WindowData.Height
 			      , "Prototype"
 			      , nullptr
 			      , nullptr);
@@ -80,6 +83,8 @@ main(int32 Argc
 			    , "res/cube.obj"
 			    , ModelID);
 
+    main_scene MainScene;
+    MainScene.Init();
 
     while(!glfwWindowShouldClose(WindowData.Window))
     {

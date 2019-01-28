@@ -15,13 +15,21 @@ struct model_matrix_component
     glm::mat4 TRS;
 };
 
+struct physics_component
+{
+    uint32 EntityID;
+
+    float MaxSpeed;
+    float Speed;
+};
+
 struct render_component
 {
     uint32 EntityID;
     
     uint32 Model;
 
-    struct render_layer *Layer;
+    struct render_layer3D *Layer;
 };
 
 struct keyboard_component
@@ -32,31 +40,52 @@ struct keyboard_component
 struct mouse_component
 {
     uint32 EntityID;
+
+    glm::vec2 PreviousMousePosition{ 0.0f };
 };
 
 struct entity_components
 {
-    int32 ModelMatrixComponentIndex;
-    int32 RenderComponentIndex;
-    int32 KeyboardComponentIndex;
-    int32 MouseComponentIndex;
+    int32 ModelMatrixComponentIndex{ MISSING_COMPONENT };
+    int32 RenderComponentIndex { MISSING_COMPONENT };
+    int32 KeyboardComponentIndex { MISSING_COMPONENT };
+    int32 MouseComponentIndex { MISSING_COMPONENT };
+    int32 PhysicsComponentIndex { MISSING_COMPONENT };
 };
 
 struct entity_data
 {
     glm::vec3 Position3D;
     glm::vec3 Direction3D;
+    glm::vec3 Velocity3D;
     glm::vec3 Scale3D;
 
     entity_components Components;
 };
 
+template <typename T> struct component_list
+{
+    std::vector<T> List;
+
+    uint32
+    Add(uint32 EntityID
+	, const T &CompIn)
+    {
+	T Component = CompIn;
+	Component.EntityID = EntityID;
+	List.push_back(Component);
+
+	return List.size() - 1;
+    }
+};
+
 extern struct entity_data_base
 {
-    std::vector<model_matrix_component> ModelMatrixComponents;
-    std::vector<render_component> RenderComponents;
-    std::vector<keyboard_component> KeyboardComponents;
-    std::vector<mouse_component> MoueComponents;
+    component_list<model_matrix_component> ModelMatrixComponents;
+    component_list<render_component> RenderComponents;
+    component_list<keyboard_component> KeyboardComponents;
+    component_list<mouse_component> MouseComponents;
+    component_list<physics_component> PhysicsComponents;
 
     std::vector<entity_data> Entities;
     

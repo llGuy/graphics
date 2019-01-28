@@ -46,7 +46,7 @@ struct ogl_ibo : ogl_buffer
 {
     uint32 Type;
     uint32 Count;
-    void *Start;
+    void *Start { nullptr };
 };
 
 struct ogl_ubo : ogl_buffer
@@ -175,6 +175,14 @@ struct ogl_program
 
     ogl_shader_compilation_info
     Link(void);
+
+    uint32
+    GetUniformLocation(const char *Name);
+
+    void
+    SendUniformMat4(uint32 Mat4Location
+		    , float *Matrix
+		    , uint32 Count);
 };
 
 struct ogl_texture
@@ -231,5 +239,11 @@ struct ogl_renderbuffer
     //SetStorage(GLenum Component
     //	       ,  );
 };
+
+extern void
+UnbindBuffers(GLenum BindingPoint);
+
+extern void
+UnbindVAOs(void);
 
 #endif

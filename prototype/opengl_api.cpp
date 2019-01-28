@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <cassert>
 #include "opengl_api.h"
 
@@ -229,6 +230,8 @@ CheckOGLShaderStatus(uint32 ID
 
     if (Status != GL_TRUE)
     {
+	printf("Error Compiling (in function)\n");
+	
 	int32 InfoLogLength;
 	GetIVProc(ID
 		  , GL_INFO_LOG_LENGTH
@@ -294,6 +297,24 @@ ogl_program::Link(void)
 				, glGetProgramiv
 				, glGetProgramInfoLog
 				, GL_LINK_STATUS);
+}
+
+uint32
+ogl_program::GetUniformLocation(const char *Name)
+{
+    return glGetUniformLocation(ID
+				, Name);
+}
+
+void
+ogl_program::SendUniformMat4(uint32 Mat4Location
+			     , float *Matrix
+			     , uint32 Count)
+{
+    glUniformMatrix4fv(Mat4Location
+		       , Count
+		       , false
+		       , Matrix);
 }
 
 void
@@ -363,4 +384,17 @@ ogl_texture::IParam(GLenum Target
     glTexParameteri(Target
 		    , Mode
 		    , Factor);
+}
+
+void
+UnbindBuffers(GLenum BindingPoint)
+{
+    glBindBuffer(BindingPoint
+		 , NULL);
+}
+
+void
+UnbindVAOs(void)
+{
+    glBindVertexArray(NULL);
 }

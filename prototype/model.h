@@ -39,6 +39,7 @@ template<typename T> struct model_component
 
 extern struct model_data_base
 {
+    /* Structure-of-Array */
     std::vector<model_component<ogl_vbo>> VBOs;  // vertex buffers
     std::vector<model_component<ogl_ibo>> IBOs;  // index buffers
     std::vector<model_component<ogl_vbo>> NBOs;  // normal buffers

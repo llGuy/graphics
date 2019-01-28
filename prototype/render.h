@@ -11,7 +11,7 @@ struct model_instance
     glm::mat4 TRS;
 };
 
-struct render_layer
+struct render_layer3D
 {
     ogl_program *Program;
     ogl_texture *Texture;
