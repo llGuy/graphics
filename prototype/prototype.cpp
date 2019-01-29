@@ -91,8 +91,14 @@ main(int32 Argc
 	glClear(GL_COLOR_BUFFER_BIT);
 	glClearColor(0.2, 0.2, 0.2, 1.0);
 
+	MainScene.Render(MainScene.Camera);
+
 	glfwSwapBuffers(WindowData.Window);
 	glfwPollEvents();
+
+	MainScene.Update();
+	EntityDataBase.Update();
+	TimeData.Reset();
 
 	WindowData.MouseMoved = false;
     }

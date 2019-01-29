@@ -1,3 +1,4 @@
+
 #include <fstream>
 #include "global.h"
 #include "scene.h"
@@ -144,6 +145,10 @@ main_scene::Render(camera &Camera)
 void 
 main_scene::Update(void)
 {
-    //    entity_data *MainPlayer = EntityDataBase
-    Camera.ViewMatrix = Look();
+    entity_data *MainPlayer = EntityDataBase.GetEntity(Entities.MainPlayerID);
+    Camera.ViewMatrix = Look(MainPlayer->Position3D
+			     , MainPlayer->Position3D + MainPlayer->Direction3D
+			     , glm::vec3(0.0f, 1.0f, 0.0f));
+    Camera.Position3D = MainPlayer->Position3D;
+    Camera.Direction3D = MainPlayer->Direction3D;
 }

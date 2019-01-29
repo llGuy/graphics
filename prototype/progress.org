@@ -1,0 +1,17 @@
+* DONE :
+  * Created Model Infrastructure
+  * Created Entity Infrastructure
+    + Created all of the current components' update functions
+    + Linked the Entities Infrastructure with the Model Infrastructure
+  * Created the Main Scene Infrastructure
+    + Created the main shader program for rendering a simple test cube
+    + Linked the Main Scene with the Main Camera
+  * Wrote basic Update() function in the main loop to update all game data
+* TODO : 
+  * Make sure that the code actually works
+  * Load a UV sphere for the player model
+  * Create platform and add collision detection with the platform
+  * Add terraforming mechanics
+  * Work on physics for sliding
+  * Start work on networking
+    
