@@ -24,7 +24,7 @@ struct model_data
 
     uint32 ID;
 
-    GLenum Primitive;
+    GLenum Primitive { GL_TRIANGLES };
 
     ogl_vertex_array VAO;
 };

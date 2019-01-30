@@ -62,13 +62,27 @@ main(int32 Argc
 	return(0);
     }
 
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+
     WindowData.Width = 900;
     WindowData.Height = 600;
     WindowData.Window = glfwCreateWindow(WindowData.Width
-			      , WindowData.Height
-			      , "Prototype"
-			      , nullptr
-			      , nullptr);
+					 , WindowData.Height
+					 , "Prototype"
+					 , nullptr
+					 , nullptr);
+
+    glfwSetInputMode(WindowData.Window
+		     , GLFW_CURSOR
+		     , GLFW_CURSOR_DISABLED);
+
+    glfwSetKeyCallback(WindowData.Window
+		       , HandleKey);
+    glfwSetCursorPosCallback(WindowData.Window
+			     , HandleMouseMove);
+    glfwSetMouseButtonCallback(WindowData.Window
+			       , HandleMB);
     
     glfwMakeContextCurrent(WindowData.Window);
 
@@ -78,27 +92,32 @@ main(int32 Argc
     }
 
     
-    uint32 ModelID = ModelDataBase.CreateModel("CubeModel"_hash);
-    ModelDataBase.LoadModel("OBJ"
-			    , "res/cube.obj"
-			    , ModelID);
-
     main_scene MainScene;
     MainScene.Init();
+
+
+    glEnable(GL_DEPTH_TEST);
+
 
     while(!glfwWindowShouldClose(WindowData.Window))
     {
 	glClear(GL_COLOR_BUFFER_BIT);
 	glClearColor(0.2, 0.2, 0.2, 1.0);
 
+
+	/* Rendering */
 	MainScene.Render(MainScene.Camera);
+
 
 	glfwSwapBuffers(WindowData.Window);
 	glfwPollEvents();
 
-	MainScene.Update();
+	/* Update Entities Before the scene updates */
 	EntityDataBase.Update();
+	
 	TimeData.Reset();
+
+	MainScene.Update();
 
 	WindowData.MouseMoved = false;
     }

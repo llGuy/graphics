@@ -66,7 +66,8 @@ UpdateKeyboardComponents(std::vector<keyboard_component> &Components
 	    if (glm::all(glm::lessThan(Entity->Velocity3D
 				       , glm::vec3(100000000.0f))))
 	    {
-		if (WindowData.KeyMap[GLFW_KEY_W]) Entity->Velocity3D += LateralDirection3D;
+		if (WindowData.KeyMap[GLFW_KEY_W])
+		    Entity->Velocity3D += LateralDirection3D;
 		if (WindowData.KeyMap[GLFW_KEY_A]) Entity->Velocity3D -= glm::cross(LateralDirection3D, glm::vec3(0.0f, 1.0f, 0.0f));
 		if (WindowData.KeyMap[GLFW_KEY_S]) Entity->Velocity3D -= LateralDirection3D;
 		if (WindowData.KeyMap[GLFW_KEY_D]) Entity->Velocity3D += glm::cross(LateralDirection3D, glm::vec3(0.0f, 1.0f, 0.0f));
@@ -134,6 +135,10 @@ UpdatePhysicsComponents(std::vector<physics_component> &Components
 	Entity->Position3D += Entity->Velocity3D * TimeData.Elapsed();
 
 	Entity->Velocity3D = glm::vec3(0.0f);
+	
+	printf("%f %f %f\n", Entity->Position3D.x
+	       , Entity->Position3D.y
+	       , Entity->Position3D.z);
     }
 }
 

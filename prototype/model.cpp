@@ -9,7 +9,7 @@ uint32
 model_data_base::CreateModel(const string_view &Name)
 {
     IndexMap[Name] = Models.size();
-    Models.push_back(model_data{ model_components{}, Models.size(), 0 });
+    Models.push_back(model_data{ model_components{}, Models.size(), GL_TRIANGLES });
     return Models.back().ID;
 }
 
@@ -153,6 +153,11 @@ CreateModel(std::vector<glm::vec3> &Vertices
     Model->VAO.Bind();
 
     ogl_vbo VBO;
+    /*    uint32 BufferTest;
+    glGenBuffers(1, &BufferTest);
+    glBindBuffer(GL_ARRAY_BUFFER, BufferTest);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * Vertices.size(), Vertices.data(), GL_STATIC_DRAW);
+    VBO.ID = BufferTest;*/
     VBO.Create();
     VBO.Bind(GL_ARRAY_BUFFER);
     VBO.Fill(sizeof(glm::vec3) * Vertices.size()
@@ -215,6 +220,11 @@ LoadOBJ(const char *Filename
 	, uint32 ID)
 {
     std::ifstream File(Filename);
+
+    if (!File.good())
+    {
+	printf("Error loading file %s", Filename);
+    }
 
     std::vector<glm::vec3> Normals;
     std::vector<glm::vec3> Vertices;
