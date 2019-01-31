@@ -114,12 +114,14 @@ UpdateMouseComponents(std::vector<mouse_component> &Components
 	    glm::vec2 Difference = WindowData.CurrentMousePosition - Component->PreviousMousePosition;
 	    Component->PreviousMousePosition = WindowData.CurrentMousePosition;
 
-	    Entity->Direction3D = RotateDirection(Difference
-						  , Entity->Direction3D
-						  , WindowData);
+	    Entity->Direction3D = normalize(RotateDirection(Difference
+							    , Entity->Direction3D
+							    , WindowData));
 	}
     }
 }
+
+#define SPEED 5.0f
 
 internal void
 UpdatePhysicsComponents(std::vector<physics_component> &Components
@@ -131,14 +133,10 @@ UpdatePhysicsComponents(std::vector<physics_component> &Components
 	     ; ++Component)
     {
 	entity_data *Entity = &Entities[Component->EntityID];
-	
-	Entity->Position3D += Entity->Velocity3D * TimeData.Elapsed();
+
+	Entity->Position3D += Entity->Velocity3D * TimeData.Elapsed() * SPEED;
 
 	Entity->Velocity3D = glm::vec3(0.0f);
-	
-	printf("%f %f %f\n", Entity->Position3D.x
-	       , Entity->Position3D.y
-	       , Entity->Position3D.z);
     }
 }
 
@@ -166,9 +164,6 @@ entity_data_base::Update(void)
     UpdateRenderComponents(RenderComponents.List
 			  , ModelMatrixComponents.List
 			  , Entities);
-
-    UpdatePhysicsComponents(PhysicsComponents.List
-			    , Entities);
 
     UpdateKeyboardComponents(KeyboardComponents.List
 			     , Entities);

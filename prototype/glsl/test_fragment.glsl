@@ -1,6 +1,6 @@
 #version 400
 
-layout(location = 0) out vec4 Albedo;
+out vec4 FinalColor;
 
 in VS_DATA
 {
@@ -13,6 +13,6 @@ in VS_DATA
 void
 main(void)
 {
-    Albedo = vec4(1.0);
+    FinalColor = vec4(fs_in.WS_Normal, 1.0);
 }
 

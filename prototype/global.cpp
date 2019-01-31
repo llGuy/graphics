@@ -18,5 +18,5 @@ current_time::Elapsed(void)
     std::chrono::duration<float> Seconds = Now - Current;
     float Count = Seconds.count();
 
-    return Count / 1000.0f;
+    return Count;
 }

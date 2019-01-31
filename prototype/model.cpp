@@ -153,11 +153,6 @@ CreateModel(std::vector<glm::vec3> &Vertices
     Model->VAO.Bind();
 
     ogl_vbo VBO;
-    /*    uint32 BufferTest;
-    glGenBuffers(1, &BufferTest);
-    glBindBuffer(GL_ARRAY_BUFFER, BufferTest);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * Vertices.size(), Vertices.data(), GL_STATIC_DRAW);
-    VBO.ID = BufferTest;*/
     VBO.Create();
     VBO.Bind(GL_ARRAY_BUFFER);
     VBO.Fill(sizeof(glm::vec3) * Vertices.size()

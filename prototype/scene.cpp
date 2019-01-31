@@ -1,8 +1,8 @@
-
 #include <fstream>
 #include "global.h"
 #include "scene.h"
 #include <iostream>
+#include <GLFW/glfw3.h>
 #include <glm/gtx/transform.hpp>
 
 ogl_program *
@@ -60,8 +60,12 @@ main_scene::InitEntities(void)
 	Entities.MainPlayerID = EntityDataBase.CreateEntity("Entity.Main"_hash);
 	uint32 KBCompIndex = EntityDataBase.KeyboardComponents.Add(Entities.MainPlayerID
 								   , keyboard_component());
+	double x, y;
+	glfwGetCursorPos(WindowData.Window, &x, &y);
+	glm::vec2 CurrentCursorPos = glm::vec2((float)x, (float)y);
 	uint32 MBCompIndex = EntityDataBase.MouseComponents.Add(Entities.MainPlayerID
-								, mouse_component());
+								, mouse_component{ Entities.MainPlayerID
+									, CurrentCursorPos});
 	uint32 PHCompIndex = EntityDataBase.PhysicsComponents.Add(Entities.MainPlayerID
 								  , physics_component());
 
@@ -147,7 +151,7 @@ main_scene::Render(camera &Camera)
 
 	ogl_ibo *IBO = ModelDataBase.GetIBOComponent(ModelInstance->ModelID);
 	IBO->Bind(GL_ELEMENT_ARRAY_BUFFER);
-
+	
 	glDrawElements(ModelData->Primitive
 		       , IBO->Count
 		       , IBO->Type
@@ -156,6 +160,8 @@ main_scene::Render(camera &Camera)
 	UnbindBuffers(GL_ELEMENT_ARRAY_BUFFER);
 	UnbindVAOs();
     }
+
+    MainLayer.Layer.Instances.clear();
 }
 
 void 
@@ -163,7 +169,7 @@ main_scene::Update(void)
 {
     entity_data *MainPlayer = EntityDataBase.GetEntity(Entities.MainPlayerID);
     Camera.ViewMatrix = Look(MainPlayer->Position3D
-			     , MainPlayer->Position3D + MainPlayer->Direction3D
+			     , MainPlayer->Direction3D
 			     , glm::vec3(0.0f, 1.0f, 0.0f));
     Camera.Position3D = MainPlayer->Position3D;
     Camera.Direction3D = MainPlayer->Direction3D;

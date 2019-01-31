@@ -101,7 +101,7 @@ main(int32 Argc
 
     while(!glfwWindowShouldClose(WindowData.Window))
     {
-	glClear(GL_COLOR_BUFFER_BIT);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glClearColor(0.2, 0.2, 0.2, 1.0);
 
 
@@ -114,9 +114,9 @@ main(int32 Argc
 
 	/* Update Entities Before the scene updates */
 	EntityDataBase.Update();
-	
-	TimeData.Reset();
 
+	TimeData.Reset();
+	
 	MainScene.Update();
 
 	WindowData.MouseMoved = false;
