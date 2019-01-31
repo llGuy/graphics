@@ -13,6 +13,9 @@ CPPS := $(wildcard *.cpp)
 OBJS := $(patsubst %,$(OBJDIR)%,$(CPPS:.cpp=.obj))
 DEPFILES := $(patsubst %,$(OBJDIR)%,$(CPPS:.cpp=.dep))
 
+run: prototype.exe
+	prototype.exe
+
 $(BINDIR)prototype.exe: $(OBJS)
 	$(CC) $(CFLAGS) /DEBUG:FULL /Fe$@ $(DEF) $(INCS) $(OBJS) $(LIBS)
 
