@@ -29,6 +29,7 @@ typedef uint64_t uint64;
 
 #define WINDOW_WIDTH 900
 #define WINDOW_HEIGHT 550
+#define MAX_FRAMES_IN_FLIGHT 2
 
 global VkInstance vulkan_instance;
 global VkSurfaceKHR surface;
@@ -49,6 +50,11 @@ global VkPipeline graphics_pipeline;
 global std::vector<VkFramebuffer> swapchain_framebuffers;
 global VkCommandPool command_pool;
 global std::vector<VkCommandBuffer> command_buffers;
+//global VkSemaphore image_available_semaphore;
+//global VkSemaphore render_finished_semaphore;
+global std::vector<VkSemaphore> image_available_semaphores;
+global std::vector<VkSemaphore> render_finished_semaphores;
+global std::vector<VkFence> in_flight_fences;
 
 //#ifdef NDEBUG
 //constexpr bool enable_validation_layers = false;
@@ -249,15 +255,15 @@ struct queue_family_indices
 };
 
 internal queue_family_indices
-find_queue_families(VkPhysicalDevice device)
+find_queue_families(VkPhysicalDevice phdevice)
 {
     queue_family_indices indices;
 
     uint32 queue_family_count = 0;
-    vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_family_count, nullptr);
+    vkGetPhysicalDeviceQueueFamilyProperties(phdevice, &queue_family_count, nullptr);
 
     std::vector<VkQueueFamilyProperties> queue_families(queue_family_count);
-    vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_family_count, queue_families.data());
+    vkGetPhysicalDeviceQueueFamilyProperties(phdevice, &queue_family_count, queue_families.data());
 
     int32 i = 0;
     for (const auto &queue_family : queue_families)
@@ -267,7 +273,7 @@ find_queue_families(VkPhysicalDevice device)
 	    indices.graphics_family = i;
 	}
 	VkBool32 present_support = false;
-	vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &present_support);
+	vkGetPhysicalDeviceSurfaceSupportKHR(phdevice, i, surface, &present_support);
 	if (queue_family.queueCount > 0 && present_support)
 	{
 	    indices.present_family = i;
@@ -422,8 +428,6 @@ is_device_suitable(VkPhysicalDevice device)
 internal void
 pick_physical_device(void)
 {
-
-    
     uint32 device_count = 0;
     vkEnumeratePhysicalDevices(vulkan_instance, &device_count, nullptr);
     
@@ -847,12 +851,22 @@ init_render_pass(void)
     subpass.colorAttachmentCount = 1;
     subpass.pColorAttachments = &color_attachment_ref;
 
+    VkSubpassDependency dependency = {};
+    dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+    dependency.dstSubpass = 0;
+    dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependency.srcAccessMask = 0;
+    dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
     VkRenderPassCreateInfo render_pass_info = {};
     render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
     render_pass_info.attachmentCount = 1;
     render_pass_info.pAttachments = &color_attachment;
     render_pass_info.subpassCount = 1;
     render_pass_info.pSubpasses = &subpass;
+    render_pass_info.dependencyCount = 1;
+    render_pass_info.pDependencies = &dependency;
 
     if (vkCreateRenderPass(device, &render_pass_info, nullptr, &render_pass) != VK_SUCCESS)
     {
@@ -929,6 +943,84 @@ init_command_buffers(void)
     }
 }
 
+internal void
+create_semaphores(void)
+{
+    image_available_semaphores.resize(MAX_FRAMES_IN_FLIGHT);
+    render_finished_semaphores.resize(MAX_FRAMES_IN_FLIGHT);
+    in_flight_fences.resize(MAX_FRAMES_IN_FLIGHT);
+
+    VkSemaphoreCreateInfo semaphore_info = {};
+    semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+    VkFenceCreateInfo fence_info = {};
+    fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+
+    fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
+    for (uint32 i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
+    {
+	if (vkCreateSemaphore(device, &semaphore_info, nullptr, &image_available_semaphores[i]) != VK_SUCCESS
+	    || vkCreateSemaphore(device, &semaphore_info, nullptr, &render_finished_semaphores[i]) != VK_SUCCESS
+	    || vkCreateFence(device, &fence_info, nullptr, &in_flight_fences[i]) != VK_SUCCESS)
+	{
+	    throw std::runtime_error("failed to create semaphores for a frame");
+	}
+    }
+}
+
+global uint32 current_frame = 0;
+
+internal void
+draw_frame(void)
+{
+    vkWaitForFences(device, 1, &in_flight_fences[current_frame], VK_TRUE, std::numeric_limits<uint64>::max());
+    vkResetFences(device, 1, &in_flight_fences[current_frame]);
+
+    uint32 image_index;
+    vkAcquireNextImageKHR(device
+			  , swapchain
+			  , std::numeric_limits<uint64>::max() // disable timeout
+			  , image_available_semaphores[current_frame]
+			  , VK_NULL_HANDLE
+			  , &image_index);
+
+    VkSubmitInfo submit_info = {};
+    submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+
+    VkSemaphore wait_semaphores[] = {image_available_semaphores[current_frame]};
+    VkPipelineStageFlags wait_stages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+    submit_info.waitSemaphoreCount = 1;
+    submit_info.pWaitSemaphores = wait_semaphores;
+    submit_info.pWaitDstStageMask = wait_stages;
+
+    submit_info.commandBufferCount = 1;
+    submit_info.pCommandBuffers = &command_buffers[image_index];
+
+    VkSemaphore signal_semaphores[] = {render_finished_semaphores[current_frame]};
+    submit_info.signalSemaphoreCount = 1;
+    submit_info.pSignalSemaphores = signal_semaphores;
+
+    if (vkQueueSubmit(graphics_queue, 1, &submit_info, in_flight_fences[current_frame]) != VK_SUCCESS)
+    {
+	throw std::runtime_error("failed to submit draw command buffer");
+    }
+
+    VkPresentInfoKHR present_info = {};
+    present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+    present_info.waitSemaphoreCount = 1;
+    present_info.pWaitSemaphores = signal_semaphores;
+    
+    VkSwapchainKHR swapchains[] = { swapchain };
+    present_info.swapchainCount = 1;
+    present_info.pSwapchains = swapchains;
+    present_info.pImageIndices = &image_index;
+    present_info.pResults = nullptr;
+
+    vkQueuePresentKHR(present_queue, &present_info);
+
+    current_frame = (current_frame + 1) % MAX_FRAMES_IN_FLIGHT;
+}
+
 int
 main(int32 argc
      , char * argv[])
@@ -941,32 +1033,57 @@ main(int32 argc
     pick_physical_device();
     create_logical_device();
     init_swapchain();
+    init_image_views();
     init_render_pass();
     init_graphics_pipeline();
+    init_framebuffers();
+    init_command_pool();
+    init_command_buffers();
+    create_semaphores();
 
     std::flush(std::cout);
 
     while(!glfwWindowShouldClose(window))
     {
 	glfwPollEvents();
+	draw_frame();
+
+	vkQueueWaitIdle(present_queue);
+    }
+
+    vkDeviceWaitIdle(device);
+
+    //    vkDestroySemaphore(device, render_finished_semaphore, nullptr);
+    //    vkDestroySemaphore(device, image_available_semaphore, nullptr);
+    for (uint32 i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
+    {
+	vkDestroySemaphore(device, render_finished_semaphores[i], nullptr);
+	vkDestroySemaphore(device, image_available_semaphores[i], nullptr);
+	vkDestroyFence(device, in_flight_fences[i], nullptr);
     }
 
     vkDestroyCommandPool(device, command_pool, nullptr);
+
     for (auto framebuffer : swapchain_framebuffers)
     {
 	vkDestroyFramebuffer(device, framebuffer, nullptr);
     }
+
+    vkDestroyPipeline(device, graphics_pipeline, nullptr);
+    vkDestroyPipelineLayout(device, pipeline_layout, nullptr);
+    vkDestroyRenderPass(device, render_pass, nullptr);
+
     for (auto image_view : swapchain_image_views)
     {
 	vkDestroyImageView(device, image_view, nullptr);
     }
-    vkDestroyPipeline(device, graphics_pipeline, nullptr);
-    vkDestroyPipelineLayout(device, pipeline_layout, nullptr);
-    vkDestroyRenderPass(device, render_pass, nullptr);
+
     vkDestroySwapchainKHR(device, swapchain, nullptr);
+    vkDestroyDevice(device, nullptr);
+
     vkDestroySurfaceKHR(vulkan_instance, surface, nullptr);
     vkDestroyInstance(vulkan_instance, nullptr);
-    vkDestroyDevice(device, nullptr);
+
     glfwDestroyWindow(window);
     glfwTerminate();
 
