@@ -1,4 +1,4 @@
-
+#define GLFW_EXPOSE_NATIVE_WIN32
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
@@ -10,7 +10,6 @@
 #include <algorithm>
 #include <optional.inc>
 #include <iostream>
-//#include <GLFW/glfw3native.h>
 #include <vulkan/vulkan.h>
 
 typedef int8_t int8;
@@ -50,17 +49,11 @@ global VkPipeline graphics_pipeline;
 global std::vector<VkFramebuffer> swapchain_framebuffers;
 global VkCommandPool command_pool;
 global std::vector<VkCommandBuffer> command_buffers;
-//global VkSemaphore image_available_semaphore;
-//global VkSemaphore render_finished_semaphore;
 global std::vector<VkSemaphore> image_available_semaphores;
 global std::vector<VkSemaphore> render_finished_semaphores;
 global std::vector<VkFence> in_flight_fences;
 
-//#ifdef NDEBUG
-//constexpr bool enable_validation_layers = false;
-//#else
 constexpr bool enable_validation_layers = true;
-//#endif
 
 internal void
 init_glfwwindow(void)
@@ -80,7 +73,10 @@ init_glfwwindow(void)
 			      , nullptr);
 }
 
-internal std::vector<const char *> validation_layers{ "VK_LAYER_LUNARG_standard_validation" };
+internal std::vector<const char *> validation_layers
+{
+    "VK_LAYER_LUNARG_standard_validation" // validation layer for a whole range of useful validation layers
+};
 
 internal bool
 check_validation_support(void)
@@ -136,11 +132,6 @@ debug_callback(VkDebugUtilsMessageSeverityFlagBitsEXT message_severity
 	       , void *p_user_data)
 {
     std::cout << "validation layer: " << p_callback_data->pMessage << std::endl;
-
-    if (message_severity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT)
-    {
-	
-    }
 
     std::flush(std::cout);
 
@@ -206,14 +197,12 @@ init_vkinstance(void)
     
     VkInstanceCreateInfo create_info = {};
     create_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-    create_info.pApplicationInfo = &app_info;
+    create_info.pApplicationInfo = &app_info; // this is optional : it just optimizes stuff
 
     auto glfw_extensions = get_required_extensions();
     
     create_info.enabledExtensionCount = (uint32)(glfw_extensions.size());
     create_info.ppEnabledExtensionNames = glfw_extensions.data();
-
-    
 
     if (enable_validation_layers)
     {
@@ -385,7 +374,7 @@ choose_swapchain_present_mode(const std::vector<VkPresentModeKHR> &available_pre
 internal VkExtent2D 
 choose_swap_extent(const VkSurfaceCapabilitiesKHR &capabilities)
 {
-    if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max())
+    if (capabilities.currentExtent.width != std::numeric_limits<uint32>::max())
     {
 	return capabilities.currentExtent;
     }
