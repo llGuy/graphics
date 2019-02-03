@@ -46,6 +46,9 @@ global std::vector<VkImageView> swapchain_image_views;
 global VkRenderPass render_pass;
 global VkPipelineLayout pipeline_layout;
 global VkPipeline graphics_pipeline;
+global std::vector<VkFramebuffer> swapchain_framebuffers;
+global VkCommandPool command_pool;
+global std::vector<VkCommandBuffer> command_buffers;
 
 //#ifdef NDEBUG
 //constexpr bool enable_validation_layers = false;
@@ -791,6 +794,34 @@ init_graphics_pipeline(void)
 }
 
 internal void
+init_framebuffers(void)
+{
+    swapchain_framebuffers.resize(swapchain_image_views.size());
+    
+    for (uint32 i = 0; i < swapchain_image_views.size(); ++i)
+    {
+	VkImageView attachments[]
+	{
+	    swapchain_image_views[i]
+	};
+
+	VkFramebufferCreateInfo framebuffer_info = {};
+	framebuffer_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+	framebuffer_info.renderPass = render_pass;
+	framebuffer_info.attachmentCount = 1;
+	framebuffer_info.pAttachments = attachments;
+	framebuffer_info.width = swapchain_extent.width;
+	framebuffer_info.height = swapchain_extent.height;
+	framebuffer_info.layers = 1;
+
+	if (vkCreateFramebuffer(device, &framebuffer_info, nullptr, &swapchain_framebuffers[i]) != VK_SUCCESS)
+	{
+	    throw std::runtime_error("failed to create framebuffer");
+	}
+    }
+}
+
+internal void
 init_render_pass(void)
 {
     VkAttachmentDescription color_attachment = {};
@@ -829,6 +860,75 @@ init_render_pass(void)
     }
 }
 
+internal void
+init_command_pool(void)
+{
+    queue_family_indices queue_family_indices = find_queue_families(physical_device);
+
+    VkCommandPoolCreateInfo pool_info = {};
+    pool_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+    pool_info.queueFamilyIndex = queue_family_indices.graphics_family.value();
+    pool_info.flags = 0; // VK_COMMAND_POOL_CREATE_TRANSIENT_BIT or ...CREATE_RESET_COMMAND_BUFFER_BIT
+
+    if (vkCreateCommandPool(device, &pool_info, nullptr, &command_pool) != VK_SUCCESS)
+    {
+	throw std::runtime_error("failed to create command pool");
+    }
+}
+
+internal void
+init_command_buffers(void)
+{
+    command_buffers.resize(swapchain_framebuffers.size());
+
+    VkCommandBufferAllocateInfo alloc_info = {};
+    alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    alloc_info.commandPool = command_pool;
+    alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    alloc_info.commandBufferCount = (uint32)command_buffers.size();
+    if (vkAllocateCommandBuffers(device, &alloc_info, command_buffers.data()) != VK_SUCCESS)
+    {
+	throw std::runtime_error("failed to allocate command buffers");
+    }
+
+    for (uint32 i = 0; i < command_buffers.size(); ++i)
+    {
+	VkCommandBufferBeginInfo begin_info = {};
+	begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	begin_info.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+	begin_info.pInheritanceInfo = nullptr;
+
+	if (vkBeginCommandBuffer(command_buffers[i], &begin_info) != VK_SUCCESS)
+	{
+	    throw std::runtime_error("failed to begin recording command buffer");
+	}
+
+	VkRenderPassBeginInfo render_pass_info = {};
+	render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+	render_pass_info.renderPass = render_pass;
+	render_pass_info.framebuffer = swapchain_framebuffers[i];
+    
+	render_pass_info.renderArea.offset = {0, 0};
+	render_pass_info.renderArea.extent = swapchain_extent;
+
+	VkClearValue clear_color = { 0.0f, 0.0f, 0.0f, 1.0f };
+	render_pass_info.clearValueCount = 1;
+	render_pass_info.pClearValues = &clear_color;
+
+	vkCmdBeginRenderPass(command_buffers[i], &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
+
+	vkCmdBindPipeline(command_buffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline);
+
+	vkCmdDraw(command_buffers[i], 3, 1, 0, 0);
+
+	vkCmdEndRenderPass(command_buffers[i]);
+	if (vkEndCommandBuffer(command_buffers[i]) != VK_SUCCESS)
+	{
+	    throw std::runtime_error("failed to record command buffers");
+	}
+    }
+}
+
 int
 main(int32 argc
      , char * argv[])
@@ -851,6 +951,11 @@ main(int32 argc
 	glfwPollEvents();
     }
 
+    vkDestroyCommandPool(device, command_pool, nullptr);
+    for (auto framebuffer : swapchain_framebuffers)
+    {
+	vkDestroyFramebuffer(device, framebuffer, nullptr);
+    }
     for (auto image_view : swapchain_image_views)
     {
 	vkDestroyImageView(device, image_view, nullptr);
