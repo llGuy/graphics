@@ -1,4 +1,5 @@
 #define GLFW_INCLUDE_VULKAN
+
 #include <vector>
 #include <GLFW/glfw3.h>
 #include <vulkan/vulkan.h>
@@ -13,6 +14,10 @@ global struct glfw_state
 {
     GLFWwindow *window;
 } window_state;
+
+
+
+
 
 global struct api_state
 {
@@ -40,6 +45,9 @@ vk_create_state(void)
     instance_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
     
     auto glfw_extensions = impl::get_required_extentions();
+
+    instance_info.enabledExtensionCount = glfw_extensions.size();
+    instance_info.ppEnabledExtensionNames = glfw_extensions.data();
 }
 
 int
