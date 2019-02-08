@@ -15,15 +15,10 @@ global struct glfw_state
     GLFWwindow *window;
 } window_state;
 
-
-
-
-
 global struct api_state
 {
     VkInstance instance;
 } vk_state;
-
 
 namespace impl
 {

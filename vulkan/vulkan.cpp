@@ -12,6 +12,7 @@
 #include <optional.inc>
 #include <iostream>
 #include <chrono>
+#include <stb_image.h>
 #include <glm/glm.hpp>
 #include <vulkan/vulkan.h>
 #include <glm/gtx/transform.hpp>
@@ -74,6 +75,9 @@ global VkBuffer index_buffer;
 global VkDeviceMemory index_buffer_memory;
 global std::vector<VkBuffer> uniform_buffers;
 global std::vector<VkDeviceMemory> uniform_buffers_memory;
+
+global VkImage texture_image;
+global VkDeviceMemory texture_image_memory;
 
 constexpr bool enable_validation_layers = true;
 
@@ -519,6 +523,17 @@ create_logical_device(void)
 internal void
 init_surface(void)
 {
+    /*
+      kWin32SurfaceCreateInfoKHR createInfo = {};
+      createInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
+      createInfo.hwnd = glfwGetWin32Window(window);
+      createInfo.hinstance = GetModuleHandle(nullptr);
+
+      if (vkCreateWin32SurfaceKHR(instance, &createInfo, nullptr, &surface) != VK_SUCCESS) {
+      throw std::runtime_error("failed to create window surface!");
+      }
+     */
+
     if (glfwCreateWindowSurface(vulkan_instance, window, nullptr, &surface) != VK_SUCCESS)
     {
 	throw std::runtime_error("failed to create window surface");
@@ -716,7 +731,7 @@ find_memory_type(uint32 type_filter, VkMemoryPropertyFlags properties)
     for (uint32 i = 0; i < mem_properties.memoryTypeCount; ++i)
     {
 	if (type_filter & (1 << i)
-	    && (mem_properties.memoryTypes[i].propertyFlags) == properties)
+	    && (mem_properties.memoryTypes[i].propertyFlags & properties) == properties)
 	{
 	    return i;
 	}
@@ -724,6 +739,8 @@ find_memory_type(uint32 type_filter, VkMemoryPropertyFlags properties)
 
     throw std::runtime_error("failed to find suitable memory type");
 }
+
+// TODO(PROBLEM WITH THE CREATE BUFFER FOR UBOS - FIX ASAP)
 
 internal void
 create_buffer(VkBuffer *write_buffer
@@ -753,9 +770,7 @@ create_buffer(VkBuffer *write_buffer
     VkMemoryAllocateInfo alloc_info = {};
     alloc_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     alloc_info.allocationSize = mem_requirements.size;
-    alloc_info.memoryTypeIndex = find_memory_type(mem_requirements.memoryTypeBits
-						  , VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
-						  | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    alloc_info.memoryTypeIndex = find_memory_type(mem_requirements.memoryTypeBits, properties);
     
     if (vkAllocateMemory(device, &alloc_info, nullptr, buffer_memory) != VK_SUCCESS)
     {
@@ -763,13 +778,6 @@ create_buffer(VkBuffer *write_buffer
     }
 
     vkBindBufferMemory(device, *write_buffer, *buffer_memory, 0);
-
-    void *data;
-    vkMapMemory(device, *buffer_memory, 0, buffer_info.size, 0, &data);
-
-    memcpy(data, vertices.data(), (uint32)buffer_info.size);
-    
-    vkUnmapMemory(device, *buffer_memory);
 }
 
 internal void
@@ -990,7 +998,7 @@ update_ubo(uint32 current_image)
     float time = std::chrono::duration<float, std::chrono::seconds::period>(current_time - start_time).count();
 
     uniform_buffer_object ubo = {};
-    ubo.model = glm::rotate(glm::radians(90.0f)
+    ubo.model = glm::rotate(time * glm::radians(90.0f)
 			    , glm::vec3(0.0f, 0.0f, 1.0f));
     ubo.view = glm::lookAt(glm::vec3(2.0f)
 			   , glm::vec3(0.0f)
@@ -1091,7 +1099,7 @@ init_graphics_pipeline(void)
 
     VkPipelineColorBlendAttachmentState color_blend_attachment = {};
     color_blend_attachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-    color_blend_attachment.blendEnable = VK_FALSE;
+    color_blend_attachment.blendEnable = VK_FALSE; 
     color_blend_attachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;  // VK_BLEND_FACTOR_SRC_ALPHA
     color_blend_attachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO; // VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA
     color_blend_attachment.colorBlendOp = VK_BLEND_OP_ADD;
@@ -1120,7 +1128,7 @@ init_graphics_pipeline(void)
     dynamic_state.dynamicStateCount = 2;
     dynamic_state.pDynamicStates = dynamic_states;
 
-    VkPipelineLayout pipeline_layout; // TODO()
+    //VkPipelineLayout pipeline_layout; 
     VkPipelineLayoutCreateInfo pipeline_layout_info = {};
     pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     pipeline_layout_info.setLayoutCount = 1;
@@ -1360,6 +1368,8 @@ draw_frame(void)
 			  , VK_NULL_HANDLE
 			  , &image_index);
 
+    update_ubo(image_index);
+
     VkSubmitInfo submit_info = {};
     submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
@@ -1394,9 +1404,56 @@ draw_frame(void)
 
     vkQueuePresentKHR(present_queue, &present_info);
 
-    update_ubo(current_frame);
-
     current_frame = (current_frame + 1) % MAX_FRAMES_IN_FLIGHT;
+}
+
+internal void
+create_texture_image(void)
+{
+    int32 texture_w, texture_h, texture_channels;
+    stbi_uc *pixels = stbi_load("textures/texture.jpg", &texture_w, &texture_h, &texture_channels, STBI_rgb_alpha);
+
+    VkDeviceSize image_size = texture_w * texture_h * 4;
+    if (!pixels)
+    {
+	throw std::runtime_error("unable to read from texture");
+    }
+
+    VkBuffer staging_buffer;
+    VkDeviceMemory staging_buffer_memory;
+
+    create_buffer(&staging_buffer
+		  , image_size
+		  , VK_BUFFER_USAGE_TRANSFER_SRC_BIT
+		  , VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+		  , &staging_buffer_memory);
+
+    void *data;
+    vkMapMemory(device, staging_buffer_memory, 0, image_size, 0, &data);
+    memcpy(data, pixels, static_cast<uint32>(image_size));
+    vkUnmapMemory(device, staging_buffer_memory);
+
+    stbi_image_free(pixels);
+
+    VkImageCreateInfo image_info = {};
+    image_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+    image_info.imageType = VK_IMAGE_TYPE_2D;
+    image_info.extent.width = (uint32)texture_w;
+    image_info.extent.height = (uint32)texture_h;
+    image_info.mipLevels = 1;
+    image_info.arrayLayers = 1;
+    image_info.format = VK_FORMAT_R8G8B8A8_UNORM;
+    image_info.tiling = VK_IMAGE_TILING_OPTIMAL;
+    image_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+    image_info.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+    image_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE; // USED BY ONLY ONE QUEUE
+    image_info.samples = VK_SAMPLE_COUNT_1_BIT;
+
+    if (vkCreateImage(device, &image_info, nullptr, &texture_image) != VK_SUCCESS)
+    {
+	throw std::runtime_error("failed to create image");
+    }
 }
 
 int32
@@ -1423,6 +1480,7 @@ main(int32 argc
     create_ibo();
     create_ubos();
     create_descriptor_pool();
+    //    create_texture_image();
     create_descriptor_sets();
     init_command_buffers();
     create_semaphores();
