@@ -1,3 +1,4 @@
+#define GLFW_INCLUDE_VULKAN
 #include <cstring>
 #include <cassert>
 #include "core.hpp"
@@ -36,6 +37,7 @@ Vulkan_GPU::find_families(void)
 					     , i
 					     , vk.surface
 					     , &present_support);
+	
 	if (queue_properties[i].queueCount > 0 && present_support)
 	{
 	    queue_families.present_family = i;
@@ -65,7 +67,46 @@ check_if_physical_device_supports_extensions(VkPhysicalDevice gpu)
 					 , &extension_count
 					 , nullptr);
 
-    
+    VkExtensionProperties *extension_properties = (VkExtensionProperties *)allocate_stack(sizeof(VkExtensionProperties) * extension_count
+											  , 1
+											  , "gpu_extension_properties_list_allocation");
+    uint32 required_extensions_left = required_extension_count;
+    for (uint32 i
+	     ; i < extension_count && required_extensions_left > 0
+	     ; ++i)
+    {
+	for (uint32 j = 0
+		 ; j < required_extension_count
+		 ; ++j)
+	{
+	    if (!strcmp(extension_properties[i].extensionName, required_physical_device_extensions[j]))
+	    {
+		--required_extensions_left;
+	    }
+	}
+    }
+    pop_stack();
+
+    return(!required_extensions_left);
+}
+
+struct Swapchain_Details
+{
+    VkSurfaceCapabilitiesKHR capabilities;
+    VkSurfaceFormatKHR *formats;
+    VkPresentModeKHR *present_modes;
+};
+
+internal Swapchain_Details
+get_swapchain_support(VkPhysicalDevice gpu)
+{
+    Swapchain_Details details;
+    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(gpu, vk.surface, &details.capabilities);
+
+    uint32 format_count;
+    vkGetPhysicalDeviceSurfaceFormatsKHR(gpu, vk.surface, &format_count, nullptr);
+
+    // TODO() 
 }
 
 internal bool
@@ -82,6 +123,24 @@ check_if_physical_device_is_suitable(Vulkan_GPU *gpu)
 				, &device_features);
 
     bool swapchain_supported = check_if_physical_device_supports_extensions(gpu->hardware);
+
+    bool swapchain_usable = false;
+    if (swapchain_supported)
+    {
+	// TODO() check for swapchain details...
+    }
+    return(false);
+}
+
+internal VKAPI_ATTR VkBool32 VKAPI_CALL
+vulkan_debug_proc(VkDebugUtilsMessageSeverityFlagBitsEXT message_severity
+		  , VkDebugUtilsMessageTypeFlagsEXT message_type
+		  , const VkDebugUtilsMessengerCallbackDataEXT *message_data
+		  , void *user_data)
+{
+    OUTPUT_DEBUG_LOG("validation layer - %s\n", message_data->pMessage);
+
+    return VK_FALSE;
 }
 
 extern_impl void
@@ -142,7 +201,7 @@ init_vk(void)
     // add the debug utils extension to the list
     extensions[glfw_extension_count] = VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
 
-    instance_info.enabledExtensionCount = glfw_extension_count;
+    instance_info.enabledExtensionCount = glfw_extension_count + 1;
     instance_info.ppEnabledExtensionNames = extensions;
 
     VK_CHECK(vkCreateInstance(&instance_info
@@ -153,11 +212,33 @@ init_vk(void)
     pop_stack();
     pop_stack();
 
+    // setup debugger
+    VkDebugUtilsMessengerCreateInfoEXT debug_info = {};
+    debug_info.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+    debug_info.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT
+	                         | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT
+	                         | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+    debug_info.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT
+	                     | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT
+	                     | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+    debug_info.pfnUserCallback = vulkan_debug_proc;
+    debug_info.pUserData = nullptr;
+
+    PFN_vkCreateDebugUtilsMessengerEXT vk_create_debug_utils_messenger = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(vk.instance, "vkCreateDebugUtilsMessengerEXT");
+    assert(vk_create_debug_utils_messenger != nullptr);
+    VK_CHECK(vk_create_debug_utils_messenger(vk.instance, &debug_info, nullptr, &vk.debug_messenger));
+    
+    // create the surface
+    VK_CHECK(glfwCreateWindowSurface(vk.instance
+				     , window
+				     , nullptr
+				     , &vk.surface));
+
     uint32 device_count = 0;
     vkEnumeratePhysicalDevices(vk.instance
 			       , &device_count
 			       , nullptr);
-
+    
     VkPhysicalDevice *devices = (VkPhysicalDevice *)allocate_stack(sizeof(VkPhysicalDevice) * device_count
 								   , 1
 								   , "physical_device_list_allocation");

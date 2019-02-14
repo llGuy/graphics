@@ -28,6 +28,7 @@ extern struct Vulkan_State
 {
     
     VkInstance instance;
+    VkDebugUtilsMessengerEXT debug_messenger;
     Vulkan_GPU gpu;
     VkDevice device;
     VkSurfaceKHR surface;

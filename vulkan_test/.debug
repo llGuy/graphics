@@ -1,11 +1,22 @@
 [core.cpp:122] log: starting session
-[core.cpp:127] log: stack allocator start address : 00000163B58D0040
+[core.cpp:127] log: stack allocator start address : 000001D511BCE040
 [core.cpp:74] log: stack allocation for "validation_layer_list_allocation"
 [core.cpp:74] log: stack allocation for "extension_layer_list_allocation"
-[graphics.cpp:74] success : vkCreateInstance(&instance_info , nullptr , &vk.instance)
+[graphics.cpp:208] success : vkCreateInstance(&instance_info , nullptr , &vk.instance)
 [core.cpp:107] log: poping allocation "extension_layer_list_allocation" -> new head is "validation_layer_list_allocation"
 [core.cpp:102] log: cleared stack : last allocation was "validation_layer_list_allocation"
+[graphics.cpp:227] success : vk_create_debug_utils_messenger(vk.instance, &debug_info, nullptr, &vk.debug_messenger)
+[graphics.cpp:233] success : glfwCreateWindowSurface(vk.instance , window , nullptr , &vk.surface)
 [core.cpp:74] log: stack allocation for "physical_device_list_allocation"
-[graphics.cpp:91] log: available physical hardware devices count : 2
-[core.cpp:147] log: stack allocator start address is : 00000163B58D0040
+[graphics.cpp:247] log: available physical hardware devices count : 2
+[core.cpp:74] log: stack allocation for "queue_family_list_allocation"
+[core.cpp:107] log: poping allocation "queue_family_list_allocation" -> new head is "physical_device_list_allocation"
+[core.cpp:74] log: stack allocation for "gpu_extension_properties_list_allocation"
+[core.cpp:107] log: poping allocation "gpu_extension_properties_list_allocation" -> new head is "physical_device_list_allocation"
+[core.cpp:74] log: stack allocation for "queue_family_list_allocation"
+[core.cpp:107] log: poping allocation "queue_family_list_allocation" -> new head is "physical_device_list_allocation"
+[core.cpp:74] log: stack allocation for "gpu_extension_properties_list_allocation"
+[core.cpp:107] log: poping allocation "gpu_extension_properties_list_allocation" -> new head is "physical_device_list_allocation"
+[core.cpp:102] log: cleared stack : last allocation was "physical_device_list_allocation"
+[core.cpp:147] log: stack allocator start address is : 000001D511BCE040
 [core.cpp:149] log: finished session

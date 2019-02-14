@@ -29,6 +29,9 @@ clean:
 run: 
 	$(EXENAME)
 
+display:
+	cat .debug
+
 debug:
 	devenv $(EXENAME)
 
