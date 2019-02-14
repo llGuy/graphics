@@ -1,22 +1,37 @@
-[core.cpp:122] log: starting session
-[core.cpp:127] log: stack allocator start address : 000001D511BCE040
-[core.cpp:74] log: stack allocation for "validation_layer_list_allocation"
-[core.cpp:74] log: stack allocation for "extension_layer_list_allocation"
-[graphics.cpp:208] success : vkCreateInstance(&instance_info , nullptr , &vk.instance)
-[core.cpp:107] log: poping allocation "extension_layer_list_allocation" -> new head is "validation_layer_list_allocation"
-[core.cpp:102] log: cleared stack : last allocation was "validation_layer_list_allocation"
-[graphics.cpp:227] success : vk_create_debug_utils_messenger(vk.instance, &debug_info, nullptr, &vk.debug_messenger)
-[graphics.cpp:233] success : glfwCreateWindowSurface(vk.instance , window , nullptr , &vk.surface)
-[core.cpp:74] log: stack allocation for "physical_device_list_allocation"
-[graphics.cpp:247] log: available physical hardware devices count : 2
-[core.cpp:74] log: stack allocation for "queue_family_list_allocation"
-[core.cpp:107] log: poping allocation "queue_family_list_allocation" -> new head is "physical_device_list_allocation"
-[core.cpp:74] log: stack allocation for "gpu_extension_properties_list_allocation"
-[core.cpp:107] log: poping allocation "gpu_extension_properties_list_allocation" -> new head is "physical_device_list_allocation"
-[core.cpp:74] log: stack allocation for "queue_family_list_allocation"
-[core.cpp:107] log: poping allocation "queue_family_list_allocation" -> new head is "physical_device_list_allocation"
-[core.cpp:74] log: stack allocation for "gpu_extension_properties_list_allocation"
-[core.cpp:107] log: poping allocation "gpu_extension_properties_list_allocation" -> new head is "physical_device_list_allocation"
-[core.cpp:102] log: cleared stack : last allocation was "physical_device_list_allocation"
-[core.cpp:147] log: stack allocator start address is : 000001D511BCE040
-[core.cpp:149] log: finished session
+[core.cpp:127] log: starting session
+[core.cpp:132] log: stack allocator start address : 00000298F3499040
+[core.cpp:77] log: stack allocation for "validation_layer_list_allocation"
+[core.cpp:77] log: stack allocation for "extension_layer_list_allocation"
+[graphics.cpp:432] success : vkCreateInstance(&instance_info , nullptr , &vk.instance)
+[core.cpp:110] log: poping allocation "extension_layer_list_allocation" -> new head is "validation_layer_list_allocation"
+[core.cpp:105] log: cleared stack : last allocation was "validation_layer_list_allocation"
+[graphics.cpp:451] success : vk_create_debug_utils_messenger(vk.instance, &debug_info, nullptr, &vk.debug_messenger)
+[graphics.cpp:457] success : glfwCreateWindowSurface(vk.instance , window , nullptr , &vk.surface)
+[core.cpp:77] log: stack allocation for "physical_device_list_allocation"
+[graphics.cpp:471] log: available physical hardware devices count : 2
+[core.cpp:77] log: stack allocation for "queue_family_list_allocation"
+[core.cpp:110] log: poping allocation "queue_family_list_allocation" -> new head is "physical_device_list_allocation"
+[core.cpp:77] log: stack allocation for "gpu_extension_properties_list_allocation"
+[core.cpp:110] log: poping allocation "gpu_extension_properties_list_allocation" -> new head is "physical_device_list_allocation"
+[core.cpp:77] log: stack allocation for "surface_format_list_allocation"
+[core.cpp:77] log: stack allocation for "surface_present_mode_list_allocation"
+[core.cpp:110] log: poping allocation "surface_present_mode_list_allocation" -> new head is "surface_format_list_allocation"
+[core.cpp:110] log: poping allocation "surface_format_list_allocation" -> new head is "physical_device_list_allocation"
+[graphics.cpp:489] log: found gpu compatible with application
+[core.cpp:77] log: stack allocation for "unique_queue_family_indices_allocation"
+[core.cpp:77] log: stack allocation for "unique_queue_list_allocation"
+[graphics.cpp:547] success : vkCreateDevice(vk.gpu.hardware , &device_info , nullptr , &vk.device)
+[core.cpp:110] log: poping allocation "unique_queue_list_allocation" -> new head is "unique_queue_family_indices_allocation"
+[core.cpp:110] log: poping allocation "unique_queue_family_indices_allocation" -> new head is "physical_device_list_allocation"
+[core.cpp:77] log: stack allocation for "surface_format_list_allocation"
+[core.cpp:77] log: stack allocation for "surface_present_mode_list_allocation"
+[graphics.cpp:599] success : vkCreateSwapchainKHR(vk.device, &swapchain_info, nullptr, &vk.swapchain.swapchain)
+[core.cpp:77] log: stack allocation for "swapchain_images_list_allocation"
+[core.cpp:77] log: stack allocation for "swapchain_image_views_list_allocation"
+[graphics.cpp:277] success : vkCreateImageView(vk.device, &view_info, nullptr, &image_view)
+[graphics.cpp:277] success : vkCreateImageView(vk.device, &view_info, nullptr, &image_view)
+[graphics.cpp:277] success : vkCreateImageView(vk.device, &view_info, nullptr, &image_view)
+[graphics.cpp:338] success : vkCreateRenderPass(vk.device, &render_pass_info, nullptr, &vk.render_pass)
+[graphics.cpp:365] success : vkCreateDescriptorSetLayout(vk.device, &layout_info, nullptr, &vk.descriptor_layout)
+[core.cpp:152] log: stack allocator start address is : 00000298F34990E4
+[core.cpp:154] log: finished session

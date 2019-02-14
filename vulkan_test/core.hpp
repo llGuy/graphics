@@ -20,6 +20,9 @@ typedef float float32;
 
 typedef uint8 byte;
 
+#define MAX(x, y) (((x) > (y)) ? (x) : (y))
+#define MIN(x, y) (((x) < (y)) ? (x) : (y))
+
 #define VK_CHECK(f, ...) \
     if (f != VK_SUCCESS) \
     { \
@@ -39,6 +42,12 @@ typedef uint8 byte;
 #define persist static
 #define internal static
 #define extern_impl
+
+inline constexpr uint32
+left_shift(uint32 n)
+{
+    return 1 << n;
+}
 
 extern class GLFWwindow *window;
 
@@ -84,6 +93,36 @@ extend_stack_top(uint32 extension_size
 // contents in the allocation must be destroyed by the user
 extern void
 pop_stack(Stack_Allocator *allocator = &stack_allocator_global);
+
+struct File_Contents
+{
+    uint32 size;
+    byte *content;
+};
+
+extern File_Contents
+read_file(const char *filename
+	  , Stack_Allocator *allocator = &stack_allocator_global)
+{
+    FILE *file = fopen(filename, "rb");
+    if (file == nullptr)
+    {
+	OUTPUT_DEBUG_LOG("error - couldnt load file \"%s\"\n", filename);
+	assert(false);
+    }
+    fseek(file, 0, SEEK_END);
+    uint32 size = ftell(file);
+    frewind(file);
+
+    byte *buffer = (byte *)allocator->allocate_stack(size
+						     , 1
+						     , filename);
+    fclose(file);
+
+    File_Contents contents { size, buffer };
+    
+    return contents;
+}
  
 inline uint8
 get_alignment_adjust(void *ptr
@@ -195,3 +234,34 @@ add_simd(float32 *__restrict a
 {
     
 }
+
+#include <intrin.h>
+
+struct Bitset_32
+{
+    uint32 bitset = 0;
+
+    inline uint32
+    pop_count(void)
+    {
+	return __popcnt(bitset);
+    }
+
+    inline void
+    set1(uint32 bit)
+    {
+	bitset |= left_shift(bit);
+    }
+
+    inline void
+    set0(uint32 bit)
+    {
+	bitset &= ~(left_shift(bit));
+    }
+
+    inline bool
+    get(uint32 bit)
+    {
+	return bitset & left_shift(bit);
+    }
+};

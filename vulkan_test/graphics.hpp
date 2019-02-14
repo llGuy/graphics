@@ -24,16 +24,33 @@ struct Vulkan_GPU
     find_families(void);
 };
 
+struct Swapchain
+{
+    VkSwapchainKHR swapchain;
+    VkFormat format;
+    VkPresentModeKHR present_mode;
+    VkExtent2D extent;
+
+    uint32 image_count;
+    VkImage *images;
+    VkImageView *image_views;
+};
+
 extern struct Vulkan_State
 {
-    
     VkInstance instance;
     VkDebugUtilsMessengerEXT debug_messenger;
     Vulkan_GPU gpu;
     VkDevice device;
     VkSurfaceKHR surface;
-    VkSwapchainKHR swapchain;
 
+    Swapchain swapchain;
+
+    VkQueue graphics_queue;
+    VkQueue present_queue;
+
+    VkRenderPass render_pass;
+    VkDescriptorSetLayout descriptor_layout;
 } vk;
 
 extern void

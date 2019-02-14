@@ -3,9 +3,12 @@
 
 #include <stdio.h>
 #include <cassert>
+#include <windows.h>
 #include "graphics.hpp"
 #include <GLFW/glfw3.h>
 #include <vulkan/vulkan.h>
+
+#include <iostream>
 
 #define DEBUG_FILE ".debug"
 
@@ -117,38 +120,49 @@ int32
 main(int32 argc
      , char * argv[])
 {
-    open_debug_file();
-
-    OUTPUT_DEBUG_LOG("%s\n", "starting session");
-    
-    stack_allocator_global.start = stack_allocator_global.current =  malloc(megabytes(4));
-    stack_allocator_global.capacity = STACK_ALLOCATOR_GLOBAL_SIZE;
-
-    OUTPUT_DEBUG_LOG("stack allocator start address : %p\n", stack_allocator_global.current);
-    
-    if (!glfwInit())
+    try
     {
-	return(0);
-    }
+	open_debug_file();
 
-    window = glfwCreateWindow(1280
-			      , 720
-			      , "Vulkan App"
-			      , NULL
-			      , NULL);
+	OUTPUT_DEBUG_LOG("%s\n", "starting session");
 
-    init_vk();
+	stack_allocator_global.start = stack_allocator_global.current =  malloc(megabytes(4));
+	stack_allocator_global.capacity = STACK_ALLOCATOR_GLOBAL_SIZE;
 
-    while(!glfwWindowShouldClose(window))
-    {
-	glfwPollEvents();
-    }
-
-    OUTPUT_DEBUG_LOG("stack allocator start address is : %p\n", stack_allocator_global.current);
+	OUTPUT_DEBUG_LOG("stack allocator start address : %p\n", stack_allocator_global.current);
     
-    OUTPUT_DEBUG_LOG("finished session\n", 1);
+	if (!glfwInit())
+	{
+	    return(0);
+	}
 
-    close_debug_file();
+	window = glfwCreateWindow(1280
+				  , 720
+				  , "Vulkan App"
+				  , NULL
+				  , NULL);
+
+	init_vk();
+
+	while(!glfwWindowShouldClose(window))
+	{
+	    glfwPollEvents();
+	}
+
+	OUTPUT_DEBUG_LOG("stack allocator start address is : %p\n", stack_allocator_global.current);
+    
+	OUTPUT_DEBUG_LOG("finished session\n", 1);
+
+	close_debug_file();
+
+	glfwDestroyWindow(window);
+	glfwTerminate();
+    }
+    catch(...)
+    {
+	OUTPUT_DEBUG_LOG("CRASH!!!\n");
+	close_debug_file();
+    }
     
     return(0);
 }
