@@ -3,10 +3,11 @@
 
 #include <stdio.h>
 #include <cassert>
+#include "graphics.hpp"
 #include <GLFW/glfw3.h>
 #include <vulkan/vulkan.h>
 
-#define DEBUG_FILE "debug.txt"
+#define DEBUG_FILE ".debug"
 
 #define STACK_ALLOCATOR_GLOBAL_SIZE 0xffff
 extern_impl Stack_Allocator stack_allocator_global;
@@ -29,7 +30,7 @@ close_debug_file(void)
 }
 
 extern void
-output_debug(char *format
+output_debug(const char *format
 	     , ...)
 {
     va_list arg_list;
@@ -48,6 +49,7 @@ output_debug(char *format
 extern_impl void *
 allocate_stack(uint32 allocation_size
 	       , uint8 alignment
+	       , const char *name
 	       , Stack_Allocator *allocator)
 {
     byte *would_be_address;
@@ -66,6 +68,12 @@ allocate_stack(uint32 allocation_size
     assert((start_address + sizeof(Stack_Allocation_Header) + allocation_size) < (uint8 *)allocator->start + allocator->capacity);
 
     Stack_Allocation_Header *header = (Stack_Allocation_Header *)start_address;
+    
+#if DEBUG
+    header->allocation_name = name;
+    OUTPUT_DEBUG_LOG("stack allocation for \"%s\"\n", name);
+#endif
+
     header->size = allocation_size;
     header->prev = allocator->allocation_count == 0 ? nullptr : (Stack_Allocation_Header *)allocator->current;
 
@@ -87,7 +95,22 @@ extern_impl void
 pop_stack(Stack_Allocator *allocator)
 {
     Stack_Allocation_Header *current_header = (Stack_Allocation_Header *)allocator->current;
-    allocator->current = current_header->prev;
+    
+#if DEBUG
+    if (allocator->allocation_count == 1)
+    {
+	OUTPUT_DEBUG_LOG("cleared stack : last allocation was \"%s\"\n", current_header->allocation_name);
+    }
+    else
+    {
+	OUTPUT_DEBUG_LOG("poping allocation \"%s\" -> new head is \"%s\"\n", current_header->allocation_name
+		     , ((Stack_Allocation_Header *)(current_header->prev))->allocation_name);
+    }
+#endif
+
+    if (allocator->allocation_count == 1) allocator->current = allocator->start;
+    else allocator->current = current_header->prev;
+    --(allocator->allocation_count);
 }
 
 int32
@@ -95,10 +118,13 @@ main(int32 argc
      , char * argv[])
 {
     open_debug_file();
-    output_debug("vector %f %f %f\n", 0.0f, 1.0f, 0.0f);
+
+    OUTPUT_DEBUG_LOG("%s\n", "starting session");
     
     stack_allocator_global.start = stack_allocator_global.current =  malloc(megabytes(4));
     stack_allocator_global.capacity = STACK_ALLOCATOR_GLOBAL_SIZE;
+
+    OUTPUT_DEBUG_LOG("stack allocator start address : %p\n", stack_allocator_global.current);
     
     if (!glfwInit())
     {
@@ -111,13 +137,17 @@ main(int32 argc
 			      , NULL
 			      , NULL);
 
+    init_vk();
+
     while(!glfwWindowShouldClose(window))
     {
 	glfwPollEvents();
     }
 
-    output_debug("done\n");
+    OUTPUT_DEBUG_LOG("stack allocator start address is : %p\n", stack_allocator_global.current);
     
+    OUTPUT_DEBUG_LOG("finished session\n", 1);
+
     close_debug_file();
     
     return(0);

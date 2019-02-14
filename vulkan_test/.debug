@@ -1,0 +1,11 @@
+[core.cpp:122] log: starting session
+[core.cpp:127] log: stack allocator start address : 00000163B58D0040
+[core.cpp:74] log: stack allocation for "validation_layer_list_allocation"
+[core.cpp:74] log: stack allocation for "extension_layer_list_allocation"
+[graphics.cpp:74] success : vkCreateInstance(&instance_info , nullptr , &vk.instance)
+[core.cpp:107] log: poping allocation "extension_layer_list_allocation" -> new head is "validation_layer_list_allocation"
+[core.cpp:102] log: cleared stack : last allocation was "validation_layer_list_allocation"
+[core.cpp:74] log: stack allocation for "physical_device_list_allocation"
+[graphics.cpp:91] log: available physical hardware devices count : 2
+[core.cpp:147] log: stack allocator start address is : 00000163B58D0040
+[core.cpp:149] log: finished session
