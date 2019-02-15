@@ -126,7 +126,7 @@ main(int32 argc
 
 	OUTPUT_DEBUG_LOG("%s\n", "starting session");
 
-	stack_allocator_global.start = stack_allocator_global.current =  malloc(megabytes(4));
+	stack_allocator_global.start = stack_allocator_global.current =  malloc(megabytes(8));
 	stack_allocator_global.capacity = STACK_ALLOCATOR_GLOBAL_SIZE;
 
 	OUTPUT_DEBUG_LOG("stack allocator start address : %p\n", stack_allocator_global.current);
@@ -136,6 +136,7 @@ main(int32 argc
 	    return(0);
 	}
 
+	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 	window = glfwCreateWindow(1280
 				  , 720
 				  , "Vulkan App"
@@ -154,6 +155,8 @@ main(int32 argc
 	OUTPUT_DEBUG_LOG("finished session\n", 1);
 
 	close_debug_file();
+
+	destroy_vk();
 
 	glfwDestroyWindow(window);
 	glfwTerminate();

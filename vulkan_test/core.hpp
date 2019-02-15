@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cassert>
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdint.h>
@@ -36,7 +37,8 @@ typedef uint8 byte;
 
 #define OUTPUT_DEBUG_LOG(str, ...) \
     fprintf(output_file.fp, "[%s:%d] log: ", __FILE__, __LINE__); \
-    fprintf(output_file.fp, str, __VA_ARGS__);
+    fprintf(output_file.fp, str, __VA_ARGS__); \
+    fflush(output_file.fp);
 
 #define global static
 #define persist static
@@ -100,7 +102,7 @@ struct File_Contents
     byte *content;
 };
 
-extern File_Contents
+internal File_Contents
 read_file(const char *filename
 	  , Stack_Allocator *allocator = &stack_allocator_global)
 {
@@ -112,16 +114,19 @@ read_file(const char *filename
     }
     fseek(file, 0, SEEK_END);
     uint32 size = ftell(file);
-    frewind(file);
+    rewind(file);
 
-    byte *buffer = (byte *)allocator->allocate_stack(size
-						     , 1
-						     , filename);
+    byte *buffer = (byte *)allocate_stack(size
+					  , 1
+					  , filename
+					  , allocator);
+    fread(buffer, 1, size, file);
+    
     fclose(file);
 
     File_Contents contents { size, buffer };
     
-    return contents;
+    return(contents);
 }
  
 inline uint8
@@ -235,7 +240,9 @@ add_simd(float32 *__restrict a
     
 }
 
+#ifndef __GNUC__
 #include <intrin.h>
+#endif
 
 struct Bitset_32
 {
@@ -244,7 +251,11 @@ struct Bitset_32
     inline uint32
     pop_count(void)
     {
+#ifndef __GNUC__
 	return __popcnt(bitset);
+#else
+	return __builtin_popcount(bitset);  
+#endif
     }
 
     inline void

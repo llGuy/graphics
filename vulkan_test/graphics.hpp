@@ -51,7 +51,17 @@ extern struct Vulkan_State
 
     VkRenderPass render_pass;
     VkDescriptorSetLayout descriptor_layout;
+    VkPipeline graphics_pipeline;
+    VkPipelineLayout pipeline_layout;
+
+    VkCommandPool command_pool;
 } vk;
 
 extern void
 init_vk(void);
+
+extern void
+recreate(void);
+
+extern void
+destroy_vk(void);
