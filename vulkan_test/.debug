@@ -1,12 +1,12 @@
 [core.cpp:127] log: starting session
-[core.cpp:132] log: stack allocator start address : 000001BB864D4040
+[core.cpp:132] log: stack allocator start address : 0000019E81416040
 [core.cpp:77] log: stack allocation for "validation_layer_list_allocation"
 [core.cpp:77] log: stack allocation for "extension_layer_list_allocation"
 [graphics.cpp:732] success : vkCreateInstance(&instance_info , nullptr , &vk.instance)
 [core.cpp:110] log: poping allocation "extension_layer_list_allocation" -> new head is "validation_layer_list_allocation"
 [core.cpp:105] log: cleared stack : last allocation was "validation_layer_list_allocation"
 [graphics.cpp:755] success : vk_create_debug_utils_messenger(vk.instance, &debug_info, nullptr, &vk.debug_messenger)
-[graphics.cpp:946] success : glfwCreateWindowSurface(vk.instance , window , nullptr , &vk.surface)
+[graphics.cpp:965] success : glfwCreateWindowSurface(vk.instance , window , nullptr , &vk.surface)
 [core.cpp:77] log: stack allocation for "physical_device_list_allocation"
 [graphics.cpp:773] log: available physical hardware devices count : 2
 [core.cpp:77] log: stack allocation for "queue_family_list_allocation"
@@ -42,5 +42,6 @@
 [graphics.cpp:611] success : vkCreatePipelineLayout(vk.device, &pipeline_layout_info, nullptr, &vk.pipeline_layout)
 [core.cpp:110] log: poping allocation "../vulkan/shaders/frag.spv" -> new head is "../vulkan/shaders/vert.spv"
 [core.cpp:110] log: poping allocation "../vulkan/shaders/vert.spv" -> new head is "swapchain_image_views_list_allocation"
-[core.cpp:153] log: stack allocator start address is : 000001BB864D40E4
+[graphics.cpp:946] success : vkCreateCommandPool(vk.device, &pool_info, nullptr, &vk.command_pool)
+[core.cpp:153] log: stack allocator start address is : 0000019E814160E4
 [core.cpp:155] log: finished session

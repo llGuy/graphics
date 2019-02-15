@@ -34,6 +34,9 @@ struct Swapchain
     uint32 image_count;
     VkImage *images;
     VkImageView *image_views;
+
+    VkFramebuffer *fbos;
+    uint32 fbo_count;
 };
 
 extern struct Vulkan_State
@@ -55,6 +58,12 @@ extern struct Vulkan_State
     VkPipelineLayout pipeline_layout;
 
     VkCommandPool command_pool;
+
+    VkImage depth_image;
+    VkImageView depth_image_view;
+
+    VkImage texture_image;
+    VkImageView texture_image_view;
 } vk;
 
 extern void

@@ -4,8 +4,9 @@
 #include <cassert>
 #include "core.hpp"
 #include <limits.h>
-#include "graphics.hpp"
+#include <stb_image.h>
 #include <glm/glm.hpp>
+#include "graphics.hpp"
 #include <GLFW/glfw3.h>
 #include <vulkan/vulkan.h>
 
@@ -200,8 +201,8 @@ choose_surface_format(const VkSurfaceFormatKHR *available_formats
     if (format_count == 1 && available_formats[0].format == VK_FORMAT_UNDEFINED)
     {
 	VkSurfaceFormatKHR format;
-	format.format = VK_FORMAT_B8G8R8A8_UNORM;
-	format.colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
+	format.format		= VK_FORMAT_B8G8R8A8_UNORM;
+	format.colorSpace	= VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
     }
     for (uint32 i = 0
 	     ; i < format_count
@@ -250,9 +251,9 @@ choose_swapchain_extent(const VkSurfaceCapabilitiesKHR *capabilities)
 	int32 width, height;
 	glfwGetFramebufferSize(window, &width, &height);
 
-	VkExtent2D actual_extent = { (uint32)width, (uint32)height };
-	actual_extent.width = MAX(capabilities->minImageExtent.width, MIN(capabilities->maxImageExtent.width, actual_extent.width));
-	actual_extent.height = MAX(capabilities->minImageExtent.height, MIN(capabilities->maxImageExtent.height, actual_extent.height));
+	VkExtent2D actual_extent	= { (uint32)width, (uint32)height };
+	actual_extent.width		= MAX(capabilities->minImageExtent.width, MIN(capabilities->maxImageExtent.width, actual_extent.width));
+	actual_extent.height		= MAX(capabilities->minImageExtent.height, MIN(capabilities->maxImageExtent.height, actual_extent.height));
 
 	return(actual_extent);
     }
@@ -263,16 +264,16 @@ create_image_view(VkImage image
 		  , VkFormat format
 		  , VkImageAspectFlags aspect_flags)
 {
-    VkImageViewCreateInfo view_info = {};
-    view_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-    view_info.image = image;
-    view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
-    view_info.format = format;
-    view_info.subresourceRange.aspectMask = aspect_flags;
-    view_info.subresourceRange.baseMipLevel = 0;
-    view_info.subresourceRange.levelCount = 1;
-    view_info.subresourceRange.baseArrayLayer = 0;
-    view_info.subresourceRange.layerCount = 1;
+    VkImageViewCreateInfo view_info		= {};
+    view_info.sType				= VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    view_info.image				= image;
+    view_info.viewType				= VK_IMAGE_VIEW_TYPE_2D;
+    view_info.format				= format;
+    view_info.subresourceRange.aspectMask	= aspect_flags;
+    view_info.subresourceRange.baseMipLevel	= 0;
+    view_info.subresourceRange.levelCount	= 1;
+    view_info.subresourceRange.baseArrayLayer	= 0;
+    view_info.subresourceRange.layerCount	= 1;
 
     VkImageView image_view;
     VK_CHECK(vkCreateImageView(vk.device, &view_info, nullptr, &image_view));
@@ -308,18 +309,18 @@ find_supported_format(const VkFormat *candidates
 internal VkFormat
 find_depth_format(void)
 {
-    VkFormat *formats = (VkFormat *)allocate_stack(sizeof(VkFormat) * 3
-						   , 1
-						   , "depth_format_list_allocation");
+    VkFormat *formats	= (VkFormat *)allocate_stack(sizeof(VkFormat) * 3
+						     , 1
+						     , "depth_format_list_allocation");
 
-    formats[0] = VK_FORMAT_D32_SFLOAT;
-    formats[1] = VK_FORMAT_D32_SFLOAT_S8_UINT;
-    formats[2] = VK_FORMAT_D24_UNORM_S8_UINT;
+    formats[0]		= VK_FORMAT_D32_SFLOAT;
+    formats[1]		= VK_FORMAT_D32_SFLOAT_S8_UINT;
+    formats[2]		= VK_FORMAT_D24_UNORM_S8_UINT;
     
-    VkFormat result = find_supported_format(formats
-					    , 3
-					    , VK_IMAGE_TILING_OPTIMAL
-					    , VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
+    VkFormat result	= find_supported_format(formats
+						, 3
+						, VK_IMAGE_TILING_OPTIMAL
+						, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 
     pop_stack();
 
@@ -415,10 +416,10 @@ init_descriptor_layout(void)
 internal VkShaderModule
 create_shader(File_Contents *contents)
 {
-    VkShaderModuleCreateInfo shader_info = {};
-    shader_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-    shader_info.codeSize = contents->size;
-    shader_info.pCode = reinterpret_cast<const uint32 *>(contents->content);
+    VkShaderModuleCreateInfo shader_info	= {};
+    shader_info.sType				= VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+    shader_info.codeSize			= contents->size;
+    shader_info.pCode				= reinterpret_cast<const uint32 *>(contents->content);
 
     VkShaderModule shader_module;
     VK_CHECK(vkCreateShaderModule(vk.device, &shader_info, nullptr, &shader_module));
@@ -434,10 +435,10 @@ struct Vertex
     static VkVertexInputBindingDescription
     get_binding_description(void)
     {
-	VkVertexInputBindingDescription binding_info = {};
-	binding_info.binding = 0;
-	binding_info.stride = sizeof(Vertex);
-	binding_info.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+	VkVertexInputBindingDescription binding_info	= {};
+	binding_info.binding				= 0;
+	binding_info.stride				= sizeof(Vertex);
+	binding_info.inputRate				= VK_VERTEX_INPUT_RATE_VERTEX;
 
 	return(binding_info);
     }
@@ -452,20 +453,20 @@ struct Vertex
     get_attribute_descriptions(void)
     {
 	Vertex_Attributes structure;
-	structure.attributes[0].binding = 0;
-	structure.attributes[0].location = 0;
-	structure.attributes[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-	structure.attributes[0].offset = offsetof(Vertex, Vertex::pos);
+	structure.attributes[0].binding		= 0;
+	structure.attributes[0].location	= 0;
+	structure.attributes[0].format		= VK_FORMAT_R32G32B32_SFLOAT;
+	structure.attributes[0].offset		= offsetof(Vertex, Vertex::pos);
 
-	structure.attributes[1].binding = 0;
-	structure.attributes[1].location = 1;
-	structure.attributes[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-	structure.attributes[1].offset = offsetof(Vertex, Vertex::color);
+	structure.attributes[1].binding		= 0;
+	structure.attributes[1].location	= 1;
+	structure.attributes[1].format		= VK_FORMAT_R32G32B32_SFLOAT;
+	structure.attributes[1].offset		= offsetof(Vertex, Vertex::color);
 
-	structure.attributes[2].binding = 0;
-	structure.attributes[2].location = 2;
-	structure.attributes[2].format = VK_FORMAT_R32G32_SFLOAT;
-	structure.attributes[2].offset = offsetof(Vertex, Vertex::uvs);
+	structure.attributes[2].binding		= 0;
+	structure.attributes[2].location	= 2;
+	structure.attributes[2].format		= VK_FORMAT_R32G32_SFLOAT;
+	structure.attributes[2].offset		= offsetof(Vertex, Vertex::uvs);
 
 	return(structure);
     }
@@ -499,54 +500,54 @@ init_graphics_pipeline(void)
     VkShaderModule v_module = create_shader(&vsh_bytecode);
     VkShaderModule f_module = create_shader(&fsh_bytecode);
 
-    VkPipelineShaderStageCreateInfo vsh_stage_info = {};
-    vsh_stage_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    vsh_stage_info.stage = VK_SHADER_STAGE_VERTEX_BIT;
-    vsh_stage_info.module = v_module;
-    vsh_stage_info.pName = "main";
+    VkPipelineShaderStageCreateInfo vsh_stage_info	= {};
+    vsh_stage_info.sType				= VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    vsh_stage_info.stage				= VK_SHADER_STAGE_VERTEX_BIT;
+    vsh_stage_info.module				= v_module;
+    vsh_stage_info.pName				= "main";
 
-    VkPipelineShaderStageCreateInfo fsh_stage_info = {};
-    fsh_stage_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    fsh_stage_info.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-    fsh_stage_info.module = f_module;
-    fsh_stage_info.pName = "main";
+    VkPipelineShaderStageCreateInfo fsh_stage_info	= {};
+    fsh_stage_info.sType				= VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    fsh_stage_info.stage				= VK_SHADER_STAGE_FRAGMENT_BIT;
+    fsh_stage_info.module				= f_module;
+    fsh_stage_info.pName				= "main";
 
     VkPipelineShaderStageCreateInfo shader_infos[] = {vsh_stage_info, fsh_stage_info};
 
-    VkPipelineVertexInputStateCreateInfo vertex_input_info = {};
-    vertex_input_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+    VkPipelineVertexInputStateCreateInfo vertex_input_info	= {};
+    vertex_input_info.sType					= VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 
-    Vertex::Vertex_Attributes attributes = Vertex::get_attribute_descriptions();
-    VkVertexInputBindingDescription binding = Vertex::get_binding_description();
+    Vertex::Vertex_Attributes attributes	= Vertex::get_attribute_descriptions();
+    VkVertexInputBindingDescription binding	= Vertex::get_binding_description();
 
-    vertex_input_info.vertexBindingDescriptionCount = 1;
-    vertex_input_info.pVertexBindingDescriptions = &binding;
-    vertex_input_info.vertexAttributeDescriptionCount = (uint32)Vertex::Vertex_Attributes::attribute_count;
-    vertex_input_info.pVertexAttributeDescriptions = attributes.attributes;
+    vertex_input_info.vertexBindingDescriptionCount	= 1;
+    vertex_input_info.pVertexBindingDescriptions	= &binding;
+    vertex_input_info.vertexAttributeDescriptionCount	= (uint32)Vertex::Vertex_Attributes::attribute_count;
+    vertex_input_info.pVertexAttributeDescriptions	= attributes.attributes;
 
-    VkPipelineInputAssemblyStateCreateInfo input_assembly = {};
-    input_assembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-    input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-    input_assembly.primitiveRestartEnable = VK_FALSE;
+    VkPipelineInputAssemblyStateCreateInfo input_assembly	= {};
+    input_assembly.sType					= VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+    input_assembly.topology					= VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+    input_assembly.primitiveRestartEnable			= VK_FALSE;
 
     VkViewport viewport = {};
-    viewport.x = 0.0f;
-    viewport.y = 0.0f;
-    viewport.width = (float32)vk.swapchain.extent.width;
-    viewport.height = (float32)vk.swapchain.extent.height;
-    viewport.minDepth = 0.0f;
-    viewport.maxDepth = 1.0f;
+    viewport.x		= 0.0f;
+    viewport.y		= 0.0f;
+    viewport.width	= (float32)vk.swapchain.extent.width;
+    viewport.height	= (float32)vk.swapchain.extent.height;
+    viewport.minDepth	= 0.0f;
+    viewport.maxDepth	= 1.0f;
 
-    VkRect2D scissor = {};
-    scissor.offset = {0, 0};
-    scissor.extent = vk.swapchain.extent;
+    VkRect2D scissor	= {};
+    scissor.offset	= {0, 0};
+    scissor.extent	= vk.swapchain.extent;
 
-    VkPipelineViewportStateCreateInfo viewport_info = {};
-    viewport_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-    viewport_info.viewportCount = 1;
-    viewport_info.pViewports = &viewport;
-    viewport_info.scissorCount = 1;
-    viewport_info.pScissors = &scissor;
+    VkPipelineViewportStateCreateInfo viewport_info	= {};
+    viewport_info.sType					= VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+    viewport_info.viewportCount				= 1;
+    viewport_info.pViewports				= &viewport;
+    viewport_info.scissorCount				= 1;
+    viewport_info.pScissors				= &scissor;
 
     VkPipelineRasterizationStateCreateInfo rasterizer = {};
     rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;    
@@ -946,6 +947,348 @@ init_command_pool(void)
     VK_CHECK(vkCreateCommandPool(vk.device, &pool_info, nullptr, &vk.command_pool));
 }
 
+internal uint32
+find_memory_type(uint32 type_filter
+		 , VkMemoryPropertyFlags properties)
+{
+    VkPhysicalDeviceMemoryProperties mem_properties;
+    vkGetPhysicalDeviceMemoryProperties(vk.gpu.hardware
+					, &mem_properties);
+
+    for (uint32 i = 0
+	     ; i < mem_properties.memoryTypeCount
+	     ; ++i)
+    {
+	if (type_filter & (1 << i)
+	    && (mem_properties.memoryTypes[i].propertyFlags & properties) == properties)
+	{
+	    return(i);
+	}
+    }
+
+    OUTPUT_DEBUG_LOG("failed to find memory type\n");
+    assert(false);
+}
+
+internal void
+create_image(uint32 width
+	     , uint32 height
+	     , VkFormat format
+	     , VkImageTiling tiling
+	     , VkImageUsageFlags usage
+	     , VkMemoryPropertyFlags properties
+	     , VkImage *image
+	     , VkDeviceMemory *image_memory)
+{
+    VkImageCreateInfo image_info = {};
+    image_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+    image_info.imageType = VK_IMAGE_TYPE_2D;
+    image_info.extent.width = width;
+    image_info.extent.height = height;
+    image_info.mipLevels = 1;
+    image_info.arrayLayers = 1;
+    image_info.format = format;
+    image_info.tiling = tiling;
+    image_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    image_info.usage = usage;
+    image_info.samples = VK_SAMPLE_COUNT_1_BIT;
+    image_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+    VK_CHECK(vkCreateImage(vk.device, &image_info, nullptr, image));
+
+    VkMemoryRequirements mem_requirements = {};
+    vkGetImageMemoryRequirements(vk.device
+				 , *image
+				 , &mem_requirements);
+
+    VkMemoryAllocateInfo alloc_info = {};
+    alloc_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    alloc_info.allocationSize = mem_requirements.size;
+    alloc_info.memoryTypeIndex = find_memory_type(mem_requirements.memoryTypeBits
+						  , properties);
+
+    VK_CHECK(vkAllocateMemory(vk.device, &alloc_info, nullptr, image_memory));
+
+    vkBindImageMemory(vk.device, *image, *image_memory, 0);
+}
+
+internal VkCommandBuffer
+begin_single_time_command(void)
+{
+    VkCommandBufferAllocateInfo alloc_info = {};
+    alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    alloc_info.commandPool = vk.command_pool;
+    alloc_info.commandBufferCount = 1;
+
+    VkCommandBuffer command_buffer;
+    vkAllocateCommandBuffers(vk.device, &alloc_info, &command_buffer);
+
+    VkCommandBufferBeginInfo begin_info = {};
+    begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+    vkBeginCommandBuffer(command_buffer
+			 , &begin_info);
+
+    return(command_buffer);
+}
+
+internal void
+end_single_time_command(VkCommandBuffer command_buffer)
+{
+    vkEndCommandBuffer(command_buffer);
+
+    VkSubmitInfo submit_info = {};
+    submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submit_info.commandBufferCount = 1;
+    submit_info.pCommandBuffers = &command_buffer;
+
+    vkQueueSubmit(vk.graphics_queue, 1, &submit_info, VK_NULL_HANDLE);
+    vkQueueWaitIdle(vk.graphics_queue);
+
+    vkFreeCommandBuffers(vk.device, vk.command_pool, 1, &command_buffer);
+}
+
+internal bool
+has_stencil_component(VkFormat format)
+{
+    return(format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT);
+}
+
+internal void
+transition_image_layout(VkImage image
+			, VkFormat format
+			, VkImageLayout old_layout
+			, VkImageLayout new_layout)
+{
+    VkCommandBuffer command_buffer = begin_single_time_command();
+
+    VkImageMemoryBarrier barrier = {};
+    barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    barrier.oldLayout = old_layout;
+    barrier.newLayout = new_layout;
+
+    barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+   
+    barrier.image				= image;
+    barrier.subresourceRange.aspectMask		= VK_IMAGE_ASPECT_COLOR_BIT;
+    barrier.subresourceRange.baseMipLevel	= 0;
+    barrier.subresourceRange.levelCount		= 1;
+    barrier.subresourceRange.baseArrayLayer	= 0;
+    barrier.subresourceRange.layerCount		= 1;
+
+    VkPipelineStageFlags source_stage;
+    VkPipelineStageFlags destination_stage;
+
+    if (old_layout == VK_IMAGE_LAYOUT_UNDEFINED && new_layout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
+    {
+	barrier.srcAccessMask = 0;
+	barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+
+	source_stage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+	destination_stage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+    }
+    else if (old_layout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && new_layout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+    {
+	barrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+	barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+	source_stage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+	destination_stage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+    }
+    else if (old_layout == VK_IMAGE_LAYOUT_UNDEFINED && new_layout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
+    {
+	barrier.srcAccessMask = 0;
+	barrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT
+	    | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+
+	source_stage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+	destination_stage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+    }
+    else
+    {
+	OUTPUT_DEBUG_LOG("unsupported layout transition\n");
+	assert(false);
+    }
+
+    if (new_layout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
+    {
+	barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+	if (has_stencil_component(format))
+	{
+	    barrier.subresourceRange.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
+	}
+    }
+    else
+    {
+	barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    }
+
+    vkCmdPipelineBarrier(command_buffer
+			 , source_stage
+			 , destination_stage
+			 , 0
+			 , 0
+			 , nullptr
+			 , 0
+			 , nullptr
+			 , 1
+			 , &barrier);
+
+    end_single_time_command(command_buffer);
+}
+
+internal void
+init_depth_resources(void)
+{
+    VkFormat depth_format = find_depth_format();
+
+    create_image(vk.swapchain.extent.width
+		 , vk.swapchain.extent.height
+		 , depth_format
+		 , VK_IMAGE_TILING_OPTIMAL
+		 , VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT
+		 , VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+		 , &vk.depth_image
+		 , &vk.depth_image_view);
+    
+    vk.depth_image_view = create_image_view(vk.depth_image
+					    , depth_format
+					    , VK_IMAGE_ASPECT_DEPTH_BIT);
+    transition_image_layout(vk.depth_image
+			    , depth_format
+			    , VK_IMAGE_LAYOUT_UNDEFINED
+			    , VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+}
+
+internal void
+init_framebuffers(void)
+{
+    vk.swapchain.fbos = (VkFramebuffer *)(allocate_stack(sizeof(VkFramebuffer) * vk.swapchain.image_count
+					       , 1
+					       , "framebuffer_list_allocation"));
+
+    for (uint32 i = 0
+	     ; i < vk.swapchain.image_count
+	     ; ++i)
+    {
+	VkImageView attachments[]
+	{
+	    vk.swapchain.image_views[i], vk.depth_image_view
+	};
+
+	VkFramebufferCreateInfo fbo_info	= {};
+	fbo_info.sType				= VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+	fbo_info.renderPass			= vk.render_pass;
+	fbo_info.attachmentCount		= sizeof(attachments) / sizeof(attachments[0]);
+	fbo_info.pAttachments			= attachments;
+	fbo_info.width				= vk.swapchain.extent.width;
+	fbo_info.height				= vk.swapchain.extent.height;
+	fbo_info.layers				= 1;
+
+	VK_CHECK(vkCreateFramebuffer(vk.device, &fbo_info, nullptr, &vk.swapchain.fbos[i]));
+    }
+}
+
+internal void
+create_buffer(VkBuffer *write_buffer
+	      , VkDeviceMemory *memory
+	      , VkDeviceSize size
+	      , VkBufferUsageFlags usage
+	      , VkMemoryPropertyFlags properties)
+{
+    VkBufferCreateInfo buffer_info	= {};
+    buffer_info.sType			= VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    buffer_info.size			= size;
+    buffer_info.usage			= usage;
+    buffer_info.sharingMode		= VK_SHARING_MODE_EXCLUSIVE;
+    buffer_info.flags			= 0;
+
+    VK_CHECK(vkCreateBuffer(vk.device, &buffer_info, nullptr, write_buffer));
+
+    VkMemoryRequirements mem_requirements;
+    vkGetBufferMemoryRequirements(vk.device, *write_buffer, &mem_requirements);
+
+    VkMemoryAllocateInfo alloc_info = {};
+    alloc_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    alloc_info.allocationSize = mem_requirements.size;
+    alloc_info.memoryTypeIndex = find_memory_type(mem_requirements.memoryTypeBits, properties);
+
+    VK_CHECK(vkAllocateMemory(vk.device, &alloc_info, nullptr, memory));
+
+    vkBindBufferMemory(vk.device, *write_buffer, *memory, 0);
+}
+
+internal void
+copy_buffer(VkBuffer *__restrict src_buffer
+	    , VkBuffer *__restrict dst_buffer
+	    , VkDeviceSize size)
+{
+    VkCommandBuffer command_buffer = begin_single_time_command();
+
+    VkBufferCopy copy_region = {};
+    copy_region.size = size;
+    vkCmdCopyBuffer(command_buffer, *src_buffer, *dst_buffer, 1, &copy_region);
+
+    end_single_time_command(command_buffer);
+}
+
+internal void
+copy_buffer_to_image()
+{
+    
+}
+
+internal void
+init_texture_image(void)
+{
+    persist const char *jpg_file = "../vulkan/textures/texture.jpg";
+
+    int32 w, h, channels;
+    stbi_uc *pixels = stbi_load(jpg_file, &w, &h, &channels, STBI_rgb_alpha);
+
+    if (!pixels)
+    {
+	OUTPUT_DEBUG_LOG("failed to open image : %s\n", jpg_file);
+    }
+
+    VkDeviceSize image_size = w * h;
+    
+    VkBuffer staging_buffer;
+    VkDeviceMemory staging_buffer_memory;
+
+    create_buffer(&staging_buffer
+		  , &staging_buffer_memory
+		  , image_size
+		  , VK_BUFFER_USAGE_TRANSFER_SRC_BIT
+		  , VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+    void *data;
+    vkMapMemory(vk.device, staging_buffer_memory, 0, image_size, 0, &data);
+    memcpy(data, pixels, static_cast<uint32>(image_size));
+    vkUnmapMemory(vk.device, staging_buffer_memory);
+
+    stbi_image_free(pixels);
+
+    create_image(w
+		 , h
+		 , VK_FORMAT_R8G8B8A8_UNORM
+		 , VK_IMAGE_TILING_OPTIMAL
+		 , VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
+		 , VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+		 , &vk.texture_image
+		 , &vk.texture_image_view);
+
+    transition_image_layout(vk.texture_image
+			    , VK_FORMAT_R8G8B8A8_UNORM
+			    , VK_IMAGE_LAYOUT_UNDEFINED
+			    , VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+
+
+}
+
 extern_impl void
 init_vk(void)
 {
@@ -970,12 +1313,24 @@ init_vk(void)
 
 
     init_graphics_pipeline();
+
+    
+    init_command_pool();
+
+    
+    init_depth_resources();
+
+    
+    init_framebuffers();
+
+
+    init_texture_image();
 }
 
 extern_impl void
 recreate(void)
 {
-    
+
 }
 
 extern_impl void
