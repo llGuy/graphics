@@ -4,6 +4,7 @@
 #include <cassert>
 #include "core.hpp"
 #include <limits.h>
+#include <glm/glm.hpp>
 #include <stb_image.h>
 #include <glm/glm.hpp>
 #include "graphics.hpp"
@@ -302,7 +303,7 @@ find_supported_format(const VkFormat *candidates
 	    return(candidates[i]);
 	}
     }
-    OUTPUT_DEBUG_LOG("failed to find supported format\n");
+    OUTPUT_DEBUG_LOG("%s\n", "failed to find supported format");
     assert(false);
 }
 
@@ -485,7 +486,7 @@ global Vertex vertices[]
     {{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}
 };
 
-global uint32 indices[]
+global uint32 mesh_indices[]
 {
     0, 1, 2, 2, 3, 0,
     4, 5, 6, 6, 7, 4
@@ -646,7 +647,7 @@ init_graphics_pipeline(void)
     //    VK_CHECK(vkCreateGraphicsPipelines(vk.device, VK_NULL_HANDLE, 1, &pipeline_info, nullptr, &vk.graphics_pipeline));
     if (vkCreateGraphicsPipelines(vk.device, VK_NULL_HANDLE, 1, &pipeline_info, nullptr, &vk.graphics_pipeline) != VK_SUCCESS)
     {
-	OUTPUT_DEBUG_LOG("error creating graphics pipeline\n");
+	OUTPUT_DEBUG_LOG("%s\n", "error creating graphics pipeline");
     }
 
     vkDestroyShaderModule(vk.device, v_module, nullptr);
@@ -966,7 +967,7 @@ find_memory_type(uint32 type_filter
 	}
     }
 
-    OUTPUT_DEBUG_LOG("failed to find memory type\n");
+    OUTPUT_DEBUG_LOG("%s\n", "failed to find memory type");
     assert(false);
 }
 
@@ -985,6 +986,7 @@ create_image(uint32 width
     image_info.imageType = VK_IMAGE_TYPE_2D;
     image_info.extent.width = width;
     image_info.extent.height = height;
+    image_info.extent.depth = 1;
     image_info.mipLevels = 1;
     image_info.arrayLayers = 1;
     image_info.format = format;
@@ -1109,7 +1111,7 @@ transition_image_layout(VkImage image
     }
     else
     {
-	OUTPUT_DEBUG_LOG("unsupported layout transition\n");
+	OUTPUT_DEBUG_LOG("%s\n", "unsupported layout transition");
 	assert(false);
     }
 
@@ -1152,7 +1154,7 @@ init_depth_resources(void)
 		 , VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT
 		 , VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
 		 , &vk.depth_image
-		 , &vk.depth_image_view);
+		 , &vk.depth_image_memory);
     
     vk.depth_image_view = create_image_view(vk.depth_image
 					    , depth_format
@@ -1236,9 +1238,33 @@ copy_buffer(VkBuffer *__restrict src_buffer
 }
 
 internal void
-copy_buffer_to_image()
+copy_buffer_to_image(VkBuffer buffer
+		     , VkImage image
+		     , uint32 w, uint32 h)
 {
-    
+    VkCommandBuffer command_buffer = begin_single_time_command();
+
+    VkBufferImageCopy region	= {};
+    region.bufferOffset		= 0;
+    region.bufferRowLength	= 0;
+    region.bufferImageHeight	= 0;
+
+    region.imageSubresource.aspectMask		= VK_IMAGE_ASPECT_COLOR_BIT;
+    region.imageSubresource.mipLevel		= 0;
+    region.imageSubresource.baseArrayLayer	= 0;
+    region.imageSubresource.layerCount		= 1;
+
+    region.imageOffset = {0, 0, 0};
+    region.imageExtent = { w, h, 1 };
+
+    vkCmdCopyBufferToImage(command_buffer
+			  , buffer
+			  , image
+			  , VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
+			  , 1
+			  , &region);
+
+    end_single_time_command(command_buffer);
 }
 
 internal void
@@ -1254,7 +1280,7 @@ init_texture_image(void)
 	OUTPUT_DEBUG_LOG("failed to open image : %s\n", jpg_file);
     }
 
-    VkDeviceSize image_size = w * h;
+    VkDeviceSize image_size = w * h * 4;
     
     VkBuffer staging_buffer;
     VkDeviceMemory staging_buffer_memory;
@@ -1279,14 +1305,186 @@ init_texture_image(void)
 		 , VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
 		 , VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
 		 , &vk.texture_image
-		 , &vk.texture_image_view);
-
-    transition_image_layout(vk.texture_image
+		 , &vk.texture_image_memory);
+ 
+   transition_image_layout(vk.texture_image
 			    , VK_FORMAT_R8G8B8A8_UNORM
 			    , VK_IMAGE_LAYOUT_UNDEFINED
 			    , VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
+    copy_buffer_to_image(staging_buffer
+			 , vk.texture_image
+			 , (uint32)w, (uint32)h);
 
+    transition_image_layout(vk.texture_image
+			    , VK_FORMAT_R8G8B8A8_UNORM
+			    , VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
+			    , VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+    vkDestroyBuffer(vk.device, staging_buffer, nullptr);
+    vkFreeMemory(vk.device, staging_buffer_memory, nullptr);
+}
+
+internal void
+init_texture_image_view(void)
+{
+    vk.texture_image_view = create_image_view(vk.texture_image
+					      , VK_FORMAT_R8G8B8A8_UNORM
+					      , VK_IMAGE_ASPECT_COLOR_BIT);
+}
+
+internal void
+init_texture_image_sampler(void)
+{
+    VkSamplerCreateInfo sampler_info = {};
+    sampler_info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+    sampler_info.magFilter = VK_FILTER_LINEAR;
+    sampler_info.minFilter = VK_FILTER_LINEAR;
+    sampler_info.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    sampler_info.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    sampler_info.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    sampler_info.anisotropyEnable = VK_TRUE;
+    sampler_info.maxAnisotropy = 16;
+    sampler_info.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK; // when clamping
+    sampler_info.unnormalizedCoordinates = VK_FALSE;
+    sampler_info.compareEnable = VK_FALSE;
+    sampler_info.compareOp = VK_COMPARE_OP_ALWAYS;
+    sampler_info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+    sampler_info.mipLodBias = 0.0f;
+    sampler_info.minLod = 0.0f;
+    sampler_info.maxLod = 0.0f;
+
+    VK_CHECK(vkCreateSampler(vk.device, &sampler_info, nullptr, &vk.texture_image_sampler));
+}
+
+internal void
+init_vbo(void)
+{
+    VkDeviceSize buffer_size = sizeof(vertices) / sizeof(vertices[0]);
+
+    VkBuffer staging_buffer;
+    VkDeviceMemory staging_buffer_memory;
+
+    create_buffer(&staging_buffer
+		  , &staging_buffer_memory
+		  , buffer_size
+		  , VK_BUFFER_USAGE_TRANSFER_SRC_BIT
+		  , VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+    void *data;
+    vkMapMemory(vk.device
+		, staging_buffer_memory
+		, 0
+		, buffer_size
+		, 0
+		, &data);
+    memcpy(data, vertices, buffer_size);
+    vkUnmapMemory(vk.device
+		  , staging_buffer_memory);
+
+    create_buffer(&vk.vertex_buffer
+		  , &vk.vertex_buffer_memory
+		  , buffer_size
+		  , VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT
+		  , VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+    copy_buffer(&staging_buffer
+		, &vk.vertex_buffer
+		, buffer_size);
+
+    vkDestroyBuffer(vk.device, staging_buffer, nullptr);
+    vkFreeMemory(vk.device, staging_buffer_memory, nullptr);
+}
+
+internal void
+init_ibo(void)
+{
+    VkDeviceSize buffer_size = sizeof(mesh_indices) / sizeof(mesh_indices[0]);
+
+    VkBuffer staging_buffer;
+    VkDeviceMemory staging_buffer_memory;
+    create_buffer(&staging_buffer
+		  , &staging_buffer_memory
+		  , buffer_size
+		  , VK_BUFFER_USAGE_TRANSFER_SRC_BIT
+		  , VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+    void *data;
+    vkMapMemory(vk.device
+		, staging_buffer_memory
+		, 0
+		, buffer_size
+		, 0
+		, &data);
+    memcpy(data, mesh_indices, buffer_size);
+    vkUnmapMemory(vk.device, staging_buffer_memory);
+
+    create_buffer(&vk.index_buffer
+		  , &vk.index_buffer_memory
+		  , buffer_size
+		  , VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT
+		  , VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+    copy_buffer(&staging_buffer
+		, &vk.index_buffer
+		, buffer_size);
+
+    vkDestroyBuffer(vk.device, staging_buffer, nullptr);
+    vkFreeMemory(vk.device, staging_buffer_memory, nullptr);
+}    
+
+struct Uniform_Buffer_Object
+{
+    glm::mat4 model_matrix;
+    glm::mat4 view_matrix;
+    glm::mat4 projection_matrix;
+};
+
+internal void
+init_ubos(void)
+{
+    VkDeviceSize buffer_size = sizeof(Uniform_Buffer_Object);
+
+    vk.uniform_buffer_count = vk.swapchain.image_count;
+
+    vk.uniform_buffers = (VkBuffer *)allocate_stack(sizeof(VkBuffer) * vk.uniform_buffer_count
+						    , 1
+						    , "uniform_buffers_list_allocation");
+    vk.uniform_buffers_memory = (VkDeviceMemory *)allocate_stack(sizeof(VkDeviceMemory *) * vk.uniform_buffer_count
+								 , 1
+								 , "uniform_buffers_memory_list_allocation");
+
+    for (uint32 i = 0
+	     ; i < vk.uniform_buffer_count
+	     ; ++i)
+    {
+	create_buffer(vk.uniform_buffers + i
+		      , vk.uniform_buffers_memory + i
+		      , buffer_size
+		      , VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT
+		      , VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    }
+}
+
+internal void
+init_descriptor_pool(void)
+{
+    VkDescriptorPoolSize pool_sizes[2] = {};
+
+    pool_sizes[0].type			= VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    pool_sizes[0].descriptorCount	= vk.swapchain.image_count;
+    
+    pool_sizes[1].type			= VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    pool_sizes[1].descriptorCount	= vk.swapchain.image_count;
+
+    VkDescriptorPoolCreateInfo pool_info = {};
+    pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+    pool_info.poolSizeCount = 2;
+    pool_info.pPoolSizes = pool_sizes;
+
+    pool_info.maxSets = vk.swapchain.image_count;
+
+    VK_CHECK(vkCreateDescriptorPool(vk.device, &pool_info, nullptr, &vk.descriptor_pool));
 }
 
 extern_impl void
@@ -1325,12 +1523,18 @@ init_vk(void)
 
 
     init_texture_image();
+    init_texture_image_view();
+    init_texture_image_sampler();
+
+    init_vbo();
+    init_ibo();
+    init_ubos();
 }
 
 extern_impl void
 recreate(void)
 {
-
+    
 }
 
 extern_impl void

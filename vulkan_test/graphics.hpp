@@ -60,10 +60,25 @@ extern struct Vulkan_State
     VkCommandPool command_pool;
 
     VkImage depth_image;
+    VkDeviceMemory depth_image_memory;
     VkImageView depth_image_view;
 
     VkImage texture_image;
+    VkDeviceMemory texture_image_memory;
     VkImageView texture_image_view;
+    VkSampler texture_image_sampler;
+
+    VkBuffer vertex_buffer;
+    VkDeviceMemory vertex_buffer_memory;
+
+    VkBuffer index_buffer;
+    VkDeviceMemory index_buffer_memory;
+
+    uint32 uniform_buffer_count;
+    VkBuffer *uniform_buffers;
+    VkDeviceMemory *uniform_buffers_memory;
+
+    VkDescriptorPool descriptor_pool;
 } vk;
 
 extern void
