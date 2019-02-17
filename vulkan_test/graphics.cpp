@@ -23,7 +23,7 @@ Vulkan_GPU::find_families(void)
 					     , &queue_family_count
 					     , nullptr);
 
-    VkQueueFamilyProperties *queue_properties = (VkQueueFamilyProperties *)allocate_stack(sizeof(VkQueueFamilyProperties) * queue_family_count
+ VkQueueFamilyProperties *queue_properties = (VkQueueFamilyProperties *)allocate_stack(sizeof(VkQueueFamilyProperties) * queue_family_count
 											  , 1
 											  , "queue_family_list_allocation");
     vkGetPhysicalDeviceQueueFamilyProperties(hardware
@@ -477,9 +477,9 @@ struct Vertex
 
 global Vertex vertices[]
 {
-    {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-    {{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-    {{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+    {{-1.0f, -0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}},
+    {{0.5f, -0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 0.0f}},
+    {{0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}},
     {{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
 
     {{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
@@ -1362,7 +1362,7 @@ init_texture_image_sampler(void)
 internal void
 init_vbo(void)
 {
-    VkDeviceSize buffer_size = sizeof(vertices) / sizeof(vertices[0]);
+    VkDeviceSize buffer_size = sizeof(vertices);
 
     VkBuffer staging_buffer;
     VkDeviceMemory staging_buffer_memory;
@@ -1401,7 +1401,7 @@ init_vbo(void)
 internal void
 init_ibo(void)
 {
-    VkDeviceSize buffer_size = sizeof(mesh_indices) / sizeof(mesh_indices[0]);
+    VkDeviceSize buffer_size = sizeof(mesh_indices);
 
     VkBuffer staging_buffer;
     VkDeviceMemory staging_buffer_memory;
@@ -1743,8 +1743,7 @@ update_ubo(uint32 current_image)
     persist auto start_time = std::chrono::high_resolution_clock::now();
 
     auto current_time = std::chrono::high_resolution_clock::now();
-    //float time = std::chrono::duration<float, std::chrono::seconds::period>(current_time - start_time).count();
-    float time = 1.0f;
+    float time = std::chrono::duration<float, std::chrono::seconds::period>(current_time - start_time).count();
 
     Uniform_Buffer_Object ubo = {};
 
