@@ -79,10 +79,25 @@ extern struct Vulkan_State
     VkDeviceMemory *uniform_buffers_memory;
 
     VkDescriptorPool descriptor_pool;
+    VkDescriptorSet *descriptor_sets;
+    uint32 descriptor_set_count;
+
+    uint32 command_buffer_count;
+    VkCommandBuffer *command_buffers;
+
+    uint32 semaphore_count;
+    VkSemaphore *image_ready_semaphores;
+    VkSemaphore *render_finished_semaphores;
+
+    uint32 fence_count;
+    VkFence *fences;
 } vk;
 
 extern void
 init_vk(void);
+
+extern void
+draw_frame(void);
 
 extern void
 recreate(void);

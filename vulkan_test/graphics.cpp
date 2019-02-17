@@ -4,12 +4,14 @@
 #include <cassert>
 #include "core.hpp"
 #include <limits.h>
+#include <chrono>
 #include <glm/glm.hpp>
 #include <stb_image.h>
 #include <glm/glm.hpp>
 #include "graphics.hpp"
 #include <GLFW/glfw3.h>
 #include <vulkan/vulkan.h>
+#include <glm/gtx/transform.hpp>
 
 extern_impl Vulkan_State vk = {};
 
@@ -473,7 +475,7 @@ struct Vertex
     }
 };
 
-global Vertex vertices[] 
+global Vertex vertices[]
 {
     {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
     {{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
@@ -1435,9 +1437,9 @@ init_ibo(void)
 
 struct Uniform_Buffer_Object
 {
-    glm::mat4 model_matrix;
-    glm::mat4 view_matrix;
-    glm::mat4 projection_matrix;
+    alignas(16) glm::mat4 model_matrix;
+    alignas(16) glm::mat4 view_matrix;
+    alignas(16) glm::mat4 projection_matrix;
 };
 
 internal void
@@ -1458,8 +1460,8 @@ init_ubos(void)
 	     ; i < vk.uniform_buffer_count
 	     ; ++i)
     {
-	create_buffer(vk.uniform_buffers + i
-		      , vk.uniform_buffers_memory + i
+	create_buffer(&vk.uniform_buffers[i]
+		      , &vk.uniform_buffers_memory[i]
 		      , buffer_size
 		      , VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT
 		      , VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
@@ -1485,6 +1487,203 @@ init_descriptor_pool(void)
     pool_info.maxSets = vk.swapchain.image_count;
 
     VK_CHECK(vkCreateDescriptorPool(vk.device, &pool_info, nullptr, &vk.descriptor_pool));
+}
+
+internal void
+init_descriptor_sets(void)
+{
+    vk.descriptor_set_count = vk.swapchain.image_count;
+
+    vk.descriptor_sets = (VkDescriptorSet *)allocate_stack(vk.descriptor_set_count * sizeof(VkDescriptorSet)
+									, 1
+									, "descriptor_set_list_allocation");
+    VkDescriptorSetLayout *descriptor_set_layouts = (VkDescriptorSetLayout *)allocate_stack(vk.descriptor_set_count * sizeof(VkDescriptorSetLayout)
+									, 1
+									, "descriptor_set_layout_list_allocation");
+    for (uint32 i = 0
+	     ; i < vk.descriptor_set_count
+	     ; ++i) descriptor_set_layouts[i] = vk.descriptor_layout;
+
+    VkDescriptorSetAllocateInfo alloc_info	= {};
+    alloc_info.sType				= VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    alloc_info.descriptorPool			= vk.descriptor_pool;
+    alloc_info.descriptorSetCount		= vk.descriptor_set_count;
+    alloc_info.pSetLayouts			= descriptor_set_layouts;
+
+    VK_CHECK(vkAllocateDescriptorSets(vk.device, &alloc_info, vk.descriptor_sets));
+    
+    for (uint32 i = 0
+	     ; i < vk.descriptor_set_count
+	     ; ++i)
+    {
+	VkDescriptorBufferInfo buffer_info = {};
+	buffer_info.buffer = vk.uniform_buffers[i];
+	buffer_info.offset = 0;
+	buffer_info.range = sizeof(Uniform_Buffer_Object);
+
+	VkDescriptorImageInfo image_info	= {};
+	image_info.imageLayout			= VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	image_info.imageView			= vk.texture_image_view;
+	image_info.sampler			= vk.texture_image_sampler;
+
+	VkWriteDescriptorSet descriptor_writes[2] = {};
+	descriptor_writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	descriptor_writes[0].dstSet = vk.descriptor_sets[i];
+	descriptor_writes[0].dstBinding = 0;
+	descriptor_writes[0].dstArrayElement = 0;
+	descriptor_writes[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	descriptor_writes[0].descriptorCount = 1;
+	descriptor_writes[0].pBufferInfo = &buffer_info;
+
+	descriptor_writes[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	descriptor_writes[1].dstSet = vk.descriptor_sets[i];
+	descriptor_writes[1].dstBinding = 1;
+	descriptor_writes[1].dstArrayElement = 0;
+	descriptor_writes[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	descriptor_writes[1].descriptorCount = 1;
+	descriptor_writes[1].pImageInfo = &image_info;
+
+	vkUpdateDescriptorSets(vk.device
+			       , 2
+			       , descriptor_writes
+			       , 0
+			       , nullptr);
+    }
+}
+
+internal void
+init_command_buffers(void)
+{
+    vk.command_buffer_count = vk.swapchain.image_count;
+
+    vk.command_buffers = (VkCommandBuffer *)allocate_stack(sizeof(VkCommandBuffer) * vk.command_buffer_count
+							   , 1
+							   , "command_buffer_list_allocation");
+
+    VkCommandBufferAllocateInfo alloc_info = {};
+    alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    alloc_info.commandPool = vk.command_pool;
+    alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    alloc_info.commandBufferCount = vk.command_buffer_count;
+
+    VK_CHECK(vkAllocateCommandBuffers(vk.device
+				      , &alloc_info
+				      , vk.command_buffers));
+
+    for (uint32 i = 0
+	     ; i < vk.command_buffer_count
+	     ; ++i)
+    {
+	VkCommandBufferBeginInfo begin_info = {};
+	begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	begin_info.pNext = nullptr;
+	// means that a command buffer can be resubmitted to a queue
+	begin_info.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+        begin_info.pInheritanceInfo = nullptr;
+
+	VK_CHECK(vkBeginCommandBuffer(vk.command_buffers[i]
+				      , &begin_info));
+
+	VkRenderPassBeginInfo render_pass_info = {};
+	render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+	render_pass_info.pNext = nullptr;
+	render_pass_info.renderPass = vk.render_pass;
+	render_pass_info.framebuffer = vk.swapchain.fbos[i];
+	render_pass_info.renderArea.offset = {0, 0};
+	render_pass_info.renderArea.extent = vk.swapchain.extent;
+
+	VkClearValue clear_colors[2];
+	clear_colors[0].color = {0.0f, 0.0f, 0.0f, 1.0f};
+	clear_colors[1].depthStencil = {1.0f, 0};
+	render_pass_info.clearValueCount = 2;
+	render_pass_info.pClearValues = clear_colors;
+
+	vkCmdBeginRenderPass(vk.command_buffers[i]
+			     , &render_pass_info
+			     , VK_SUBPASS_CONTENTS_INLINE);
+
+	vkCmdBindPipeline(vk.command_buffers[i]
+			  , VK_PIPELINE_BIND_POINT_GRAPHICS
+			  , vk.graphics_pipeline);
+
+	VkBuffer vertex_buffers[] = {vk.vertex_buffer};
+	VkDeviceSize offset[] = {0};
+	vkCmdBindVertexBuffers(vk.command_buffers[i]
+			       , 0
+			       , 1
+			       , vertex_buffers
+			       , offset);
+
+	vkCmdBindIndexBuffer(vk.command_buffers[i]
+			     , vk.index_buffer
+			     , 0
+			     , VK_INDEX_TYPE_UINT32);
+
+	vkCmdBindDescriptorSets(vk.command_buffers[i]
+				, VK_PIPELINE_BIND_POINT_GRAPHICS
+				, vk.pipeline_layout
+				, 0
+				, 1
+				, &vk.descriptor_sets[i]
+				, 0
+				, nullptr);
+
+	vkCmdDrawIndexed(vk.command_buffers[i]
+			 , sizeof(mesh_indices) / sizeof(uint32)
+			 , 1
+			 , 0
+			 , 0
+			 , 0);
+
+	vkCmdEndRenderPass(vk.command_buffers[i]);
+	VK_CHECK(vkEndCommandBuffer(vk.command_buffers[i]));
+    }
+}
+
+global constexpr uint32 MAX_FRAMES_IN_FLIGHT = 2;
+
+internal void
+init_sync(void)
+{
+    vk.semaphore_count = MAX_FRAMES_IN_FLIGHT;
+    vk.image_ready_semaphores = (VkSemaphore *)allocate_stack(sizeof(VkSemaphore) * vk.semaphore_count
+						  , 1
+						  , "sempahore_image_ready_list_allocation");
+
+    vk.render_finished_semaphores = (VkSemaphore *)allocate_stack(sizeof(VkSemaphore) * vk.semaphore_count
+						  , 1
+							      , "sempahore_image_ready_list_allocation");
+
+    vk.fences = (VkFence *)allocate_stack(sizeof(VkFence) * vk.semaphore_count
+						  , 1
+						  , "fence_list_allocation");
+
+    VkSemaphoreCreateInfo semaphore_info = {};
+    semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+    VkFenceCreateInfo fence_info = {};
+    fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+    
+    for (uint32 i = 0
+	     ; i < MAX_FRAMES_IN_FLIGHT
+	     ; ++i)
+    {
+	VK_CHECK(vkCreateFence(vk.device
+			       , &fence_info
+			       , nullptr
+			       , &vk.fences[i]));
+
+	VK_CHECK(vkCreateSemaphore(vk.device
+				   , &semaphore_info
+				   , nullptr
+				   , &vk.render_finished_semaphores[i]));
+
+	VK_CHECK(vkCreateSemaphore(vk.device
+				   , &semaphore_info
+				   , nullptr
+				   , &vk.image_ready_semaphores[i]));
+    }
 }
 
 extern_impl void
@@ -1529,6 +1728,122 @@ init_vk(void)
     init_vbo();
     init_ibo();
     init_ubos();
+
+    init_descriptor_pool();
+    init_descriptor_sets();
+
+
+    init_command_buffers();
+    init_sync();
+}
+
+internal void
+update_ubo(uint32 current_image)
+{
+    persist auto start_time = std::chrono::high_resolution_clock::now();
+
+    auto current_time = std::chrono::high_resolution_clock::now();
+    //float time = std::chrono::duration<float, std::chrono::seconds::period>(current_time - start_time).count();
+    float time = 1.0f;
+
+    Uniform_Buffer_Object ubo = {};
+
+    ubo.model_matrix = glm::rotate(time * glm::radians(90.0f)
+				   , glm::vec3(0.0f, 0.0f, 1.0f));
+    ubo.view_matrix = glm::lookAt(glm::vec3(2.0f)
+				  , glm::vec3(0.0f)
+				  , glm::vec3(0.0f, 0.0f, 1.0f));
+    ubo.projection_matrix = glm::perspective(glm::radians(60.0f)
+					     , (float)vk.swapchain.extent.width / (float)vk.swapchain.extent.height
+					     , 0.1f
+					     , 10.0f);
+
+    ubo.projection_matrix[1][1] *= -1;
+
+    void *data;
+    vkMapMemory(vk.device, vk.uniform_buffers_memory[current_image], 0, sizeof(ubo), 0, &data);
+    memcpy(data, &ubo, sizeof(ubo));
+    vkUnmapMemory(vk.device, vk.uniform_buffers_memory[current_image]);
+}
+
+global uint32 current_frame = 0;
+
+extern_impl void
+draw_frame(void)
+{
+    vkWaitForFences(vk.device
+		    , 1
+		    , &vk.fences[current_frame]
+		    , VK_TRUE
+		    , UINT_MAX);
+
+    uint32 image_index;
+
+    VkResult result = vkAcquireNextImageKHR(vk.device
+					    , vk.swapchain.swapchain
+					    , UINT_MAX
+					    , vk.image_ready_semaphores[current_frame]
+					    , vk.fences[current_frame]
+					    , &image_index);
+    
+    if (result == VK_ERROR_OUT_OF_DATE_KHR)
+    {
+	// recreate swapchain
+	return;
+    }
+    else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
+    {
+	OUTPUT_DEBUG_LOG("%s\n", "failed to acquire swapchain image");
+    }
+
+    update_ubo(image_index);
+
+    VkSubmitInfo submit_info = {};
+    submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+
+    VkSemaphore wait_semaphores[] = {vk.image_ready_semaphores[current_frame]};
+    VkPipelineStageFlags wait_stages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+    submit_info.waitSemaphoreCount = 1;
+    submit_info.pWaitSemaphores = wait_semaphores;
+    submit_info.pWaitDstStageMask = wait_stages;
+
+    submit_info.commandBufferCount = 1;
+    submit_info.pCommandBuffers = &vk.command_buffers[image_index];
+
+    VkSemaphore signal_semaphores[] = {vk.render_finished_semaphores[current_frame]};
+    submit_info.signalSemaphoreCount = 1;
+    submit_info.pSignalSemaphores = signal_semaphores;
+
+    vkResetFences(vk.device, 1, &vk.fences[current_frame]);
+
+    VK_CHECK(vkQueueSubmit(vk.graphics_queue
+			   , 1
+			   , &submit_info
+			   , vk.fences[current_frame]));
+
+    VkPresentInfoKHR present_info = {};
+    present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+    present_info.waitSemaphoreCount = 1;
+    present_info.pWaitSemaphores = signal_semaphores;
+
+    VkSwapchainKHR swapchains[] = {vk.swapchain.swapchain};
+    present_info.swapchainCount = 1;
+    present_info.pSwapchains = swapchains;
+    present_info.pImageIndices = &image_index;
+
+    result = vkQueuePresentKHR(vk.present_queue
+			       , &present_info);
+
+    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)
+    {
+	// recreate swapchain
+    }
+    else if (result != VK_SUCCESS)
+    {
+	OUTPUT_DEBUG_LOG("%s\n", "failed to present swapchain image");
+    }
+
+    current_frame = (current_frame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
 extern_impl void
