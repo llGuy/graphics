@@ -1,5 +1,5 @@
-#include <iostream>
 #include "core.hpp"
+#include "vulkan.hpp"
 
 #include <stdio.h>
 #include <cassert>
@@ -144,6 +144,8 @@ main(int32 argc
 				  , NULL);
 
 	init_vk();
+	
+	Vulkan_API::State vulkan_state = {};
 
 	uint32 current_frame = 0;
 	while(!glfwWindowShouldClose(window))

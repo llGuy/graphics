@@ -23,7 +23,7 @@ Vulkan_GPU::find_families(void)
 					     , &queue_family_count
 					     , nullptr);
 
- VkQueueFamilyProperties *queue_properties = (VkQueueFamilyProperties *)allocate_stack(sizeof(VkQueueFamilyProperties) * queue_family_count
+    VkQueueFamilyProperties *queue_properties = (VkQueueFamilyProperties *)allocate_stack(sizeof(VkQueueFamilyProperties) * queue_family_count
 											  , 1
 											  , "queue_family_list_allocation");
     vkGetPhysicalDeviceQueueFamilyProperties(hardware

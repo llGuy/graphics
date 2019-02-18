@@ -8,12 +8,40 @@
 namespace Vulkan_API
 {
 
+    struct Queue_Families
+    {
+	int32 graphics_family = -1;
+	int32 present_family = 1;
+
+	inline bool
+	complete(void)
+	{
+	    return(graphics_family >= 0 && present_family >= 0);
+	}
+    };
+    
+    struct GPU
+    {
+	VkPhysicalDevice hardware;
+	VkDevice logical_device;
+
+	VkPhysicalDeviceMemoryProperties memory_properties;
+
+	Queue_Families queue_families;
+	VkQueue graphics_queue;
+	VkQueue present_queue;
+
+	void
+	find_queue_families(VkSurfaceKHR *surface);
+    };
+
     namespace Memory
     {
 
 	// allocates memory for stuff like buffers and images
 	struct Allocate_GPU_Memory_Params
 	{
+	    GPU *r_gpu;
 	    VkDeviceSize r_allocation_size;
 	    VkMemoryPropertyFlags r_properties;
 	    VkMemoryRequirements r_memory_requirements;
@@ -63,5 +91,20 @@ namespace Vulkan_API
     extern void
     create_image(Create_Image_Params *params
 		 , VkImage *dest_image);
+
+    struct State
+    {
+	VkInstance instance;
+
+	GPU gpu;
+
+	VkSurfaceKHR surface;
+    };
+
+
+
+    /* entry point for vulkan stuff */
+    extern void
+    init_state(State *state);
 
 }
