@@ -19,6 +19,15 @@ namespace Vulkan_API
 	    return(graphics_family >= 0 && present_family >= 0);
 	}
     };
+
+    struct Swapchain_Details
+    {
+	VkSurfaceCapabilitiesKHR capabilities;
+	uint32 available_formats_count;
+	VkSurfaceFormatKHR *available_formats;
+	uint32 available_present_modes_count;
+	VkPresentModeKHR *available_present_modes;
+    };
     
     struct GPU
     {
@@ -30,6 +39,8 @@ namespace Vulkan_API
 	Queue_Families queue_families;
 	VkQueue graphics_queue;
 	VkQueue present_queue;
+
+	Swapchain_Details swapchain_support;
 
 	void
 	find_queue_families(VkSurfaceKHR *surface);
@@ -92,13 +103,19 @@ namespace Vulkan_API
     create_image(Create_Image_Params *params
 		 , VkImage *dest_image);
 
+    struct Swapchain
+    {
+	VkSurfaceFormatKHR format;
+	VkPresentModeKHR present_mode;
+	VkSwapchainKHR swapchain;
+    };
+
     struct State
     {
 	VkInstance instance;
-
 	GPU gpu;
-
 	VkSurfaceKHR surface;
+	Swapchain swapchain;
     };
 
 

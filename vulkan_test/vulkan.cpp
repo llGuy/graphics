@@ -155,9 +155,220 @@ namespace Vulkan_API
     }
 
     internal void
-    choose_gpu(void)
+    get_swapchain_support(VkSurfaceKHR *surface
+			  , GPU *gpu)
     {
+	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(gpu->hardware, *surface, &gpu->swapchain_support.capabilities);
+	vkGetPhysicalDeviceSurfaceFormatsKHR(gpu->hardware, *surface, &gpu->swapchain_support.available_formats_count, nullptr);
+
+	if (gpu->swapchain_support.available_formats_count != 0)
+	{
+	    gpu->swapchain_support.available_formats = (VkSurfaceFormatKHR *)allocate_stack(sizeof(VkSurfaceFormatKHR) * gpu->swapchain_support.available_formats_count
+											    , 1
+											    , "surface_format_list_allocation");
+	    vkGetPhysicalDeviceSurfaceFormatsKHR(gpu->hardware
+						 , *surface
+						 , &gpu->swapchain_support.available_formats_count
+						 , gpu->swapchain_support.available_formats);
+	}
+
+	vkGetPhysicalDeviceSurfacePresentModesKHR(gpu->hardware, *surface, &gpu->swapchain_support.available_present_modes_count, nullptr);
+	if (gpu->swapchain_support.available_present_modes_count != 0)
+	{
+	    gpu->swapchain_support.available_present_modes = (VkPresentModeKHR *)allocate_stack(sizeof(VkPresentModeKHR) * gpu->swapchain_support.available_present_modes_count
+												, 1
+												, "surface_present_mode_list_allocation");
+	    vkGetPhysicalDeviceSurfacePresentModesKHR(gpu->hardware
+						      , *surface
+						      , &gpu->swapchain_support.available_present_modes_count
+						      , gpu->swapchain_support.available_present_modes);
+	}
+    }
+    
+    struct Physical_Device_Extensions_Params
+    {
+	uint32 r_extension_count;
+	const char **r_extension_names;
+    };
+
+    internal bool
+    check_if_physical_device_supports_extensions(Physical_Device_Extensions_Params *extension_params
+						 , VkPhysicalDevice gpu)
+    {
+	uint32 extension_count;
+	vkEnumerateDeviceExtensionProperties(gpu
+					     , nullptr
+					     , &extension_count
+					     , nullptr);
+
+	VkExtensionProperties *extension_properties = (VkExtensionProperties *)allocate_stack(sizeof(VkExtensionProperties) * extension_count
+											      , 1
+											      , "gpu_extension_properties_list_allocation");
+	vkEnumerateDeviceExtensionProperties(gpu
+					     , nullptr
+					     , &extension_count
+					     , extension_properties);
+    
+	uint32 required_extensions_left = extension_params->r_extension_count;
+	for (uint32 i = 0
+		 ; i < extension_count && required_extensions_left > 0
+		 ; ++i)
+	{
+	    for (uint32 j = 0
+		     ; j < extension_params->r_extension_count
+		     ; ++j)
+	    {
+		if (!strcmp(extension_properties[i].extensionName, extension_params->r_extension_names[j]))
+		{
+		    --required_extensions_left;
+		}
+	    }
+	}
+	pop_stack();
+
+	return(!required_extensions_left);
+    }
+    
+    internal bool
+    check_if_physical_device_is_suitable(Physical_Device_Extensions_Params *extension_params
+					 , VkSurfaceKHR *surface
+					 , GPU *gpu)
+    {
+	gpu->find_queue_families(surface);
+
+	VkPhysicalDeviceProperties device_properties;
+	vkGetPhysicalDeviceProperties(gpu->hardware
+				      , &device_properties);
+    
+	VkPhysicalDeviceFeatures device_features;
+	vkGetPhysicalDeviceFeatures(gpu->hardware
+				    , &device_features);
+
+	bool swapchain_supported = check_if_physical_device_supports_extensions(extension_params
+										, gpu->hardware);
+
+	bool swapchain_usable = false;
+	if (swapchain_supported)
+	{
+	    get_swapchain_support(surface, gpu);
+	    swapchain_usable = gpu->swapchain_support.available_formats_count && gpu->swapchain_support.available_present_modes_count;
+	}
+
+	return(swapchain_supported && swapchain_usable
+	       && (device_properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
+	       && gpu->queue_families.complete()
+	       && device_features.geometryShader
+	       && device_features.samplerAnisotropy);
+    }
+
+    internal GPU
+    choose_gpu(Physical_Device_Extensions_Params *extension_params
+	       , VkSurfaceKHR *surface
+	       , VkInstance *instance
+	       , GPU *gpu_result)
+    {
+	uint32 device_count = 0;
+	vkEnumeratePhysicalDevices(*instance
+				   , &device_count
+				   , nullptr);
+    
+	VkPhysicalDevice *devices = (VkPhysicalDevice *)allocate_stack(sizeof(VkPhysicalDevice) * device_count
+								       , 1
+								       , "physical_device_list_allocation");
+	vkEnumeratePhysicalDevices(*instance
+				   , &device_count
+				   , devices);
+
+	OUTPUT_DEBUG_LOG("available physical hardware devices count : %d\n", device_count);
+
+	for (uint32 i = 0
+		 ; i < device_count
+		 ; ++i)
+	{
+	    GPU gpu;
+	    gpu.hardware = devices[i];
 	
+	    // check if device is suitable
+	    if (check_if_physical_device_is_suitable(extension_params
+						     , surface
+						     , &gpu))
+	    {
+		*gpu_result = gpu;
+		break;
+	    }
+	}
+
+	assert(gpu_result->hardware != VK_NULL_HANDLE);
+	OUTPUT_DEBUG_LOG("%s\n", "found gpu compatible with application");
+    }
+
+    internal void
+    init_device(Physical_Device_Extensions_Params *gpu_extensions
+		, Instance_Create_Validation_Layer_Params *validation_layers
+		, GPU *gpu)
+    {
+	// create the logical device
+	Queue_Families *indices = &gpu->queue_families;
+
+	Bitset_32 bitset;
+	bitset.set1(indices->graphics_family);
+	bitset.set1(indices->present_family);
+
+	uint32 unique_sets = bitset.pop_count();
+
+	uint32 *unique_family_indices = (uint32 *)allocate_stack(sizeof(uint32) * unique_sets
+								 , 1
+								 , "unique_queue_family_indices_allocation");
+	VkDeviceQueueCreateInfo *unique_queue_infos = (VkDeviceQueueCreateInfo *)allocate_stack(sizeof(VkDeviceCreateInfo) * unique_sets
+												, 1
+												, "unique_queue_list_allocation");
+
+	// fill the unique_family_indices with the indices
+	for (uint32 b = 0, set_bit = 0
+		 ; b < 32 && set_bit < unique_sets
+		 ; ++b)
+	{
+	    if (bitset.get(b))
+	    {
+		unique_family_indices[set_bit++] = b;
+	    }
+	}
+    
+	float32 priority1 = 1.0f;
+	for (uint32 i = 0
+		 ; i < unique_sets
+		 ; ++i)
+	{
+	    VkDeviceQueueCreateInfo queue_info = {};
+	    queue_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+	    queue_info.queueFamilyIndex = unique_family_indices[i];
+	    queue_info.queueCount = 1;
+	    queue_info.pQueuePriorities = &priority1;
+	    unique_queue_infos[i] = queue_info;
+	}
+
+	VkPhysicalDeviceFeatures device_features = {};
+	device_features.samplerAnisotropy = VK_TRUE;
+
+	VkDeviceCreateInfo device_info = {};
+	device_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+	device_info.pQueueCreateInfos = unique_queue_infos;
+	device_info.queueCreateInfoCount = unique_sets;
+	device_info.pEnabledFeatures = &device_features;
+	device_info.enabledExtensionCount = gpu_extensions->r_extension_count;
+	device_info.ppEnabledExtensionNames = gpu_extensions->r_extension_names;
+	device_info.ppEnabledLayerNames = validation_layers->o_layer_names;
+	device_info.enabledLayerCount = validation_layers->o_layer_count;
+
+	VK_CHECK(vkCreateDevice(gpu->hardware
+				, &device_info
+				, nullptr
+				, &gpu->logical_device));
+	pop_stack();
+	pop_stack();
+
+	vkGetDeviceQueue(gpu->logical_device, gpu->queue_families.graphics_family, 0, &gpu->graphics_queue);
+	vkGetDeviceQueue(gpu->logical_device, gpu->queue_families.present_family, 0, &gpu->present_queue);
     }
     
     extern_impl void
@@ -200,14 +411,26 @@ namespace Vulkan_API
 	pop_stack();
 	pop_stack();
 
-	    // create the surface
+	// create the surface
 	VK_CHECK(glfwCreateWindowSurface(state->instance
 					 , window
 					 , nullptr
 					 , &state->surface));
 
-	// choose gpu
-	
+	// choose hardware and create device
+	persist constexpr uint32 gpu_extension_count = 1;
+	const char *gpu_extension_names[gpu_extension_count] = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
+	Physical_Device_Extensions_Params gpu_extensions = {};
+	gpu_extensions.r_extension_count = gpu_extension_count;
+	gpu_extensions.r_extension_names = gpu_extension_names;
+	choose_gpu(&gpu_extensions	// function initializes the queue families in the GPU struct
+		   , &state->surface
+		   , &state->instance
+		   , &state->gpu);
+	vkGetPhysicalDeviceMemoryProperties(state->gpu.hardware, &state->gpu.memory_properties);
+	init_device(&gpu_extensions
+		    , &validation_params
+		    , &state->gpu);
     }
 
 }
