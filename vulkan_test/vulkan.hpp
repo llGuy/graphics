@@ -1,6 +1,7 @@
 #pragma once
 
 #include "core.hpp"
+#include <GLFW/glfw3.h>
 #include <vulkan/vulkan.h>
 
 // struct data with "r_" are required, data with "o_" are optional
@@ -61,7 +62,6 @@ namespace Vulkan_API
 	extern void
 	allocate_gpu_memory(Allocate_GPU_Memory_Params *params
 			    , VkDeviceMemory *dest_memory);
-
     }
 
     struct Buffer
@@ -92,36 +92,62 @@ namespace Vulkan_API
 
     struct Create_Image_Params
     {
-	uint32 width, height;
-	VkFormat format;
-	VkImageTiling tiling;
-	VkImageUsageFlags usage;
-	VkMemoryPropertyFlags properties;
+	uint32 r_width, r_height;
+	VkFormat r_format;
+	VkImageTiling r_tiling;
+	VkImageUsageFlags r_usage;
+	VkMemoryPropertyFlags r_properties;
+	GPU *r_gpu;
     };
     
     extern void
-    create_image(Create_Image_Params *params
+    init_image(Create_Image_Params *params
 		 , VkImage *dest_image);
 
-    struct Swapchain
+    struct Create_Image_View_Params
     {
-	VkSurfaceFormatKHR format;
-	VkPresentModeKHR present_mode;
-	VkSwapchainKHR swapchain;
+	VkImage *r_image;
+	VkFormat r_format;
+	VkImageAspectFlags r_aspect_flags;
+	GPU *r_gpu;
     };
 
+    extern void
+    init_image_view(Create_Image_View_Params *params
+		      , VkImageView *dest_image_view);
+
+    struct Render_Pass
+    {
+	VkRenderPass render_pass;
+    };
+    
+    struct Swapchain
+    {
+	VkFormat format;
+	VkPresentModeKHR present_mode;
+	VkSwapchainKHR swapchain;
+	VkExtent2D extent;
+
+	VkImage *images;
+	VkImageView *image_views;
+	uint32 image_count;
+
+	VkFramebuffer *fbos;
+	uint32 fbo_count;
+    };
+    
     struct State
     {
 	VkInstance instance;
+	VkDebugUtilsMessengerEXT debug_messenger;
 	GPU gpu;
 	VkSurfaceKHR surface;
 	Swapchain swapchain;
     };
 
-
-
     /* entry point for vulkan stuff */
     extern void
-    init_state(State *state);
+    init_state(State *state
+	       , GLFWwindow *window);
 
 }

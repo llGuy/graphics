@@ -1,5 +1,9 @@
-#include <cstring> 
+#define GLFW_INCLUDE_VULKAN
+
+#include <cstring>
+
 #include "vulkan.hpp"
+#include <limits.h>
 #include <GLFW/glfw3.h>
 #include <vulkan/vulkan.h>
 
@@ -27,6 +31,9 @@ namespace Vulkan_API
 		}
 	    }
 	    
+	    OUTPUT_DEBUG_LOG("%s\n", "failed to find suitable memory type");
+	    assert(false);
+	    return(0);
 	}
 	
 	extern_impl void
@@ -154,6 +161,38 @@ namespace Vulkan_API
 	pop_stack();
     }
 
+    internal VKAPI_ATTR VkBool32 VKAPI_CALL
+    vulkan_debug_proc(VkDebugUtilsMessageSeverityFlagBitsEXT message_severity
+		      , VkDebugUtilsMessageTypeFlagsEXT message_type
+		      , const VkDebugUtilsMessengerCallbackDataEXT *message_data
+		      , void *user_data)
+    {
+	OUTPUT_DEBUG_LOG("validation layer - %s\n", message_data->pMessage);
+
+	return(VK_FALSE);
+    }
+
+    internal void
+    init_debug_messenger(VkInstance *instance
+			  , VkDebugUtilsMessengerEXT *messenger)
+    {
+	// setup debugger
+	VkDebugUtilsMessengerCreateInfoEXT debug_info = {};
+	debug_info.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+	debug_info.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT
+	    | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT
+	    | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+	debug_info.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT
+	    | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT
+	    | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+	debug_info.pfnUserCallback = vulkan_debug_proc;
+	debug_info.pUserData = nullptr;
+
+	PFN_vkCreateDebugUtilsMessengerEXT vk_create_debug_utils_messenger = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(*instance, "vkCreateDebugUtilsMessengerEXT");
+	assert(vk_create_debug_utils_messenger != nullptr);
+	VK_CHECK(vk_create_debug_utils_messenger(*instance, &debug_info, nullptr, messenger));
+    }
+
     internal void
     get_swapchain_support(VkSurfaceKHR *surface
 			  , GPU *gpu)
@@ -261,7 +300,7 @@ namespace Vulkan_API
 	       && device_features.samplerAnisotropy);
     }
 
-    internal GPU
+    internal void
     choose_gpu(Physical_Device_Extensions_Params *extension_params
 	       , VkSurfaceKHR *surface
 	       , VkInstance *instance
@@ -370,9 +409,173 @@ namespace Vulkan_API
 	vkGetDeviceQueue(gpu->logical_device, gpu->queue_families.graphics_family, 0, &gpu->graphics_queue);
 	vkGetDeviceQueue(gpu->logical_device, gpu->queue_families.present_family, 0, &gpu->present_queue);
     }
+
+    internal VkSurfaceFormatKHR
+    choose_surface_format(VkSurfaceFormatKHR *available_formats
+			  , uint32 format_count)
+    {
+	if (format_count == 1 && available_formats[0].format == VK_FORMAT_UNDEFINED)
+	{
+	    VkSurfaceFormatKHR format;
+	    format.format		= VK_FORMAT_B8G8R8A8_UNORM;
+	    format.colorSpace	= VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
+	}
+	for (uint32 i = 0
+		 ; i < format_count
+		 ; ++i)
+	{
+	    if (available_formats[i].format == VK_FORMAT_B8G8R8A8_UNORM && available_formats[i].colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+	    {
+		return(available_formats[i]);
+	    }
+	}
+
+	return(available_formats[0]);
+    }
+
+    internal VkPresentModeKHR
+    choose_surface_present_mode(const VkPresentModeKHR *available_present_modes
+				, uint32 present_modes_count)
+    {
+	// supported by most hardware
+	VkPresentModeKHR best_mode = VK_PRESENT_MODE_FIFO_KHR;
+	for (uint32 i = 0
+		 ; i < present_modes_count
+		 ; ++i)
+	{
+	    if (available_present_modes[i] == VK_PRESENT_MODE_MAILBOX_KHR)
+	    {
+		return(available_present_modes[i]);
+	    }
+	    else if (available_present_modes[i] == VK_PRESENT_MODE_IMMEDIATE_KHR)
+	    {
+		best_mode = available_present_modes[i];
+	    }
+	}
+	return(best_mode);
+    }
+
+    internal VkExtent2D
+    choose_swapchain_extent(GLFWwindow *window
+			    , const VkSurfaceCapabilitiesKHR *capabilities)
+    {
+	if (capabilities->currentExtent.width != UINT_MAX)
+	{
+	    return(capabilities->currentExtent);
+	}
+	else
+	{
+	    int32 width, height;
+	    glfwGetFramebufferSize(window, &width, &height);
+
+	    VkExtent2D actual_extent	= { (uint32)width, (uint32)height };
+	    actual_extent.width		= MAX(capabilities->minImageExtent.width, MIN(capabilities->maxImageExtent.width, actual_extent.width));
+	    actual_extent.height	= MAX(capabilities->minImageExtent.height, MIN(capabilities->maxImageExtent.height, actual_extent.height));
+
+	    return(actual_extent);
+	}
+    }
+
+    extern_impl void
+    init_image_view(Create_Image_View_Params *params
+		      , VkImageView *dest_image_view)
+    {
+	VkImageViewCreateInfo view_info			= {};
+	view_info.sType					= VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+	view_info.image					= *params->r_image;
+	view_info.viewType				= VK_IMAGE_VIEW_TYPE_2D;
+	view_info.format				= params->r_format;
+	view_info.subresourceRange.aspectMask		= params->r_aspect_flags;
+	view_info.subresourceRange.baseMipLevel		= 0;
+	view_info.subresourceRange.levelCount		= 1;
+	view_info.subresourceRange.baseArrayLayer	= 0;
+	view_info.subresourceRange.layerCount		= 1;
+
+	VK_CHECK(vkCreateImageView(params->r_gpu->logical_device, &view_info, nullptr, dest_image_view));
+    }
+
+    internal void
+    init_swapchain(GLFWwindow *window
+		   , VkSurfaceKHR *surface
+		   , GPU *gpu
+		   , Swapchain *swapchain)
+    {
+	Swapchain_Details *swapchain_details = &gpu->swapchain_support;
+	VkSurfaceFormatKHR surface_format = choose_surface_format(swapchain_details->available_formats, swapchain_details->available_formats_count);
+	VkExtent2D surface_extent = choose_swapchain_extent(window, &swapchain_details->capabilities);
+	VkPresentModeKHR present_mode = choose_surface_present_mode(swapchain_details->available_present_modes, swapchain_details->available_present_modes_count);
+
+	// add 1 to the minimum images supported in the swapchain
+	uint32 image_count = swapchain_details->capabilities.minImageCount + 1;
+	if (image_count > swapchain_details->capabilities.maxImageCount)
+	{
+	    image_count = swapchain_details->capabilities.maxImageCount;
+	}
+
+	VkSwapchainCreateInfoKHR swapchain_info = {};
+	swapchain_info.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+	swapchain_info.surface = *surface;
+	swapchain_info.minImageCount = image_count;
+	swapchain_info.imageFormat = surface_format.format;
+	swapchain_info.imageColorSpace = surface_format.colorSpace;
+	swapchain_info.imageExtent = surface_extent;
+	swapchain_info.imageArrayLayers = 1;
+	swapchain_info.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+
+	uint32 queue_family_indices[] = { (uint32)gpu->queue_families.graphics_family, (uint32)gpu->queue_families.present_family };
+
+	if (gpu->queue_families.graphics_family != gpu->queue_families.present_family)
+	{
+	    swapchain_info.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
+	    swapchain_info.queueFamilyIndexCount = 2;
+	    swapchain_info.pQueueFamilyIndices = queue_family_indices;
+	}
+	else
+	{
+	    swapchain_info.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+	    swapchain_info.queueFamilyIndexCount = 0;
+	    swapchain_info.pQueueFamilyIndices = nullptr;
+	}
+
+	swapchain_info.preTransform = swapchain_details->capabilities.currentTransform;
+	swapchain_info.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+	swapchain_info.presentMode = present_mode;
+	swapchain_info.clipped = VK_TRUE;
+	swapchain_info.oldSwapchain = VK_NULL_HANDLE;
+
+	VK_CHECK(vkCreateSwapchainKHR(gpu->logical_device, &swapchain_info, nullptr, &swapchain->swapchain));
+
+	vkGetSwapchainImagesKHR(gpu->logical_device, swapchain->swapchain, &image_count, nullptr);
+	swapchain->images = (VkImage *)allocate_stack(sizeof(VkImage) * image_count
+							, 1
+							, "swapchain_images_list_allocation");
+	vkGetSwapchainImagesKHR(gpu->logical_device, swapchain->swapchain, &image_count, swapchain->images);
+	swapchain->image_count = image_count;
+
+	swapchain->extent = surface_extent;
+	swapchain->format = surface_format.format;
+	swapchain->present_mode = present_mode;
+
+	swapchain->image_views = (VkImageView *)allocate_stack(sizeof(VkImageView) * image_count
+								 , 1
+								 , "swapchain_image_views_list_allocation");
+
+	for (uint32 i = 0
+		 ; i < image_count
+		 ; ++i)
+	{
+	    Create_Image_View_Params image_view_params = {};
+	    image_view_params.r_image = &swapchain->images[i];
+	    image_view_params.r_format = swapchain->format;
+	    image_view_params.r_aspect_flags = VK_IMAGE_ASPECT_COLOR_BIT;
+	    image_view_params.r_gpu = gpu;
+	    init_image_view(&image_view_params, &swapchain->image_views[i]);
+	}
+    }
     
     extern_impl void
-    init_state(State *state)
+    init_state(State *state
+	       , GLFWwindow *window)
     {
 	// initialize instance
 	persist constexpr uint32 layer_count = 1;
@@ -403,13 +606,15 @@ namespace Vulkan_API
 	app_info.engineVersion = VK_MAKE_VERSION(1, 0, 0);
 	app_info.apiVersion = VK_API_VERSION_1_0;
 	
-	init_instance(&state->instance
+ 	init_instance(&state->instance
 		      , &app_info
 		      , &validation_params
 		      , &extension_params);
 	
 	pop_stack();
-	pop_stack();
+
+	init_debug_messenger(&state->instance
+			     , &state->debug_messenger);
 
 	// create the surface
 	VK_CHECK(glfwCreateWindowSurface(state->instance
@@ -431,6 +636,12 @@ namespace Vulkan_API
 	init_device(&gpu_extensions
 		    , &validation_params
 		    , &state->gpu);
+
+	// create swapchain
+	init_swapchain(window
+		       , &state->surface
+		       , &state->gpu
+		       , &state->swapchain);
     }
 
 }

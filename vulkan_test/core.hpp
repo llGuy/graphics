@@ -40,9 +40,9 @@ typedef uint8 byte;
     fprintf(output_file.fp, str, __VA_ARGS__); \
     fflush(output_file.fp);
 
-#define global static
 #define persist static
 #define internal static
+#define global_var static
 #define extern_impl
 
 inline constexpr uint32
@@ -50,8 +50,6 @@ left_shift(uint32 n)
 {
     return 1 << n;
 }
-
-extern class GLFWwindow *window;
 
 extern struct Debug_Output
 {
@@ -276,3 +274,25 @@ struct Bitset_32
 	return bitset & left_shift(bit);
     }
 };
+
+struct Constant_String
+{
+    const char* str;
+    uint32 size;
+    uint32 hash;
+
+    inline bool
+    operator==(const Constant_String &other) {return(other.hash == this->hash);}
+};
+
+internal inline constexpr uint32
+compile_hash(const char *string, uint32 size)
+{
+    return ((size ? compile_hash(string, size - 1) : 2166136261u) ^ string[size]) * 16777619u;
+}
+
+internal inline constexpr Constant_String
+operator""_hash(const char *string, size_t size)
+{
+    return(Constant_String{string, (uint32)size, compile_hash(string, (uint32)size)});
+}

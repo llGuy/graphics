@@ -1,14 +1,9 @@
-#include "core.hpp"
-#include "vulkan.hpp"
-
-#include <stdio.h>
-#include <cassert>
-#include <windows.h>
-#include "graphics.hpp"
 #include <GLFW/glfw3.h>
 #include <vulkan/vulkan.h>
 
-#include <iostream>
+#include "vulkan.hpp"
+#include "core.hpp"
+#include "graphics.hpp"
 
 #define DEBUG_FILE ".debug"
 
@@ -17,7 +12,7 @@ extern_impl Stack_Allocator stack_allocator_global;
 extern_impl Debug_Output output_file;
 extern_impl GLFWwindow *window;
 
-global bool running;
+internal bool running;
 
 internal void
 open_debug_file(void)
@@ -104,6 +99,10 @@ pop_stack(Stack_Allocator *allocator)
     {
 	OUTPUT_DEBUG_LOG("cleared stack : last allocation was \"%s\"\n", current_header->allocation_name);
     }
+    else if (allocator->allocation_count == 0)
+    {
+	OUTPUT_DEBUG_LOG("%s\n", "stack already cleared : pop stack call ignored");
+    }
     else
     {
 	OUTPUT_DEBUG_LOG("poping allocation \"%s\" -> new head is \"%s\"\n", current_header->allocation_name
@@ -143,9 +142,7 @@ main(int32 argc
 				  , NULL
 				  , NULL);
 
-	init_vk();
-	
-	Vulkan_API::State vulkan_state = {};
+	init_vk(window);
 
 	uint32 current_frame = 0;
 	while(!glfwWindowShouldClose(window))
@@ -168,7 +165,7 @@ main(int32 argc
     }
     catch(...)
     {
-	OUTPUT_DEBUG_LOG("CRASH!!!\n");
+	OUTPUT_DEBUG_LOG("%s\n", "CRASH!!!");
 	close_debug_file();
     }
     
