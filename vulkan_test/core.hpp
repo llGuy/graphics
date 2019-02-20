@@ -296,3 +296,107 @@ operator""_hash(const char *string, size_t size)
 {
     return(Constant_String{string, (uint32)size, compile_hash(string, (uint32)size)});
 }
+
+// fast and relatively cheap hash table
+template <typename T
+	  , uint32 Bucket_Count
+	  , uint32 Bucket_Size
+	  , uint32 Bucket_Search_Count> struct Hash_Table_Inline
+{
+    enum { UNINITIALIZED_HASH = 0xFFFFFFFF };
+    enum { ITEM_POUR_LIMIT    = Bucket_Search_Count };
+
+    struct Item
+    {
+	uint32 hash = UNINITIALIZED_HASH;
+	T value = T();
+    };
+
+    struct Bucket
+    {
+	uint32 bucket_usage_count = 0;
+	Item items[Bucket_Size] = {};
+    };
+
+    const char *debug_name;
+    Bucket buckets[Bucket_Count] = {};
+
+    Hash_Table_Inline(const char *name) : debug_name(name) {}
+
+    void
+    insert(uint32 hash, T value, const char *debug_name = "")
+    {
+	uint32 start_index = hash % Bucket_Count;
+	uint32 limit = start_index + ITEM_POUR_LIMIT;
+	for (Bucket *bucket = &buckets[start_index]
+		 ; bucket->bucket_usage_count != Bucket_Size && start_index < limit
+		 ; ++bucket)
+	{
+	    for (uint32 bucket_item = 0
+		     ; bucket_item < Bucket_Size
+		     ; ++bucket_item)
+	    {
+		Item *item = &bucket->items[bucket_item];
+		if (item->hash == UNINITIALIZED_HASH)
+		{
+		    /* found a slot for the object */
+		    item->hash = hash;
+		    item->value = value;
+		    return;
+		}
+	    }
+	    OUTPUT_DEBUG_LOG("%s -> %s%s\n", map_debug_name, "hash bucket filled : need bigger buckets! - item name : ", debug_name);
+	}
+
+	OUTPUT_DEBUG_LOG("%s -> %s%s\n", map_debug_name, "couldn't fit item into hash because of filled buckets - item name : ", debug_name);
+	assert(false);
+    }
+
+    void
+    remove(uint32 hash)
+    {
+	uint32 start_index = hash % Bucket_Count;
+	uint32 limit = start_index + ITEM_POUR_LIMIT;
+	for (Bucket *bucket = &buckets[start_index]
+		 ; bucket->bucket_usage_count != Bucket_Size && start_index < limit
+		 ; ++bucket)
+	{
+	    for (uint32 bucket_item = 0
+		     ; bucket_item < Bucket_Size
+		     ; ++bucket_item)
+	    {
+		Item *item = &bucket->items[bucket_item];
+		if (item->hash == UNINITIALIZED_HASH)
+		{
+		    item->hash = UNINITIALIZED_HASH;
+		    item->value = T();
+		}
+	    }
+	}
+    }
+
+    T 
+    get(uint32 hash)
+    {
+	uint32 start_index = hash % Bucket_Count;
+	uint32 limit = start_index + ITEM_POUR_LIMIT;
+	for (Bucket *bucket = &buckets[start_index]
+		 ; bucket->bucket_usage_count != Bucket_Size && start_index < limit
+		 ; ++bucket)
+	{
+	    for (uint32 bucket_item = 0
+		     ; bucket_item < Bucket_Size
+		     ; ++bucket_item)
+	    {
+		Item *item = &bucket->items[bucket_item];
+		if (item->hash != UNINITIALIZED_HASH)
+		{
+		    return(item->value);
+		}
+	    }
+	}
+	OUTPUT_DEBUG_LOG("%s -> %s\n", map_debug_name, "failed to find value requested from hash");
+	assert(false);
+	return(T());
+    }
+};

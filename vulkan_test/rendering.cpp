@@ -12,6 +12,8 @@ namespace Rendering
     MAKE_OBJECT_MANAGER_TMP_PARAM_GROUP(BUFFER, 64, 20, Buffer, uint8)
     MAKE_OBJECT_MANAGER_TMP_PARAM_GROUP(RENDER_PASS, 20, 10, Render_Pass, uint8)
 
+
+    
     template <typename I_Type /* which type of int */
 	      , uint32 N> struct Removed_Stack
     {
@@ -20,16 +22,17 @@ namespace Rendering
 	I_Type items[N] = {};
 	uint32 head = 0;
 
-	void
+	uint32
 	push(I_Type index)
 	{
+	    uint32 handle = head;
 #if DEBUG
 	    if (head == MAX) { OUTPUT_DEBUG_LOG("%s\n", "cannot push to stack anymore"); }
 	    else items[head++] = index;
 #else
 	    items[head++] = index;
 #endif
-
+	    return(handle);
 	}
 
 	I_Type
@@ -50,9 +53,24 @@ namespace Rendering
 	
 	Removed_Stack<Stack_I_Type
 		      , Stack_N> removed_objects;
+
+	uint32 /* handle */
+	add(void)
+	{
+	    uint32 handle = object_count;
+
+	    if (object_count == N)
+	    {
+		OUTPUT_DEBUG_LOG("%s\n", "manager object array is full!");
+	    }
+	    
+	    return(handle);
+	}
     };
 
     global_var Object_Manager<Vulkan_API::Buffer, BUFFER_MAX_COUNT, Buffer_Stack_Type, BUFFER_STACK_MAX_REMOVED> buffer_manager;
+
+    Hash_Table_Inline<uint32 /*index of item in the manager struct*/, 20, 8, 3> render_pass_index_map {"map.render_pass_index_map"};
     global_var Object_Manager<Vulkan_API::Render_Pass, RENDER_PASS_MAX_COUNT, Render_Pass_Stack_Type, RENDER_PASS_STACK_MAX_REMOVED> render_pass_manager;
 
     // buffer functions
@@ -80,7 +98,9 @@ namespace Rendering
     extern_impl Vulkan_Render_Pass_Handle
     add_render_pass(const Constant_String &string)
     {
-	return(0);
+	Vulkan_Render_Pass_Handle render_pass_handle = render_pass_manager.add();
+	render_pass_index_map.insert(string.hash, render_pass_handle, string.str);
+	return(render_pass_handle);
     }
 
     extern_impl Vulkan_Render_Pass_Handle

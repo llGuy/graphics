@@ -1368,10 +1368,10 @@ draw_frame(void)
 
     vkResetFences(vulkan_state.gpu.logical_device, 1, &vk.fences[current_frame]);
 
-    VK_CHECK(vkQueueSubmit(vulkan_state.gpu.graphics_queue
+    vkQueueSubmit(vulkan_state.gpu.graphics_queue
 			   , 1
 			   , &submit_info
-			   , vk.fences[current_frame]));
+			   , vk.fences[current_frame]);
 
     VkPresentInfoKHR present_info = {};
     present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;

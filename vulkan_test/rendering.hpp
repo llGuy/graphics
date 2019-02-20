@@ -22,6 +22,7 @@ namespace Rendering
     extern Vulkan_API::Buffer *
     get_buffer(Vulkan_Buffer_Handle handle);
 
+    
 
     extern Vulkan_Render_Pass_Handle
     add_render_pass(const Constant_String &string);

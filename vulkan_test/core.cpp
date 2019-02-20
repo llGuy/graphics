@@ -143,7 +143,7 @@ main(int32 argc
 				  , NULL);
 
 	init_vk(window);
-
+	
 	uint32 current_frame = 0;
 	while(!glfwWindowShouldClose(window))
 	{
@@ -153,7 +153,7 @@ main(int32 argc
 
 	OUTPUT_DEBUG_LOG("stack allocator start address is : %p\n", stack_allocator_global.current);
 	OUTPUT_DEBUG_LOG("stack allocator allocated %d bytes\n", (uint32)((uint8 *)stack_allocator_global.current - (uint8 *)stack_allocator_global.start));
-    
+	
 	OUTPUT_DEBUG_LOG("finished session\n", 1);
 
 	close_debug_file();
