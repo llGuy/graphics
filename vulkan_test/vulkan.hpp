@@ -42,6 +42,7 @@ namespace Vulkan_API
 	VkQueue present_queue;
 
 	Swapchain_Details swapchain_support;
+	VkFormat supported_depth_format;
 
 	void
 	find_queue_families(VkSurfaceKHR *surface);
@@ -119,7 +120,24 @@ namespace Vulkan_API
     struct Render_Pass
     {
 	VkRenderPass render_pass;
+	uint32 subpass_count;
     };
+
+    struct Render_Pass_Create_Params
+    {
+	uint32 r_attachment_description_count;
+	VkAttachmentDescription *r_attachment_descriptions;
+	uint32 r_subpass_count;
+	VkSubpassDescription *r_subpasses;
+	uint32 r_dependency_count;
+	VkSubpassDependency *r_dependencies;
+
+	GPU *r_gpu;
+    };
+    
+    extern_impl void
+    init_render_pass(Render_Pass_Create_Params *params
+		     , Render_Pass *dest_render_pass);
     
     struct Swapchain
     {

@@ -318,10 +318,10 @@ template <typename T
 	Item items[Bucket_Size] = {};
     };
 
-    const char *debug_name;
+    const char *map_debug_name;
     Bucket buckets[Bucket_Count] = {};
 
-    Hash_Table_Inline(const char *name) : debug_name(name) {}
+    Hash_Table_Inline(const char *name) : map_debug_name(name) {}
 
     void
     insert(uint32 hash, T value, const char *debug_name = "")

@@ -9,12 +9,15 @@
 #include <stb_image.h>
 #include <glm/glm.hpp>
 #include "graphics.hpp"
+#include "rendering.hpp"
 #include <GLFW/glfw3.h>
 #include <vulkan/vulkan.h>
 #include <glm/gtx/transform.hpp>
 
+// TODO(luc) : remove these globals in the future when ported to the new system
 extern_impl Vulkan_State vk = {};
 extern_impl Vulkan_API::State vulkan_state = {};
+extern_impl Rendering::Rendering_Objects_Handle_Cache rendering_objects = {};
 
 internal constexpr uint32 required_device_extension_count = 1;
 internal const char *required_physical_device_extensions[required_device_extension_count]
@@ -148,7 +151,7 @@ init_render_pass(void)
     render_pass_info.dependencyCount		= 1;
     render_pass_info.pDependencies		= &dependency;
 
-    VK_CHECK(vkCreateRenderPass(vulkan_state.gpu.logical_device, &render_pass_info, nullptr, &vk.render_pass));
+    //    VK_CHECK(vkCreateRenderPass(vulkan_state.gpu.logical_device, &render_pass_info, nullptr, &vk.render_pass));
 }
 
 internal void
@@ -402,7 +405,8 @@ init_graphics_pipeline(void)
     pipeline_info.pDynamicState = nullptr;
 
     pipeline_info.layout = vk.pipeline_layout;
-    pipeline_info.renderPass = vk.render_pass;
+    Vulkan_API::Render_Pass *render_pass = Rendering::get_render_pass(rendering_objects.test_render_pass);
+    pipeline_info.renderPass = render_pass->render_pass;
     pipeline_info.subpass = 0;
 
     pipeline_info.basePipelineHandle = VK_NULL_HANDLE;
@@ -740,6 +744,8 @@ init_framebuffers(void)
 					       , 1
 					       , "framebuffer_list_allocation"));
 
+    Vulkan_API::Render_Pass *render_pass = Rendering::get_render_pass(rendering_objects.test_render_pass);
+    
     for (uint32 i = 0
 	     ; i < vulkan_state.swapchain.image_count
 	     ; ++i)
@@ -751,7 +757,7 @@ init_framebuffers(void)
 
 	VkFramebufferCreateInfo fbo_info	= {};
 	fbo_info.sType				= VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-	fbo_info.renderPass			= vk.render_pass;
+	fbo_info.renderPass			= render_pass->render_pass;
 	fbo_info.attachmentCount		= sizeof(attachments) / sizeof(attachments[0]);
 	fbo_info.pAttachments			= attachments;
 	fbo_info.width				= vulkan_state.swapchain.extent.width;
@@ -1136,6 +1142,8 @@ init_command_buffers(void)
 				      , &alloc_info
 				      , vk.command_buffers));
 
+    Vulkan_API::Render_Pass *render_pass = Rendering::get_render_pass(rendering_objects.test_render_pass);
+    
     for (uint32 i = 0
 	     ; i < vk.command_buffer_count
 	     ; ++i)
@@ -1153,7 +1161,7 @@ init_command_buffers(void)
 	VkRenderPassBeginInfo render_pass_info = {};
 	render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 	render_pass_info.pNext = nullptr;
-	render_pass_info.renderPass = vk.render_pass;
+	render_pass_info.renderPass = render_pass->render_pass;
 	render_pass_info.framebuffer = vulkan_state.swapchain.fbos[i];
 	render_pass_info.renderArea.offset = {0, 0};
 	render_pass_info.renderArea.extent = vulkan_state.swapchain.extent;
@@ -1258,7 +1266,9 @@ init_vk(GLFWwindow *window)
     Vulkan_API::init_state(&vulkan_state
 			   , window);
 
-    init_render_pass();
+    Rendering::init_rendering_state(&vulkan_state
+				    , &rendering_objects); 
+    
     init_descriptor_layout();
 
 
@@ -1409,7 +1419,8 @@ destroy_vk(void)
 {
     vkDestroyPipeline(vulkan_state.gpu.logical_device, vk.graphics_pipeline, nullptr);
     vkDestroyPipelineLayout(vulkan_state.gpu.logical_device, vk.pipeline_layout, nullptr);
-    vkDestroyRenderPass(vulkan_state.gpu.logical_device, vk.render_pass, nullptr);
+    Vulkan_API::Render_Pass *render_pass = Rendering::get_render_pass(rendering_objects.test_render_pass);
+    vkDestroyRenderPass(vulkan_state.gpu.logical_device, render_pass->render_pass, nullptr);
 
     for (uint32 i = 0
 	     ; i < vulkan_state.swapchain.image_count

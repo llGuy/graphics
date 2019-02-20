@@ -94,7 +94,6 @@ namespace Rendering
     }
 
     // render pass functions
-    
     extern_impl Vulkan_Render_Pass_Handle
     add_render_pass(const Constant_String &string)
     {
@@ -106,13 +105,88 @@ namespace Rendering
     extern_impl Vulkan_Render_Pass_Handle
     get_render_pass_handle(const Constant_String &string)
     {
-	return(0);
+	return(render_pass_index_map.get(string.hash));
     }
     
     extern_impl Vulkan_API::Render_Pass *
     get_render_pass(Vulkan_Buffer_Handle handle)
     {
-	return(0);
+	return(&render_pass_manager.objects[handle]);
+    }
+
+    
+
+    /* initialize the rendering objects */
+    internal void
+    init_test_render_pass(Vulkan_API::Swapchain *swapchain
+			  , Vulkan_API::GPU *gpu)
+    {
+	/* init main renderpass */
+	Vulkan_Render_Pass_Handle test_render_pass = add_render_pass("render_pass.test_render_pass"_hash);
+	Vulkan_API::Render_Pass *test_render_pass_object = get_render_pass(test_render_pass);
+	
+	enum {COLOR_DESCRIPTION = 0, DEPTH_DESCRIPTION = 1};
+	
+	VkAttachmentDescription descriptions[2]		= {};
+	descriptions[COLOR_DESCRIPTION].format		= swapchain->format;
+	descriptions[COLOR_DESCRIPTION].samples		= VK_SAMPLE_COUNT_1_BIT;
+	descriptions[COLOR_DESCRIPTION].loadOp		= VK_ATTACHMENT_LOAD_OP_CLEAR;
+	descriptions[COLOR_DESCRIPTION].storeOp		= VK_ATTACHMENT_STORE_OP_STORE;
+	descriptions[COLOR_DESCRIPTION].stencilLoadOp	= VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	descriptions[COLOR_DESCRIPTION].stencilStoreOp	= VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	descriptions[COLOR_DESCRIPTION].initialLayout	= VK_IMAGE_LAYOUT_UNDEFINED;
+	descriptions[COLOR_DESCRIPTION].finalLayout	= VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+	descriptions[DEPTH_DESCRIPTION].format		= gpu->supported_depth_format;
+	descriptions[DEPTH_DESCRIPTION].samples		= VK_SAMPLE_COUNT_1_BIT;
+	descriptions[DEPTH_DESCRIPTION].loadOp		= VK_ATTACHMENT_LOAD_OP_CLEAR;
+	descriptions[DEPTH_DESCRIPTION].storeOp		= VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	descriptions[DEPTH_DESCRIPTION].stencilLoadOp	= VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	descriptions[DEPTH_DESCRIPTION].stencilStoreOp	= VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	descriptions[DEPTH_DESCRIPTION].initialLayout	= VK_IMAGE_LAYOUT_UNDEFINED;
+	descriptions[DEPTH_DESCRIPTION].finalLayout	= VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+	VkAttachmentReference references[2]		= {};
+	references[COLOR_DESCRIPTION].attachment	= 0;
+	references[COLOR_DESCRIPTION].layout		= VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+	references[DEPTH_DESCRIPTION].attachment	= 1;
+	references[DEPTH_DESCRIPTION].layout		= VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+	VkSubpassDescription subpass	= {};
+	subpass.pipelineBindPoint	= VK_PIPELINE_BIND_POINT_GRAPHICS;
+	subpass.colorAttachmentCount	= 1;
+	subpass.pColorAttachments	= &references[COLOR_DESCRIPTION];
+	subpass.pDepthStencilAttachment	= &references[DEPTH_DESCRIPTION];
+
+	VkSubpassDependency dependency	= {};
+	dependency.srcSubpass		= VK_SUBPASS_EXTERNAL;
+	dependency.dstSubpass		= 0;
+	dependency.srcStageMask		= VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	dependency.srcAccessMask	= 0;
+	dependency.dstStageMask		= VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	dependency.dstAccessMask	= VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+	Vulkan_API::Render_Pass_Create_Params test_render_pass_params = {};
+	test_render_pass_params.r_attachment_description_count = 2;
+	test_render_pass_params.r_attachment_descriptions = descriptions;
+	test_render_pass_params.r_subpass_count = 1;
+	test_render_pass_params.r_subpasses = &subpass;
+	test_render_pass_params.r_dependency_count = 1;
+	test_render_pass_params.r_dependencies = &dependency;
+	test_render_pass_params.r_gpu = gpu;
+	
+	Vulkan_API::init_render_pass(&test_render_pass_params, test_render_pass_object);
+    }
+    
+    extern_impl void
+    init_rendering_state(Vulkan_API::State *vulkan_state
+			 , Rendering_Objects_Handle_Cache *cache)
+    {
+	init_test_render_pass(&vulkan_state->swapchain
+			      , &vulkan_state->gpu);
+
+	cache->test_render_pass = get_render_pass_handle("render_pass.test_render_pass"_hash);
     }
 
 }

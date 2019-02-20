@@ -574,6 +574,69 @@ namespace Vulkan_API
     }
     
     extern_impl void
+    init_render_pass(Render_Pass_Create_Params *params
+		     , Render_Pass *dest_render_pass)
+    {
+	VkRenderPassCreateInfo render_pass_info	= {};
+	render_pass_info.sType			= VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+	render_pass_info.attachmentCount	= params->r_attachment_description_count;
+	render_pass_info.pAttachments		= params->r_attachment_descriptions;
+	render_pass_info.subpassCount		= params->r_subpass_count;
+	render_pass_info.pSubpasses		= params->r_subpasses;
+	render_pass_info.dependencyCount	= params->r_dependency_count;
+	render_pass_info.pDependencies		= params->r_dependencies;
+
+	VK_CHECK(vkCreateRenderPass(params->r_gpu->logical_device, &render_pass_info, nullptr, &dest_render_pass->render_pass));
+	dest_render_pass->subpass_count = params->r_subpass_count;
+    }
+
+    // find gpu supported depth format
+    internal VkFormat
+    find_supported_format(const VkFormat *candidates
+			  , uint32 candidate_size
+			  , VkImageTiling tiling
+			  , VkFormatFeatureFlags features
+			  , GPU *gpu)
+    {
+	for (uint32 i = 0
+		 ; i < candidate_size
+		 ; ++i)
+	{
+	    VkFormatProperties properties;
+	    vkGetPhysicalDeviceFormatProperties(gpu->hardware, candidates[i], &properties);
+	    if (tiling == VK_IMAGE_TILING_LINEAR && (properties.linearTilingFeatures & features) == features)
+	    {
+		return(candidates[i]);
+	    }
+	    else if (tiling == VK_IMAGE_TILING_OPTIMAL && (properties.optimalTilingFeatures & features) == features)
+	    {
+		return(candidates[i]);
+	    }
+	}
+	OUTPUT_DEBUG_LOG("%s\n", "failed to find supported format");
+	assert(false);
+
+	return VkFormat{};
+    }
+
+    internal void
+    find_depth_format(GPU *gpu)
+    {
+	VkFormat formats[] = 
+	{
+	    VK_FORMAT_D32_SFLOAT
+	    , VK_FORMAT_D32_SFLOAT_S8_UINT
+	    , VK_FORMAT_D24_UNORM_S8_UINT
+	};
+    
+	gpu->supported_depth_format	= find_supported_format(formats
+								, 3
+								, VK_IMAGE_TILING_OPTIMAL
+								, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
+								, gpu);
+    }
+    
+    extern_impl void
     init_state(State *state
 	       , GLFWwindow *window)
     {
@@ -633,6 +696,7 @@ namespace Vulkan_API
 		   , &state->instance
 		   , &state->gpu);
 	vkGetPhysicalDeviceMemoryProperties(state->gpu.hardware, &state->gpu.memory_properties);
+	find_depth_format(&state->gpu);
 	init_device(&gpu_extensions
 		    , &validation_params
 		    , &state->gpu);

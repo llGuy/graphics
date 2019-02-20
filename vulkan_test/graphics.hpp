@@ -21,7 +21,7 @@ extern struct Vulkan_State
     //    VkQueue graphics_queue;
     //    VkQueue present_queue;
 
-    VkRenderPass render_pass;
+    //    VkRenderPass render_pass;
     VkDescriptorSetLayout descriptor_layout;
     VkPipeline graphics_pipeline;
     VkPipelineLayout pipeline_layout;
