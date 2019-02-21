@@ -94,6 +94,40 @@ extend_stack_top(uint32 extension_size
 extern void
 pop_stack(Stack_Allocator *allocator = &stack_allocator_global);
 
+struct Free_Block_Header
+{
+    Free_Block_Header *next_free_block = nullptr;
+    uint32 free_block_size = 0;
+};
+
+struct Free_List_Allocation_Header
+{
+    uint32 size;
+#if DEBUG
+    const char *name;
+#endif
+};
+
+extern struct Free_List_Allocator
+{
+    Free_Block_Header *free_block_head;
+    
+    void *start;
+    uint32 available_bytes;
+
+    uint32 allocation_count = 0;
+} free_list_allocator_global;
+
+extern void *
+allocate_free_list(uint32 allocation_size
+		   , uint8 alignment
+		   , const char *name = ""
+		   , Free_List_Allocator *allocator = &free_list_allocator_global);
+
+extern void
+deallocate_free_list(void *pointer
+		     , Free_List_Allocator *allocator = &free_list_allocator_global);
+
 struct File_Contents
 {
     uint32 size;

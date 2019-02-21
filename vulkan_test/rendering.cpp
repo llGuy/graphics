@@ -11,6 +11,7 @@ namespace Rendering
 
     MAKE_OBJECT_MANAGER_TMP_PARAM_GROUP(BUFFER, 64, 20, Buffer, uint8)
     MAKE_OBJECT_MANAGER_TMP_PARAM_GROUP(RENDER_PASS, 20, 10, Render_Pass, uint8)
+    MAKE_OBJECT_MANAGER_TMP_PARAM_GROUP(DESCRIPTOR_SET_LAYOUT, 20, 10, Descriptor_Set_Layout, uint8)
 
 
     
@@ -68,11 +69,15 @@ namespace Rendering
 	}
     };
 
+    global_var Hash_Table_Inline<uint32 /*index of item in the manager struct*/, 20, 8, 3> buffer_index_map {"map.buffer_index_map"};
     global_var Object_Manager<Vulkan_API::Buffer, BUFFER_MAX_COUNT, Buffer_Stack_Type, BUFFER_STACK_MAX_REMOVED> buffer_manager;
 
-    Hash_Table_Inline<uint32 /*index of item in the manager struct*/, 20, 8, 3> render_pass_index_map {"map.render_pass_index_map"};
+    global_var Hash_Table_Inline<uint32 /*index of item in the manager struct*/, 20, 8, 3> render_pass_index_map {"map.render_pass_index_map"};
     global_var Object_Manager<Vulkan_API::Render_Pass, RENDER_PASS_MAX_COUNT, Render_Pass_Stack_Type, RENDER_PASS_STACK_MAX_REMOVED> render_pass_manager;
 
+    global_var Hash_Table_Inline<uint32 /*index of item in the manager struct*/, 20, 8, 3> descriptor_set_layout_index_map {"map.descriptor_set_layout_index_map"};
+    global_var Object_Manager<VkDescriptorSetLayout, DESCRIPTOR_SET_LAYOUT_MAX_COUNT, Descriptor_Set_Layout_Stack_Type, DESCRIPTOR_SET_LAYOUT_STACK_MAX_REMOVED> descriptor_set_layout_manager;
+    
     // buffer functions
     // TODO(luc) : make these functions actually do stuff in the future
     extern_impl Vulkan_Buffer_Handle
@@ -112,6 +117,27 @@ namespace Rendering
     get_render_pass(Vulkan_Buffer_Handle handle)
     {
 	return(&render_pass_manager.objects[handle]);
+    }
+
+    // descriptor set layout
+    extern_impl Vulkan_Render_Pass_Handle
+    add_descriptor_set_layout(const Constant_String &string)
+    {
+	Vulkan_Descriptor_Set_Layout_Handle descriptor_set_layout_handle = descriptor_set_layout_manager.add();
+	descriptor_set_layout_index_map.insert(string.hash, descriptor_set_layout_handle, string.str);
+	return(descriptor_set_layout_handle);
+    }
+
+    extern_impl Vulkan_Render_Pass_Handle
+    get_descriptor_set_layout_handle(const Constant_String &string)
+    {
+	return(descriptor_set_layout_index_map.get(string.hash));
+    }
+    
+    extern_impl VkDescriptorSetLayout *
+    get_descriptor_set_layout(Vulkan_Buffer_Handle handle)
+    {
+	return(&descriptor_set_layout_manager.objects[handle]);
     }
 
     
@@ -178,6 +204,37 @@ namespace Rendering
 	
 	Vulkan_API::init_render_pass(&test_render_pass_params, test_render_pass_object);
     }
+
+    internal void
+    init_descriptor_set_layout(Vulkan_API::GPU *gpu)
+    {
+	// create descriptor set layout in manager
+	Vulkan_Descriptor_Set_Layout_Handle handle = add_descriptor_set_layout("descriptor_set_layout.test_descriptor_set_layout"_hash);
+	
+	VkDescriptorSetLayoutBinding ubo_binding	= {};
+	ubo_binding.binding				= 0;
+	ubo_binding.descriptorType			= VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	ubo_binding.descriptorCount			= 1;
+	ubo_binding.stageFlags				= VK_SHADER_STAGE_VERTEX_BIT;
+	ubo_binding.pImmutableSamplers			= nullptr;
+
+	VkDescriptorSetLayoutBinding sampler_binding	= {};
+	sampler_binding.binding				= 1;
+	sampler_binding.descriptorCount			= 1;
+	sampler_binding.descriptorType			= VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	sampler_binding.pImmutableSamplers		= nullptr;
+	sampler_binding.stageFlags			= VK_SHADER_STAGE_FRAGMENT_BIT;
+
+	VkDescriptorSetLayoutBinding bindings[] = {ubo_binding, sampler_binding};
+
+	VkDescriptorSetLayoutCreateInfo layout_info	= {};
+	layout_info.sType				= VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+	layout_info.bindingCount			= 2;
+	layout_info.pBindings				= bindings;
+
+	VkDescriptorSetLayout *layout = get_descriptor_set_layout(handle);
+	VK_CHECK(vkCreateDescriptorSetLayout(gpu->logical_device, &layout_info, nullptr, layout));
+    }
     
     extern_impl void
     init_rendering_state(Vulkan_API::State *vulkan_state
@@ -185,8 +242,11 @@ namespace Rendering
     {
 	init_test_render_pass(&vulkan_state->swapchain
 			      , &vulkan_state->gpu);
+	
+	init_descriptor_set_layout(&vulkan_state->gpu);
 
 	cache->test_render_pass = get_render_pass_handle("render_pass.test_render_pass"_hash);
+	cache->descriptor_set_layout = get_descriptor_set_layout_handle("descriptor_set_layout.test_descriptor_set_layout"_hash);
     }
 
 }

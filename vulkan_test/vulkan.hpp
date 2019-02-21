@@ -5,7 +5,6 @@
 #include <vulkan/vulkan.h>
 
 // struct data with "r_" are required, data with "o_" are optional
-
 namespace Vulkan_API
 {
 
@@ -117,28 +116,6 @@ namespace Vulkan_API
     init_image_view(Create_Image_View_Params *params
 		      , VkImageView *dest_image_view);
 
-    struct Render_Pass
-    {
-	VkRenderPass render_pass;
-	uint32 subpass_count;
-    };
-
-    struct Render_Pass_Create_Params
-    {
-	uint32 r_attachment_description_count;
-	VkAttachmentDescription *r_attachment_descriptions;
-	uint32 r_subpass_count;
-	VkSubpassDescription *r_subpasses;
-	uint32 r_dependency_count;
-	VkSubpassDependency *r_dependencies;
-
-	GPU *r_gpu;
-    };
-    
-    extern_impl void
-    init_render_pass(Render_Pass_Create_Params *params
-		     , Render_Pass *dest_render_pass);
-    
     struct Swapchain
     {
 	VkFormat format;
@@ -153,6 +130,46 @@ namespace Vulkan_API
 	VkFramebuffer *fbos;
 	uint32 fbo_count;
     };
+    
+    struct Render_Pass
+    {
+	VkRenderPass render_pass;
+	uint32 subpass_count;
+    };
+    
+    struct Render_Pass_Create_Params
+    {
+	uint32 r_attachment_description_count;
+	VkAttachmentDescription *r_attachment_descriptions;
+	uint32 r_subpass_count;
+	VkSubpassDescription *r_subpasses;
+	uint32 r_dependency_count;
+	VkSubpassDependency *r_dependencies;
+
+	GPU *r_gpu;
+    };
+    
+    extern void
+    init_render_pass(Render_Pass_Create_Params *params
+		     , Render_Pass *dest_render_pass);
+
+    struct Shader_Module_Create_Params
+    {
+	VkShaderStageFlagBits r_stage_bits;
+	uint32 r_content_size;
+	byte *r_file_contents;
+	GPU *r_gpu;
+    };
+    
+    struct Shader_Module
+    {
+	VkShaderStageFlagBits stage_bits;
+	VkShaderModule shader;
+    };
+
+    extern void
+    init_shader(Shader_Module_Create_Params *params
+		, Shader_Module *dest_shader_module);
     
     struct State
     {

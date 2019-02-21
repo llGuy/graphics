@@ -178,7 +178,8 @@ init_descriptor_layout(void)
     layout_info.bindingCount = 2;
     layout_info.pBindings = bindings;
 
-    VK_CHECK(vkCreateDescriptorSetLayout(vulkan_state.gpu.logical_device, &layout_info, nullptr, &vk.descriptor_layout));
+    VkDescriptorSetLayout *descriptor_set_layout = Rendering::get_descriptor_set_layout(rendering_objects.descriptor_set_layout);
+    VK_CHECK(vkCreateDescriptorSetLayout(vulkan_state.gpu.logical_device, &layout_info, nullptr, descriptor_set_layout));
 }
 
 internal VkShaderModule
@@ -373,7 +374,8 @@ init_graphics_pipeline(void)
     VkPipelineLayoutCreateInfo pipeline_layout_info = {};
     pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     pipeline_layout_info.setLayoutCount = 1;
-    pipeline_layout_info.pSetLayouts = &vk.descriptor_layout;
+    VkDescriptorSetLayout *descriptor_layout = Rendering::get_descriptor_set_layout(rendering_objects.descriptor_set_layout);
+    pipeline_layout_info.pSetLayouts = descriptor_layout;
     pipeline_layout_info.pushConstantRangeCount = 0;
     pipeline_layout_info.pPushConstantRanges = nullptr;
 
@@ -1072,9 +1074,11 @@ init_descriptor_sets(void)
     VkDescriptorSetLayout *descriptor_set_layouts = (VkDescriptorSetLayout *)allocate_stack(vk.descriptor_set_count * sizeof(VkDescriptorSetLayout)
 									, 1
 									, "descriptor_set_layout_list_allocation");
+    VkDescriptorSetLayout *main_descriptor_layout = Rendering::get_descriptor_set_layout(rendering_objects.descriptor_set_layout);
+    
     for (uint32 i = 0
 	     ; i < vk.descriptor_set_count
-	     ; ++i) descriptor_set_layouts[i] = vk.descriptor_layout;
+	     ; ++i) descriptor_set_layouts[i] = *main_descriptor_layout;
 
     VkDescriptorSetAllocateInfo alloc_info	= {};
     alloc_info.sType				= VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
@@ -1269,7 +1273,7 @@ init_vk(GLFWwindow *window)
     Rendering::init_rendering_state(&vulkan_state
 				    , &rendering_objects); 
     
-    init_descriptor_layout();
+    //    init_descriptor_layout();
 
 
     init_graphics_pipeline();

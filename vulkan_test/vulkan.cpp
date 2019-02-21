@@ -635,6 +635,22 @@ namespace Vulkan_API
 								, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
 								, gpu);
     }
+
+    extern_impl void
+    init_shader(Shader_Module_Create_Params *params
+		, Shader_Module *dest_shader_module)
+    {
+	VkShaderModuleCreateInfo shader_info = {};
+	shader_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+	shader_info.codeSize = params->r_content_size;
+	shader_info.pCode = reinterpret_cast<const uint32 *>(params->r_file_contents);
+
+	VK_CHECK(vkCreateShaderModule(params->r_gpu->logical_device
+				      , &shader_info
+				      , nullptr
+				      , &dest_shader_module->shader));
+	dest_shader_module->stage_bits = params->r_stage_bits;
+    }
     
     extern_impl void
     init_state(State *state

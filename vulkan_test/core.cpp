@@ -11,6 +11,7 @@
 extern_impl Stack_Allocator stack_allocator_global;
 extern_impl Debug_Output output_file;
 extern_impl GLFWwindow *window;
+extern_impl Free_List_Allocator free_list_allocator_global;
 
 internal bool running;
 
@@ -115,6 +116,149 @@ pop_stack(Stack_Allocator *allocator)
     --(allocator->allocation_count);
 }
 
+internal void
+init_free_list_allocator_head(Free_List_Allocator *allocator = &free_list_allocator_global)
+{
+    allocator->free_block_head = (Free_Block_Header *)allocator->start;
+    allocator->free_block_head->free_block_size = allocator->available_bytes;
+}
+
+extern_impl void *
+allocate_free_list(uint32 allocation_size
+		   , uint8 alignment
+		   , const char *name
+		   , Free_List_Allocator *allocator)
+{
+    uint32 total_allocation_size = allocation_size + sizeof(Free_List_Allocation_Header);
+    // find best fit free block
+    // TODO(luc) : make free list allocator adjust the smallest free block according to the alignment as well
+    Free_Block_Header *previous_free_block = nullptr;
+    Free_Block_Header *smallest_free_block = allocator->free_block_head;
+    for (Free_Block_Header *header = allocator->free_block_head
+	     ; header
+	     ; header = header->next_free_block)
+    {
+	if (header->free_block_size >= total_allocation_size)
+	{
+	    if (smallest_free_block->free_block_size >= header->free_block_size)
+	    {
+		smallest_free_block = header;
+		break;
+	    }
+	}
+	previous_free_block = header;
+    }
+    Free_Block_Header *next = smallest_free_block->next_free_block;
+    if (previous_free_block)
+    {
+	uint32 previous_smallest_block_size = smallest_free_block->free_block_size;
+	previous_free_block->next_free_block = (Free_Block_Header *)(((byte *)smallest_free_block) + total_allocation_size);
+	previous_free_block->next_free_block->free_block_size = previous_smallest_block_size - total_allocation_size;
+	previous_free_block->next_free_block->next_free_block = next;
+    }
+    else
+    {
+	Free_Block_Header *new_block = (Free_Block_Header *)(((byte *)smallest_free_block) + total_allocation_size);
+	allocator->free_block_head = new_block;
+	new_block->free_block_size = smallest_free_block->free_block_size - total_allocation_size;
+	new_block->next_free_block = smallest_free_block->next_free_block;
+    }
+    
+    Free_List_Allocation_Header *header = (Free_List_Allocation_Header *)smallest_free_block;
+    header->size = allocation_size;
+#if DEBUG
+    header->name = name;
+#endif
+    return((byte *)header + sizeof(Free_List_Allocation_Header));
+}
+
+// TODO(luc) : optimize free list allocator so that all the blocks are stored in order
+extern_impl void
+deallocate_free_list(void *pointer
+		     , Free_List_Allocator *allocator)
+{
+    Free_List_Allocation_Header *allocation_header = (Free_List_Allocation_Header *)((byte *)pointer - sizeof(Free_List_Allocation_Header));
+    Free_Block_Header *new_free_block_header = (Free_Block_Header *)allocation_header;
+    new_free_block_header->free_block_size = allocation_header->size + sizeof(Free_Block_Header);
+
+    Free_Block_Header *previous = nullptr;
+    Free_Block_Header *current_header = allocator->free_block_head;
+
+    Free_Block_Header *viable_prev = nullptr;
+    Free_Block_Header *viable_next = nullptr;
+    
+    // check if possible to merge free blocks
+    bool merged = false;
+    for (; current_header
+	     ; current_header = current_header->next_free_block)
+    {
+	if (new_free_block_header > previous && new_free_block_header < current_header)
+	{
+	    viable_prev = previous;
+	    viable_next = current_header;
+	}
+	
+	// check if free blocks will overlap
+	// does the header go over the newly freed header
+	if (current_header->free_block_size + (byte *)current_header >= (byte *)new_free_block_header
+	    && (byte *)current_header < (byte *)new_free_block_header)
+	{
+	    current_header->free_block_size = ((byte *)new_free_block_header + new_free_block_header->free_block_size) - (byte *)current_header;
+	    new_free_block_header = current_header;
+	    previous = current_header;
+	    merged = true;
+	    continue;
+	}
+	// does the newly freed header go over the header
+	if ((byte *)current_header <= (byte *)new_free_block_header + new_free_block_header->free_block_size
+	    && (byte *)current_header > (byte *)new_free_block_header)
+	{
+	    // if current header is not the head of the list
+	    new_free_block_header->free_block_size = (byte *)((byte *)current_header + current_header->free_block_size) - (byte *)new_free_block_header; 
+	    /*if (previous)
+	    {
+		previous->next_free_block = new_free_block_header;
+		}*/
+	    if (!previous)
+	    {
+		allocator->free_block_head = new_free_block_header;
+	    }
+	    new_free_block_header->next_free_block = current_header->next_free_block;
+	    merged = true;
+	    
+	    previous = current_header;
+	    continue;
+	}
+
+	if (merged) return;
+	
+	previous = current_header;
+    }
+
+    if (merged) return;
+
+    // put the blocks in order if no blocks merged
+    // if viable_prev == nullptr && viable_next != nullptr -> new block should be before the head
+    // if viable_prev != nullptr && viable_next != nullptr -> new block should be between prev and next
+    // if viable_prev == nullptr && viable_next == nullptr -> new block should be after the last header
+    if (!viable_prev && viable_next)
+    {
+	Free_Block_Header *old_head = allocator->free_block_head;
+	allocator->free_block_head = new_free_block_header;
+	allocator->free_block_head->next_free_block = old_head;
+    }
+    else if (viable_prev && viable_next)
+    {
+	viable_prev->next_free_block = new_free_block_header;
+	new_free_block_header->next_free_block = viable_next;
+    }
+    else if (!viable_prev && !viable_next)
+    {
+	// at the end of the loop, previous is that last current before current = nullptr
+	previous->next_free_block = new_free_block_header;
+    }
+}
+
 int32
 main(int32 argc
      , char * argv[])
@@ -124,8 +268,8 @@ main(int32 argc
 	open_debug_file();
 
 	OUTPUT_DEBUG_LOG("%s\n", "starting session");
-
-	stack_allocator_global.start = stack_allocator_global.current =  malloc(megabytes(8));
+	
+	stack_allocator_global.start = stack_allocator_global.current = malloc(megabytes(8));
 	stack_allocator_global.capacity = STACK_ALLOCATOR_GLOBAL_SIZE;
 
 	OUTPUT_DEBUG_LOG("stack allocator start address : %p\n", stack_allocator_global.current);
