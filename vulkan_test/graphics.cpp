@@ -12,6 +12,7 @@
 #include "rendering.hpp"
 #include <GLFW/glfw3.h>
 #include <vulkan/vulkan.h>
+#include "vulkan_managers.hpp"
 #include <glm/gtx/transform.hpp>
 
 // TODO(luc) : remove these globals in the future when ported to the new system
@@ -178,7 +179,7 @@ init_descriptor_layout(void)
     layout_info.bindingCount = 2;
     layout_info.pBindings = bindings;
 
-    VkDescriptorSetLayout *descriptor_set_layout = Rendering::get_descriptor_set_layout(rendering_objects.descriptor_set_layout);
+    VkDescriptorSetLayout *descriptor_set_layout = Vulkan_API::get_descriptor_set_layout(rendering_objects.descriptor_set_layout);
     VK_CHECK(vkCreateDescriptorSetLayout(vulkan_state.gpu.logical_device, &layout_info, nullptr, descriptor_set_layout));
 }
 
@@ -374,7 +375,7 @@ init_graphics_pipeline(void)
     VkPipelineLayoutCreateInfo pipeline_layout_info = {};
     pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     pipeline_layout_info.setLayoutCount = 1;
-    VkDescriptorSetLayout *descriptor_layout = Rendering::get_descriptor_set_layout(rendering_objects.descriptor_set_layout);
+    VkDescriptorSetLayout *descriptor_layout = Vulkan_API::get_descriptor_set_layout(rendering_objects.descriptor_set_layout);
     pipeline_layout_info.pSetLayouts = descriptor_layout;
     pipeline_layout_info.pushConstantRangeCount = 0;
     pipeline_layout_info.pPushConstantRanges = nullptr;
@@ -407,14 +408,14 @@ init_graphics_pipeline(void)
     pipeline_info.pDynamicState = nullptr;
 
     pipeline_info.layout = vk.pipeline_layout;
-    Vulkan_API::Render_Pass *render_pass = Rendering::get_render_pass(rendering_objects.test_render_pass);
+    Vulkan_API::Render_Pass *render_pass = Vulkan_API::get_render_pass(rendering_objects.test_render_pass);
     pipeline_info.renderPass = render_pass->render_pass;
     pipeline_info.subpass = 0;
 
     pipeline_info.basePipelineHandle = VK_NULL_HANDLE;
     pipeline_info.basePipelineIndex = -1;
 
-    //    VK_CHECK(vkCreateGraphicsPipelines(vulkan_state.gpu.logical_device, VK_NULL_HANDLE, 1, &pipeline_info, nullptr, &vk.graphics_pipeline));
+    //VK_CHECK(vkCreateGraphicsPipelines(vulkan_state.gpu.logical_device, VK_NULL_HANDLE, 1, &pipeline_info, nullptr, &vk.graphics_pipeline));
     if (vkCreateGraphicsPipelines(vulkan_state.gpu.logical_device, VK_NULL_HANDLE, 1, &pipeline_info, nullptr, &vk.graphics_pipeline) != VK_SUCCESS)
     {
 	OUTPUT_DEBUG_LOG("%s\n", "error creating graphics pipeline");
@@ -746,7 +747,7 @@ init_framebuffers(void)
 								   , Alignment(1)
 								   , "framebuffer_list_allocation"));
 
-    Vulkan_API::Render_Pass *render_pass = Rendering::get_render_pass(rendering_objects.test_render_pass);
+    Vulkan_API::Render_Pass *render_pass = Vulkan_API::get_render_pass(rendering_objects.test_render_pass);
     
     for (uint32 i = 0
 	     ; i < vulkan_state.swapchain.image_count
@@ -1074,7 +1075,7 @@ init_descriptor_sets(void)
     VkDescriptorSetLayout *descriptor_set_layouts = (VkDescriptorSetLayout *)allocate_stack(vk.descriptor_set_count * sizeof(VkDescriptorSetLayout)
 											    , Alignment(1)
 											    , "descriptor_set_layout_list_allocation");
-    VkDescriptorSetLayout *main_descriptor_layout = Rendering::get_descriptor_set_layout(rendering_objects.descriptor_set_layout);
+    VkDescriptorSetLayout *main_descriptor_layout = Vulkan_API::get_descriptor_set_layout(rendering_objects.descriptor_set_layout);
     
     for (uint32 i = 0
 	     ; i < vk.descriptor_set_count
@@ -1146,7 +1147,7 @@ init_command_buffers(void)
 				      , &alloc_info
 				      , vk.command_buffers));
 
-    Vulkan_API::Render_Pass *render_pass = Rendering::get_render_pass(rendering_objects.test_render_pass);
+    Vulkan_API::Render_Pass *render_pass = Vulkan_API::get_render_pass(rendering_objects.test_render_pass);
     
     for (uint32 i = 0
 	     ; i < vk.command_buffer_count
@@ -1423,7 +1424,7 @@ destroy_vk(void)
 {
     vkDestroyPipeline(vulkan_state.gpu.logical_device, vk.graphics_pipeline, nullptr);
     vkDestroyPipelineLayout(vulkan_state.gpu.logical_device, vk.pipeline_layout, nullptr);
-    Vulkan_API::Render_Pass *render_pass = Rendering::get_render_pass(rendering_objects.test_render_pass);
+    Vulkan_API::Render_Pass *render_pass = Vulkan_API::get_render_pass(rendering_objects.test_render_pass);
     vkDestroyRenderPass(vulkan_state.gpu.logical_device, render_pass->render_pass, nullptr);
 
     for (uint32 i = 0

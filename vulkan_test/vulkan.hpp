@@ -3,6 +3,7 @@
 #include "core.hpp"
 #include <GLFW/glfw3.h>
 #include <vulkan/vulkan.h>
+#include "vulkan_handles.hpp"
 
 // struct data with "r_" are required, data with "o_" are optional
 namespace Vulkan_API
@@ -174,6 +175,139 @@ namespace Vulkan_API
     extern void
     init_shader_pipeline_info(Shader_Module *module
 			      , VkPipelineShaderStageCreateInfo *dest_info);
+
+    // describes the binding of a buffer to a model VAO
+    struct Model_Binding
+    {
+	// buffer that stores all the attributes
+	Buffer_Handle buffer;
+	uint32 binding;
+	VkVertexInputRate input_rate;
+
+	VkVertexInputAttributeDescription *attribute_list = nullptr;
+	uint32 stride = 0;
+	
+	void
+	begin_attributes_creation(VkVertexInputAttributeDescription *attribute_list)
+	{
+	    this->attribute_list = attribute_list;
+	}
+	
+	void
+	push_attribute(uint32 location, VkFormat format, uint32 size)
+	{
+	    VkVertexInputAttributeDescription attribute = {};
+	    attribute.binding = binding;
+	    attribute.location = location;
+	    attribute.format = format;
+	    attribute.offset = stride;
+
+	    stride += size;
+	}
+
+	void
+	end_attributes_creation(void)
+	{
+	    attribute_list = nullptr;
+	}
+    };
+    
+    // describes the attributes and bindings of the model
+    struct Model
+    {
+	// model bindings
+	uint32 binding_count;
+	// allocated on free list allocator
+	Model_Binding *bindings;
+	// model attriutes
+	uint32 attribute_count;
+	// allocated on free list also | multiple bindings can push to this buffer
+	VkVertexInputAttributeDescription *attributes_buffer;
+
+	VkVertexInputBindingDescription *
+	create_binding_descriptions(void)
+	{
+	    VkVertexInputBindingDescription *descriptions = (VkVertexInputBindingDescription *)allocate_stack(sizeof(VkVertexInputBindingDescription) * binding_count
+													      , 1
+													      , "binding_total_list_allocation");
+	    for (uint32 i = 0; i < binding_count; ++i)
+	    {
+		descriptions[i].binding = bindings[i].binding;
+		descriptions[i].stride = bindings[i].stride;
+		descriptions[i].inputRate = bindings[i].input_rate;
+	    }
+	    return(descriptions);
+	}
+
+	void
+	create_vertex_input_state_info(VkPipelineVertexInputStateCreateInfo *info)
+	{
+	    VkVertexInputBindingDescription *binding_descriptions = create_binding_descriptions();
+
+	    info->sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+	
+	    info->vertexBindingDescriptionCount = binding_count;
+	    info->pVertexBindingDescriptions = binding_descriptions;
+	    info->vertexAttributeDescriptionCount = attribute_count;
+	    info->pVertexAttributeDescriptions = attributes_buffer;
+	}
+    };
+
+    struct Graphics_Pipeline
+    {
+	enum Shader_Stages_Bits { VERTEX_SHADER_BIT = 1 << 0
+				  , GEOMETRY_SHADER_BIT = 1 << 1
+				  , TESSELATION_SHADER_BIT = 1 << 2
+				  , FRAGMENT_SHADER = 1 << 3};
+
+	Shader_Stages_Bits stages;
+	// "[some_dir]/[name]_[vert/frag/tess/geom].spv"
+	const char *base_dir_and_name;
+
+	Vulkan_API::Descriptor_Set_Layout_Handle descriptor_set_layout;
+	VkPipelineLayout layout;
+    };
+
+    // creating pipelines takes a LOT of params
+    extern void
+    init_pipeline_vertex_input_info(Model *model /* model contains input information required */
+				    , VkPipelineVertexInputStateCreateInfo *info);
+
+    struct Input_Assembly_Create_Params
+    {
+	// maybe for future use?
+	VkPipelineInputAssemblyStateCreateFlags flags;
+	VkPrimitiveTopology topology;
+	VkBool32 primitive_restart;
+    };
+    
+    extern void
+    init_pipeline_input_assembly_info(Input_Assembly_Create_Params *params
+				      , VkPipelineInputAssemblyStateCreateInfo *info);
+
+    extern void
+    init_pipeline_viewport_info();
+
+    extern void
+    init_pipeline_rasterization_info();
+
+    extern void
+    init_pipeline_multisampling_info();
+
+    extern void
+    init_pipeline_blending_info();
+
+    extern void
+    init_pipeline_dynamic_states_info();
+
+    extern void
+    init_pipeline_layout_info();
+
+    extern void
+    init_pipeline_depth_stencil_info();
+
+    extern void
+    init_graphics_pipeline( /* ... */ );
     
     struct State
     {
