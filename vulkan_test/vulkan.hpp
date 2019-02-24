@@ -7,7 +7,7 @@
 // struct data with "r_" are required, data with "o_" are optional
 namespace Vulkan_API
 {
-
+    
     struct Queue_Families
     {
 	int32 graphics_family = -1;
@@ -170,6 +170,10 @@ namespace Vulkan_API
     extern void
     init_shader(Shader_Module_Create_Params *params
 		, Shader_Module *dest_shader_module);
+
+    extern void
+    init_shader_pipeline_info(Shader_Module *module
+			      , VkPipelineShaderStageCreateInfo *dest_info);
     
     struct State
     {

@@ -60,6 +60,8 @@ extern void
 output_debug(const char *format
 	     , ...);
 
+using Alignment = uint8;
+
 struct Stack_Allocation_Header
 {
     #if DEBUG
@@ -81,7 +83,7 @@ extern struct Stack_Allocator
 
 extern void *
 allocate_stack(uint32 allocation_size
-	       , uint8 alignment
+	       , Alignment alignment
 	       , const char *name = ""
 	       , Stack_Allocator *allocator = &stack_allocator_global);
 
@@ -120,7 +122,7 @@ extern struct Free_List_Allocator
 
 extern void *
 allocate_free_list(uint32 allocation_size
-		   , uint8 alignment
+		   , Alignment alignment
 		   , const char *name = ""
 		   , Free_List_Allocator *allocator = &free_list_allocator_global);
 

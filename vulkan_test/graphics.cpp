@@ -78,7 +78,7 @@ internal VkFormat
 find_depth_format(void)
 {
     VkFormat *formats	= (VkFormat *)allocate_stack(sizeof(VkFormat) * 3
-						     , 1
+						     , Alignment(1)
 						     , "depth_format_list_allocation");
 
     formats[0]		= VK_FORMAT_D32_SFLOAT;
@@ -462,7 +462,7 @@ init_instance(void)
 				       , nullptr);
 
     VkLayerProperties *properties = (VkLayerProperties *)allocate_stack(sizeof(VkLayerProperties) * layer_count
-									, 1
+									, Alignment(1)
 									, "validation_layer_list_allocation");
     vkEnumerateInstanceLayerProperties(&layer_count
 				       , properties);
@@ -487,7 +487,7 @@ init_instance(void)
     const char **glfw_extensions = glfwGetRequiredInstanceExtensions(&glfw_extension_count);
 
     const char **extensions = (const char **)allocate_stack(sizeof(const char *) * (glfw_extension_count + 1)
-							    , 1
+							    , Alignment(1)
 							    , "extension_layer_list_allocation");
 
     memcpy(extensions, glfw_extensions, sizeof(const char *) * glfw_extension_count);
@@ -743,8 +743,8 @@ internal void
 init_framebuffers(void)
 {
     vulkan_state.swapchain.fbos = (VkFramebuffer *)(allocate_stack(sizeof(VkFramebuffer) * vulkan_state.swapchain.image_count
-					       , 1
-					       , "framebuffer_list_allocation"));
+								   , Alignment(1)
+								   , "framebuffer_list_allocation"));
 
     Vulkan_API::Render_Pass *render_pass = Rendering::get_render_pass(rendering_objects.test_render_pass);
     
@@ -1024,10 +1024,10 @@ init_ubos(void)
     vk.uniform_buffer_count = vulkan_state.swapchain.image_count;
 
     vk.uniform_buffers = (VkBuffer *)allocate_stack(sizeof(VkBuffer) * vk.uniform_buffer_count
-						    , 1
+						    , Alignment(1)
 						    , "uniform_buffers_list_allocation");
     vk.uniform_buffers_memory = (VkDeviceMemory *)allocate_stack(sizeof(VkDeviceMemory *) * vk.uniform_buffer_count
-								 , 1
+								 , Alignment(1)
 								 , "uniform_buffers_memory_list_allocation");
 
     for (uint32 i = 0
@@ -1069,11 +1069,11 @@ init_descriptor_sets(void)
     vk.descriptor_set_count = vulkan_state.swapchain.image_count;
 
     vk.descriptor_sets = (VkDescriptorSet *)allocate_stack(vk.descriptor_set_count * sizeof(VkDescriptorSet)
-									, 1
-									, "descriptor_set_list_allocation");
+							   , Alignment(1)
+							   , "descriptor_set_list_allocation");
     VkDescriptorSetLayout *descriptor_set_layouts = (VkDescriptorSetLayout *)allocate_stack(vk.descriptor_set_count * sizeof(VkDescriptorSetLayout)
-									, 1
-									, "descriptor_set_layout_list_allocation");
+											    , Alignment(1)
+											    , "descriptor_set_layout_list_allocation");
     VkDescriptorSetLayout *main_descriptor_layout = Rendering::get_descriptor_set_layout(rendering_objects.descriptor_set_layout);
     
     for (uint32 i = 0
@@ -1133,7 +1133,7 @@ init_command_buffers(void)
     vk.command_buffer_count = vulkan_state.swapchain.image_count;
 
     vk.command_buffers = (VkCommandBuffer *)allocate_stack(sizeof(VkCommandBuffer) * vk.command_buffer_count
-							   , 1
+							   , Alignment(1)
 							   , "command_buffer_list_allocation");
 
     VkCommandBufferAllocateInfo alloc_info = {};
@@ -1225,15 +1225,15 @@ init_sync(void)
 {
     vk.semaphore_count = MAX_FRAMES_IN_FLIGHT;
     vk.image_ready_semaphores = (VkSemaphore *)allocate_stack(sizeof(VkSemaphore) * vk.semaphore_count
-						  , 1
-						  , "sempahore_image_ready_list_allocation");
-
-    vk.render_finished_semaphores = (VkSemaphore *)allocate_stack(sizeof(VkSemaphore) * vk.semaphore_count
-						  , 1
+							      , Alignment(1)
 							      , "sempahore_image_ready_list_allocation");
 
+    vk.render_finished_semaphores = (VkSemaphore *)allocate_stack(sizeof(VkSemaphore) * vk.semaphore_count
+								  , Alignment(1)
+								  , "sempahore_image_ready_list_allocation");
+
     vk.fences = (VkFence *)allocate_stack(sizeof(VkFence) * vk.semaphore_count
-						  , 1
+					  , Alignment(1)
 						  , "fence_list_allocation");
 
     VkSemaphoreCreateInfo semaphore_info = {};

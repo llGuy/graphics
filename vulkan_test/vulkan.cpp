@@ -64,7 +64,7 @@ namespace Vulkan_API
 						 , nullptr);
 
 	VkQueueFamilyProperties *queue_properties = (VkQueueFamilyProperties *)allocate_stack(sizeof(VkQueueFamilyProperties) * queue_family_count
-											      , 1
+											      , Alignment(1)
 											      , "queue_family_list_allocation");
 	vkGetPhysicalDeviceQueueFamilyProperties(hardware
 						 , &queue_family_count
@@ -128,7 +128,7 @@ namespace Vulkan_API
 					   , nullptr);
 
 	VkLayerProperties *properties = (VkLayerProperties *)allocate_stack(sizeof(VkLayerProperties) * layer_count
-									    , 1
+									    , Alignment(1)
 									    , "validation_layer_list_allocation");
 	vkEnumerateInstanceLayerProperties(&layer_count
 					   , properties);
@@ -203,7 +203,7 @@ namespace Vulkan_API
 	if (gpu->swapchain_support.available_formats_count != 0)
 	{
 	    gpu->swapchain_support.available_formats = (VkSurfaceFormatKHR *)allocate_stack(sizeof(VkSurfaceFormatKHR) * gpu->swapchain_support.available_formats_count
-											    , 1
+											    , Alignment(1)
 											    , "surface_format_list_allocation");
 	    vkGetPhysicalDeviceSurfaceFormatsKHR(gpu->hardware
 						 , *surface
@@ -215,7 +215,7 @@ namespace Vulkan_API
 	if (gpu->swapchain_support.available_present_modes_count != 0)
 	{
 	    gpu->swapchain_support.available_present_modes = (VkPresentModeKHR *)allocate_stack(sizeof(VkPresentModeKHR) * gpu->swapchain_support.available_present_modes_count
-												, 1
+												, Alignment(1)
 												, "surface_present_mode_list_allocation");
 	    vkGetPhysicalDeviceSurfacePresentModesKHR(gpu->hardware
 						      , *surface
@@ -241,7 +241,7 @@ namespace Vulkan_API
 					     , nullptr);
 
 	VkExtensionProperties *extension_properties = (VkExtensionProperties *)allocate_stack(sizeof(VkExtensionProperties) * extension_count
-											      , 1
+											      , Alignment(1)
 											      , "gpu_extension_properties_list_allocation");
 	vkEnumerateDeviceExtensionProperties(gpu
 					     , nullptr
@@ -312,7 +312,7 @@ namespace Vulkan_API
 				   , nullptr);
     
 	VkPhysicalDevice *devices = (VkPhysicalDevice *)allocate_stack(sizeof(VkPhysicalDevice) * device_count
-								       , 1
+								       , Alignment(1)
 								       , "physical_device_list_allocation");
 	vkEnumeratePhysicalDevices(*instance
 				   , &device_count
@@ -356,10 +356,10 @@ namespace Vulkan_API
 	uint32 unique_sets = bitset.pop_count();
 
 	uint32 *unique_family_indices = (uint32 *)allocate_stack(sizeof(uint32) * unique_sets
-								 , 1
+								 , Alignment(1)
 								 , "unique_queue_family_indices_allocation");
 	VkDeviceQueueCreateInfo *unique_queue_infos = (VkDeviceQueueCreateInfo *)allocate_stack(sizeof(VkDeviceCreateInfo) * unique_sets
-												, 1
+												, Alignment(1)
 												, "unique_queue_list_allocation");
 
 	// fill the unique_family_indices with the indices
@@ -547,7 +547,7 @@ namespace Vulkan_API
 
 	vkGetSwapchainImagesKHR(gpu->logical_device, swapchain->swapchain, &image_count, nullptr);
 	swapchain->images = (VkImage *)allocate_stack(sizeof(VkImage) * image_count
-							, 1
+						      , Alignment(1)
 							, "swapchain_images_list_allocation");
 	vkGetSwapchainImagesKHR(gpu->logical_device, swapchain->swapchain, &image_count, swapchain->images);
 	swapchain->image_count = image_count;
@@ -557,8 +557,8 @@ namespace Vulkan_API
 	swapchain->present_mode = present_mode;
 
 	swapchain->image_views = (VkImageView *)allocate_stack(sizeof(VkImageView) * image_count
-								 , 1
-								 , "swapchain_image_views_list_allocation");
+							       , Alignment(1)
+							       , "swapchain_image_views_list_allocation");
 
 	for (uint32 i = 0
 		 ; i < image_count
@@ -651,6 +651,17 @@ namespace Vulkan_API
 				      , &dest_shader_module->shader));
 	dest_shader_module->stage_bits = params->r_stage_bits;
     }
+
+    extern_impl void
+    init_shader_pipeline_info(Shader_Module *module
+			      , VkPipelineShaderStageCreateInfo *dest_info)
+    {
+	*dest_info = {};
+	dest_info->sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	dest_info->stage = module->stage_bits;
+	dest_info->module = module->shader;
+	dest_info->pName = "main";
+    }
     
     extern_impl void
     init_state(State *state
@@ -668,7 +679,7 @@ namespace Vulkan_API
 	uint32 extension_count;
 	const char **extension_names = glfwGetRequiredInstanceExtensions(&extension_count);
 	const char **total_extension_buffer = (const char **)allocate_stack(sizeof(const char *) * (extension_count + 1)
-									    , 1
+									    , Alignment(1)
 									    , "vulkan_instanc_extension_names_list_allocation");
 	memcpy(total_extension_buffer, extension_names, sizeof(const char *) * extension_count);
 	total_extension_buffer[extension_count++] = VK_EXT_DEBUG_UTILS_EXTENSION_NAME;

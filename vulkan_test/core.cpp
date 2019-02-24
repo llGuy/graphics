@@ -47,7 +47,7 @@ output_debug(const char *format
 
 extern_impl void *
 allocate_stack(uint32 allocation_size
-	       , uint8 alignment
+	       , Alignment alignment
 	       , const char *name
 	       , Stack_Allocator *allocator)
 {
@@ -79,7 +79,7 @@ allocate_stack(uint32 allocation_size
     allocator->current = (void *)header;
     ++(allocator->allocation_count);
 
-    return start_address + sizeof(Stack_Allocation_Header);
+    return(start_address + sizeof(Stack_Allocation_Header));
 }
 
 extern_impl void
@@ -125,7 +125,7 @@ init_free_list_allocator_head(Free_List_Allocator *allocator = &free_list_alloca
 
 extern_impl void *
 allocate_free_list(uint32 allocation_size
-		   , uint8 alignment
+		   , Alignment alignment
 		   , const char *name
 		   , Free_List_Allocator *allocator)
 {
