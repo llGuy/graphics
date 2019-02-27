@@ -43,7 +43,6 @@ typedef uint8 byte;
 #define persist static
 #define internal static
 #define global_var static
-#define extern_impl
 
 inline constexpr uint32
 left_shift(uint32 n)
@@ -56,7 +55,7 @@ extern struct Debug_Output
     FILE *fp;
 } output_file;
 
-extern void
+void
 output_debug(const char *format
 	     , ...);
 
@@ -81,19 +80,19 @@ extern struct Stack_Allocator
     uint32 capacity;
 } stack_allocator_global;
 
-extern void *
+void *
 allocate_stack(uint32 allocation_size
 	       , Alignment alignment
 	       , const char *name = ""
 	       , Stack_Allocator *allocator = &stack_allocator_global);
 
 // only applies to the allocation at the top of the stack
-extern void
+void
 extend_stack_top(uint32 extension_size
 	     , Stack_Allocator *allocator = &stack_allocator_global);
 
 // contents in the allocation must be destroyed by the user
-extern void
+void
 pop_stack(Stack_Allocator *allocator = &stack_allocator_global);
 
 struct Free_Block_Header
@@ -120,13 +119,13 @@ extern struct Free_List_Allocator
     uint32 allocation_count = 0;
 } free_list_allocator_global;
 
-extern void *
+void *
 allocate_free_list(uint32 allocation_size
 		   , Alignment alignment
 		   , const char *name = ""
 		   , Free_List_Allocator *allocator = &free_list_allocator_global);
 
-extern void
+void
 deallocate_free_list(void *pointer
 		     , Free_List_Allocator *allocator = &free_list_allocator_global);
 
@@ -435,4 +434,11 @@ template <typename T
 	assert(false);
 	return(T());
     }
+};
+
+template <typename T>
+struct Memory_Buffer_View
+{
+    uint32 count;
+    T *buffer;
 };

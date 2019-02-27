@@ -57,23 +57,22 @@ namespace Rendering
 	dependency.dstStageMask		= VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 	dependency.dstAccessMask	= VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 
-	Vulkan_API::Render_Pass_Create_Params test_render_pass_params = {};
-	test_render_pass_params.r_attachment_description_count = 2;
-	test_render_pass_params.r_attachment_descriptions = descriptions;
-	test_render_pass_params.r_subpass_count = 1;
-	test_render_pass_params.r_subpasses = &subpass;
-	test_render_pass_params.r_dependency_count = 1;
-	test_render_pass_params.r_dependencies = &dependency;
-	test_render_pass_params.r_gpu = gpu;
+	Memory_Buffer_View<VkAttachmentDescription> descriptions_array	= {2, descriptions};
+	Memory_Buffer_View<VkSubpassDescription> subpasses_array		= {1, &subpass};
+	Memory_Buffer_View<VkSubpassDependency> dependencies_array		= {1, &dependency};
 	
-	Vulkan_API::init_render_pass(&test_render_pass_params, test_render_pass_object);
+	Vulkan_API::init_render_pass(&descriptions_array
+				     , &subpasses_array
+				     , &dependencies_array
+				     , gpu
+				     , test_render_pass_object);
     }
 
     internal void
     init_model_info(void)
     {
-	Vulkan_API::Model_Handle handle = Vulkan_API::add_vulkan_model("vulkan_model.test_model"_hash);
-	Vulkan_API::Model *model = Vulkan_API::get_vulkan_model(handle);
+	Vulkan_API::Model_Handle handle = Vulkan_API::add_model("vulkan_model.test_model"_hash);
+	Vulkan_API::Model *model = Vulkan_API::get_model(handle);
 
 	model->attribute_count = 3;
 	model->attributes_buffer = (VkVertexInputAttributeDescription *)allocate_free_list(sizeof(VkVertexInputAttributeDescription) * model->attribute_count
@@ -101,132 +100,113 @@ namespace Rendering
     init_graphics_pipeline(Vulkan_API::Swapchain *swapchain
 			   , Vulkan_API::GPU *gpu)
     {
+	// initialize graphics pipeline object in the manager
+	Vulkan_API::Graphics_Pipeline_Handle pipeline_handle = Vulkan_API::add_graphics_pipeline("pipeline.main_pipeline"_hash);
+	Vulkan_API::Graphics_Pipeline *graphics_pipeline = Vulkan_API::get_graphics_pipeline(pipeline_handle);
+	graphics_pipeline->stages = Vulkan_API::Graphics_Pipeline::Shader_Stages_Bits::VERTEX_SHADER_BIT
+	                            | Vulkan_API::Graphics_Pipeline::Shader_Stages_Bits::FRAGMENT_SHADER_BIT;
+	graphics_pipeline->base_dir_and_name = "../vulkan/shaders/";
+	graphics_pipeline->descriptor_set_layout = Vulkan_API::get_descriptor_set_layout_handle("descriptor_set_layout.test_descriptor_set_layout"_hash);
+	
 	// create shaders
 	File_Contents vsh_bytecode = read_file("../vulkan/shaders/vert.spv");
 	File_Contents fsh_bytecode = read_file("../vulkan/shaders/frag.spv");
-
-	Vulkan_API::Shader_Module vsh_module = { VK_SHADER_STAGE_VERTEX_BIT };
-	Vulkan_API::Shader_Module_Create_Params vsh_params = { VK_SHADER_STAGE_VERTEX_BIT
-							       , vsh_bytecode.size
-							       , vsh_bytecode.content
-							       , gpu};
-	Vulkan_API::init_shader(&vsh_params, &vsh_module);
 	
-	Vulkan_API::Shader_Module fsh_module = { VK_SHADER_STAGE_FRAGMENT_BIT };
-	Vulkan_API::Shader_Module_Create_Params fsh_params = { VK_SHADER_STAGE_VERTEX_BIT
-							       , fsh_bytecode.size
-							       , fsh_bytecode.content
-							       , gpu};
-	Vulkan_API::init_shader(&fsh_params, &fsh_module);
+	VkShaderModule vsh_module;
+	Vulkan_API::init_shader(VK_SHADER_STAGE_VERTEX_BIT, vsh_bytecode.size, vsh_bytecode.content, gpu, &vsh_module);
+	
+	VkShaderModule fsh_module;
+	Vulkan_API::init_shader(VK_SHADER_STAGE_FRAGMENT_BIT, fsh_bytecode.size, fsh_bytecode.content, gpu, &fsh_module);
 
 	VkPipelineShaderStageCreateInfo module_infos[2] = {};
-	Vulkan_API::init_shader_pipeline_info(&vsh_module, &module_infos[0]);
-	Vulkan_API::init_shader_pipeline_info(&fsh_module, &module_infos[1]);
+	Vulkan_API::init_shader_pipeline_info(&vsh_module, VK_SHADER_STAGE_VERTEX_BIT, &module_infos[0]);
+	Vulkan_API::init_shader_pipeline_info(&fsh_module, VK_SHADER_STAGE_FRAGMENT_BIT, &module_infos[1]);
 
-	// create vertex input info
-	VkPipelineVertexInputStateCreateInfo vertex_input = {};
-	Vulkan_API::Model_Handle vulkan_model_handle = Vulkan_API::get_vulkan_model_handle("vulkan_model.test_model"_hash);
-	Vulkan_API::Model *model = Vulkan_API::get_vulkan_model(vulkan_model_handle);
-	model->create_vertex_input_state_info(&vertex_input);
+	// init vertex input stuff
+	Vulkan_API::Model_Handle model_handle = Vulkan_API::get_model_handle("vulkan_model.test_model"_hash);
+	Vulkan_API::Model *model = Vulkan_API::get_model(model_handle);
+	VkPipelineVertexInputStateCreateInfo vertex_input_info = {};
+	Vulkan_API::init_pipeline_vertex_input_info(model, &vertex_input_info);
 
-	// create input assembly
-	VkPipelineInputAssemblyStateCreateInfo input_assembly	= {};
-	input_assembly.sType					= VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-	input_assembly.topology					= VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-	input_assembly.primitiveRestartEnable			= VK_FALSE;
+	// init assembly info
+	VkPipelineInputAssemblyStateCreateInfo assembly_info = {};
+	Vulkan_API::init_pipeline_input_assembly_info(0, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_FALSE, &assembly_info);
 
-	// viewport
-	VkViewport viewport	= {};
-	viewport.x		= 0.0f;
-	viewport.y		= 0.0f;
-	viewport.width		= (float32)swapchain->extent.width;
-	viewport.height		= (float32)swapchain->extent.height;
-	viewport.minDepth	= 0.0f;
-	viewport.maxDepth	= 1.0f;
+	// init viewport info
+	VkViewport viewport = {};
+	Vulkan_API::init_viewport(swapchain->extent.width, swapchain->extent.height, 0.0f, 1.0f, &viewport);
+	VkRect2D scissor = {};
+	Vulkan_API::init_rect_2D(VkOffset2D{}, swapchain->extent, &scissor);
 
-	VkRect2D scissor	= {};
-	scissor.offset		= {0, 0};
-	scissor.extent		= swapchain->extent;
+	VkPipelineViewportStateCreateInfo viewport_info = {};
+	Memory_Buffer_View<VkViewport> viewports = {1, &viewport};
+	Memory_Buffer_View<VkRect2D>   scissors = {1, &scissor};
+	Vulkan_API::init_pipeline_viewport_info(&viewports, &scissors, &viewport_info);
 
-	VkPipelineViewportStateCreateInfo viewport_info	= {};
-	viewport_info.sType				= VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-	viewport_info.viewportCount			= 1;
-	viewport_info.pViewports			= &viewport;
-	viewport_info.scissorCount			= 1;
-	viewport_info.pScissors				= &scissor;
+	// init rasterization info
+	VkPipelineRasterizationStateCreateInfo rasterization_info = {};
+	Vulkan_API::init_pipeline_rasterization_info(VK_POLYGON_MODE_FILL, VK_CULL_MODE_BACK_BIT, 1.0f, 0, &rasterization_info);
 
-	// rasterizer
-	VkPipelineRasterizationStateCreateInfo rasterizer	= {};
-	rasterizer.sType					= VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;    
-	rasterizer.depthClampEnable				= VK_FALSE;
-	rasterizer.rasterizerDiscardEnable			= VK_FALSE;
-	rasterizer.polygonMode					= VK_POLYGON_MODE_FILL;
-	rasterizer.lineWidth					= 1.0f;
-	rasterizer.cullMode					= VK_CULL_MODE_BACK_BIT;
-	rasterizer.frontFace					= VK_FRONT_FACE_COUNTER_CLOCKWISE;
-	rasterizer.depthBiasEnable				= VK_FALSE;
-	rasterizer.depthBiasConstantFactor			= 0.0f;
-	rasterizer.depthBiasClamp				= 0.0f;
-	rasterizer.depthBiasSlopeFactor				= 0.0f;
+	// init multisample info
+	VkPipelineMultisampleStateCreateInfo multisample_info = {};
+	Vulkan_API::init_pipeline_multisampling_info(VK_SAMPLE_COUNT_1_BIT, 0, &multisample_info);
 
-	// multisampling
-	VkPipelineMultisampleStateCreateInfo multisampling	= {};
-	multisampling.sType					= VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-	multisampling.sampleShadingEnable			= VK_FALSE;
-	multisampling.rasterizationSamples			= VK_SAMPLE_COUNT_1_BIT;
-	multisampling.minSampleShading				= 1.0f;
-	multisampling.pSampleMask				= nullptr;
-	multisampling.alphaToCoverageEnable			= VK_FALSE;
-	multisampling.alphaToOneEnable				= VK_FALSE;
+	// init blending info
+	VkPipelineColorBlendAttachmentState blend_attachment = {};
+	Vulkan_API::init_blend_state_attachment(VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT
+						, VK_FALSE
+						, VK_BLEND_FACTOR_ONE
+						, VK_BLEND_FACTOR_ZERO
+						, VK_BLEND_OP_ADD
+						, VK_BLEND_FACTOR_ONE
+						, VK_BLEND_FACTOR_ZERO
+						, VK_BLEND_OP_ADD
+						, &blend_attachment);
+	VkPipelineColorBlendStateCreateInfo blending_info = {};
+	Memory_Buffer_View<VkPipelineColorBlendAttachmentState> blend_attachments = {1, &blend_attachment};
+	Vulkan_API::init_pipeline_blending_info(VK_FALSE, VK_LOGIC_OP_COPY, &blend_attachments, &blending_info);
 
-	// blending
-	VkPipelineColorBlendAttachmentState color_blend_attachment = {};
-	color_blend_attachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-	color_blend_attachment.blendEnable = VK_FALSE; 
-	color_blend_attachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;  // VK_BLEND_FACTOR_SRC_ALPHA
-	color_blend_attachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO; // VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA
-	color_blend_attachment.colorBlendOp = VK_BLEND_OP_ADD;
-	color_blend_attachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-	color_blend_attachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-	color_blend_attachment.alphaBlendOp = VK_BLEND_OP_ADD;
-
-	VkPipelineColorBlendStateCreateInfo color_blending	= {};
-	color_blending.sType					= VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-	color_blending.logicOpEnable				= VK_FALSE;
-	color_blending.logicOp					= VK_LOGIC_OP_COPY;
-	color_blending.attachmentCount				= 1;
-	color_blending.pAttachments				= &color_blend_attachment;
-	color_blending.blendConstants[0]			= 0.0f;
-	color_blending.blendConstants[1]			= 0.0f;
-	color_blending.blendConstants[2]			= 0.0f;
-	color_blending.blendConstants[3]			= 0.0f;
-
-	// dynamic states
+	// init dynamic states info
 	VkDynamicState dynamic_states[]
 	{
 	    VK_DYNAMIC_STATE_VIEWPORT,
 	    VK_DYNAMIC_STATE_LINE_WIDTH
 	};
-	VkPipelineDynamicStateCreateInfo dynamic_state = {};
-	dynamic_state.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-	dynamic_state.dynamicStateCount = 2;
-	dynamic_state.pDynamicStates = dynamic_states;
+	Memory_Buffer_View<VkDynamicState> dynamic_states_ptr = {2, dynamic_states};
+	VkPipelineDynamicStateCreateInfo dynamic_info = {};
+	Vulkan_API::init_pipeline_dynamic_states_info(&dynamic_states_ptr, &dynamic_info);
 
-	// layout
-	// get test pipeline descriptor set layout
-	Vulkan_API::Descriptor_Set_Handle descriptor_handle = Vulkan_API::get_descriptor_set_layout_handle("descriptor_set_layout.test_descriptor_set_layout"_hash);
-	VkDescriptorSetLayout *descriptor_set_layout = Vulkan_API::get_descriptor_set_layout(descriptor_handle);
-	
-	VkPipelineLayoutCreateInfo pipeline_layout_info = {};
-	pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	pipeline_layout_info.setLayoutCount = 1;
-	pipeline_layout_info.pSetLayouts = descriptor_set_layout;
-	pipeline_layout_info.pushConstantRangeCount = 0;
-	pipeline_layout_info.pPushConstantRanges = nullptr;
+	// init pipeline layout
+	VkDescriptorSetLayout *descriptor_set_layout = Vulkan_API::get_descriptor_set_layout(graphics_pipeline->descriptor_set_layout);
+	Memory_Buffer_View<VkDescriptorSetLayout> layouts = {1, descriptor_set_layout};
+	Memory_Buffer_View<VkPushConstantRange> ranges = {0, nullptr};
+	Vulkan_API::init_pipeline_layout(&layouts, &ranges, gpu, &graphics_pipeline->layout);
 
-	// pipeline needs pipeline layout
-	VkPipelineLayout pipeline_layout;
-	VK_CHECK(vkCreatePipelineLayout(gpu->logical_device, &pipeline_layout_info, nullptr, &pipeline_layout));
+	// init depth stencil info
+	VkPipelineDepthStencilStateCreateInfo depth_stencil_info = {};
+	Vulkan_API::init_pipeline_depth_stencil_info(VK_TRUE, VK_TRUE, 0.0f, 1.0f, VK_FALSE, &depth_stencil_info);
+
+	// init pipeline object
+	Vulkan_API::Render_Pass_Handle render_pass_handle = Vulkan_API::get_render_pass_handle("render_pass.test_render_pass"_hash);
+	Vulkan_API::Render_Pass *render_pass = Vulkan_API::get_render_pass(render_pass_handle);
+	Memory_Buffer_View<VkPipelineShaderStageCreateInfo> modules = {2, module_infos};
+	Vulkan_API::init_graphics_pipeline(&modules
+					   , &vertex_input_info
+					   , &assembly_info
+					   , &viewport_info
+					   , &rasterization_info
+					   , &multisample_info
+					   , &blending_info
+					   , nullptr
+					   , &depth_stencil_info
+					   , &graphics_pipeline->layout
+					   , render_pass
+					   , 0
+					   , gpu
+					   , &graphics_pipeline->pipeline);
+
+	vkDestroyShaderModule(gpu->logical_device, vsh_module, nullptr);
+	vkDestroyShaderModule(gpu->logical_device, fsh_module, nullptr);
     }
     
     internal void
@@ -260,7 +240,7 @@ namespace Rendering
 	VK_CHECK(vkCreateDescriptorSetLayout(gpu->logical_device, &layout_info, nullptr, layout));
     }
     
-    extern_impl void
+    void
     init_rendering_state(Vulkan_API::State *vulkan_state
 			 , Rendering_Objects_Handle_Cache *cache)
     {
@@ -268,9 +248,14 @@ namespace Rendering
 			      , &vulkan_state->gpu);
 	
 	init_descriptor_set_layout(&vulkan_state->gpu);
+
+	init_model_info();
+
+	init_graphics_pipeline(&vulkan_state->swapchain, &vulkan_state->gpu);
 	
 	cache->test_render_pass = Vulkan_API::get_render_pass_handle("render_pass.test_render_pass"_hash);
 	cache->descriptor_set_layout = Vulkan_API::get_descriptor_set_layout_handle("descriptor_set_layout.test_descriptor_set_layout"_hash);
+	cache->graphics_pipeline = Vulkan_API::get_graphics_pipeline_handle("pipeline.main_pipeline"_hash);
     }
 
 }

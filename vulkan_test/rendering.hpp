@@ -17,9 +17,10 @@ namespace Rendering
     {
 	Vulkan_API::Render_Pass_Handle test_render_pass;
 	Vulkan_API::Descriptor_Set_Layout_Handle descriptor_set_layout;
+	Vulkan_API::Graphics_Pipeline_Handle graphics_pipeline;
     };
     
-    extern void
+    void
     init_rendering_state(Vulkan_API::State *vulkan_state
 			 , Rendering_Objects_Handle_Cache *cache);
 

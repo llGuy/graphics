@@ -7,46 +7,57 @@
 namespace Vulkan_API
 {
 
-    extern Buffer_Handle
+    Buffer_Handle
     add_buffer(const Constant_String &string);
 
-    extern Buffer_Handle
+    Buffer_Handle
     get_buffer_handle(const Constant_String &string);
     
-    extern Vulkan_API::Buffer *
+    Vulkan_API::Buffer *
     get_buffer(Buffer_Handle handle);
 
     
 
-    extern Render_Pass_Handle
+    Render_Pass_Handle
     add_render_pass(const Constant_String &string);
 
-    extern Render_Pass_Handle
+    Render_Pass_Handle
     get_render_pass_handle(const Constant_String &string);
 	
-    extern Vulkan_API::Render_Pass *
+    Vulkan_API::Render_Pass *
     get_render_pass(Render_Pass_Handle handle);
 
     
     
-    extern Descriptor_Set_Layout_Handle
+    Descriptor_Set_Layout_Handle
     add_descriptor_set_layout(const Constant_String &string);
 
-    extern Descriptor_Set_Layout_Handle
+    Descriptor_Set_Layout_Handle
     get_descriptor_set_layout_handle(const Constant_String &string);
 	
-    extern VkDescriptorSetLayout *
+    VkDescriptorSetLayout *
     get_descriptor_set_layout(Descriptor_Set_Layout_Handle handle);
 
 
 
-    extern Model_Handle
-    add_vulkan_model(const Constant_String &string);
+    Model_Handle
+    add_model(const Constant_String &string);
 
-    extern Model_Handle
-    get_vulkan_model_handle(const Constant_String &string);
+    Model_Handle
+    get_model_handle(const Constant_String &string);
     
-    extern Model *
-    get_vulkan_model(Model_Handle handle);
+    Model *
+    get_model(Model_Handle handle);
+
+
+
+    Graphics_Pipeline_Handle
+    add_graphics_pipeline(const Constant_String &string);
+
+    Graphics_Pipeline_Handle
+    get_graphics_pipeline_handle(const Constant_String &string);
+    
+    Graphics_Pipeline *
+    get_graphics_pipeline(Graphics_Pipeline_Handle handle);
 
 }

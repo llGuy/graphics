@@ -16,9 +16,9 @@
 #include <glm/gtx/transform.hpp>
 
 // TODO(luc) : remove these globals in the future when ported to the new system
-extern_impl Vulkan_State vk = {};
-extern_impl Vulkan_API::State vulkan_state = {};
-extern_impl Rendering::Rendering_Objects_Handle_Cache rendering_objects = {};
+Vulkan_State vk = {};
+Vulkan_API::State vulkan_state = {};
+Rendering::Rendering_Objects_Handle_Cache rendering_objects = {};
 
 internal constexpr uint32 required_device_extension_count = 1;
 internal const char *required_physical_device_extensions[required_device_extension_count]
@@ -1265,7 +1265,7 @@ init_sync(void)
     }
 }
 
-extern_impl void
+void
 init_vk(GLFWwindow *window)
 {
     Vulkan_API::init_state(&vulkan_state
@@ -1335,7 +1335,7 @@ update_ubo(uint32 current_image)
 
 internal uint32 current_frame = 0;
 
-extern_impl void
+void
 draw_frame(void)
 {
     vkWaitForFences(vulkan_state.gpu.logical_device
@@ -1413,13 +1413,13 @@ draw_frame(void)
     current_frame = (current_frame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
-extern_impl void
+void
 recreate(void)
 {
     
 }
 
-extern_impl void
+void
 destroy_vk(void)
 {
     vkDestroyPipeline(vulkan_state.gpu.logical_device, vk.graphics_pipeline, nullptr);

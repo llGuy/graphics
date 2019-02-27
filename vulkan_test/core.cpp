@@ -8,10 +8,10 @@
 #define DEBUG_FILE ".debug"
 
 #define STACK_ALLOCATOR_GLOBAL_SIZE 0xffff
-extern_impl Stack_Allocator stack_allocator_global;
-extern_impl Debug_Output output_file;
-extern_impl GLFWwindow *window;
-extern_impl Free_List_Allocator free_list_allocator_global;
+Stack_Allocator stack_allocator_global;
+Debug_Output output_file;
+GLFWwindow *window;
+Free_List_Allocator free_list_allocator_global;
 
 internal bool running;
 
@@ -45,7 +45,7 @@ output_debug(const char *format
     fflush(output_file.fp);
 }
 
-extern_impl void *
+void *
 allocate_stack(uint32 allocation_size
 	       , Alignment alignment
 	       , const char *name
@@ -82,7 +82,7 @@ allocate_stack(uint32 allocation_size
     return(start_address + sizeof(Stack_Allocation_Header));
 }
 
-extern_impl void
+void
 extend_stack_top(uint32 extension_size
 	       , Stack_Allocator *allocator)
 {
@@ -90,7 +90,7 @@ extend_stack_top(uint32 extension_size
     current_header->size += extension_size;
 }
 
-extern_impl void
+void
 pop_stack(Stack_Allocator *allocator)
 {
     Stack_Allocation_Header *current_header = (Stack_Allocation_Header *)allocator->current;
@@ -123,7 +123,7 @@ init_free_list_allocator_head(Free_List_Allocator *allocator = &free_list_alloca
     allocator->free_block_head->free_block_size = allocator->available_bytes;
 }
 
-extern_impl void *
+void *
 allocate_free_list(uint32 allocation_size
 		   , Alignment alignment
 		   , const char *name
@@ -173,7 +173,7 @@ allocate_free_list(uint32 allocation_size
 }
 
 // TODO(luc) : optimize free list allocator so that all the blocks are stored in order
-extern_impl void
+void
 deallocate_free_list(void *pointer
 		     , Free_List_Allocator *allocator)
 {

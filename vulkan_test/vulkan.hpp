@@ -5,7 +5,6 @@
 #include <vulkan/vulkan.h>
 #include "vulkan_handles.hpp"
 
-// struct data with "r_" are required, data with "o_" are optional
 namespace Vulkan_API
 {
     
@@ -52,16 +51,11 @@ namespace Vulkan_API
     {
 
 	// allocates memory for stuff like buffers and images
-	struct Allocate_GPU_Memory_Params
-	{
-	    GPU *r_gpu;
-	    VkDeviceSize r_allocation_size;
-	    VkMemoryPropertyFlags r_properties;
-	    VkMemoryRequirements r_memory_requirements;
-	};
-
-	extern void
-	allocate_gpu_memory(Allocate_GPU_Memory_Params *params
+	void
+	allocate_gpu_memory(VkDeviceSize allocation_size
+			    , VkMemoryPropertyFlags properties
+			    , VkMemoryRequirements memory_requirements
+			    , GPU *gpu
 			    , VkDeviceMemory *dest_memory);
     }
 
@@ -72,15 +66,10 @@ namespace Vulkan_API
 	VkDeviceSize buffer_size;
     };
 
-    struct Create_Buffer_Params
-    {
-	VkDeviceSize r_buffer_size;
-	VkBufferUsageFlags r_usage;
-	VkSharingMode r_sharing_mode;
-    };
-
-    extern void
-    create_buffer(Create_Buffer_Params *params
+    void
+    create_buffer(VkDeviceSize buffer_size
+		  , VkBufferUsageFlags usage
+		  , VkSharingMode sharing_mode
 		  , Buffer *dest_buffer);
 
     struct Texture
@@ -90,32 +79,23 @@ namespace Vulkan_API
 	// optional : ex: swapchain images won't store the VkDeviceMemory objects in the Image struct
 	VkDeviceMemory memory;
     };
-
-    struct Create_Image_Params
-    {
-	uint32 r_width, r_height;
-	VkFormat r_format;
-	VkImageTiling r_tiling;
-	VkImageUsageFlags r_usage;
-	VkMemoryPropertyFlags r_properties;
-	GPU *r_gpu;
-    };
     
-    extern void
-    init_image(Create_Image_Params *params
-		 , VkImage *dest_image);
+    void
+    init_image(uint32 width
+	       , uint32 height
+	       , VkFormat format
+	       , VkImageTiling tiling
+	       , VkImageUsageFlags usage
+	       , VkMemoryPropertyFlags properties
+	       , GPU *gpu
+	       , VkImage *dest_image);
 
-    struct Create_Image_View_Params
-    {
-	VkImage *r_image;
-	VkFormat r_format;
-	VkImageAspectFlags r_aspect_flags;
-	GPU *r_gpu;
-    };
-
-    extern void
-    init_image_view(Create_Image_View_Params *params
-		      , VkImageView *dest_image_view);
+    void
+    init_image_view(VkImage *image
+		    , VkFormat format
+		    , VkImageAspectFlags aspect_flags
+		    , GPU *gpu
+		    , VkImageView *dest_image_view);
 
     struct Swapchain
     {
@@ -138,43 +118,18 @@ namespace Vulkan_API
 	uint32 subpass_count;
     };
     
-    struct Render_Pass_Create_Params
-    {
-	uint32 r_attachment_description_count;
-	VkAttachmentDescription *r_attachment_descriptions;
-	uint32 r_subpass_count;
-	VkSubpassDescription *r_subpasses;
-	uint32 r_dependency_count;
-	VkSubpassDependency *r_dependencies;
-
-	GPU *r_gpu;
-    };
-    
-    extern void
-    init_render_pass(Render_Pass_Create_Params *params
+    void
+    init_render_pass(Memory_Buffer_View<VkAttachmentDescription> *attachment_descriptions
+		     , Memory_Buffer_View<VkSubpassDescription> *subpass_descriptions
+		     , Memory_Buffer_View<VkSubpassDependency> *subpass_dependencies
+		     , GPU *gpu
 		     , Render_Pass *dest_render_pass);
-
-    struct Shader_Module_Create_Params
-    {
-	VkShaderStageFlagBits r_stage_bits;
-	uint32 r_content_size;
-	byte *r_file_contents;
-	GPU *r_gpu;
-    };
-    
-    struct Shader_Module
-    {
-	VkShaderStageFlagBits stage_bits;
-	VkShaderModule shader;
-    };
-
-    extern void
-    init_shader(Shader_Module_Create_Params *params
-		, Shader_Module *dest_shader_module);
-
-    extern void
-    init_shader_pipeline_info(Shader_Module *module
-			      , VkPipelineShaderStageCreateInfo *dest_info);
+    void
+    init_shader(VkShaderStageFlagBits stage_bits
+		, uint32 content_size
+		, byte *file_contents
+		, GPU *gpu
+		, VkShaderModule *dest_shader_module);
 
     // describes the binding of a buffer to a model VAO
     struct Model_Binding
@@ -255,59 +210,213 @@ namespace Vulkan_API
 
     struct Graphics_Pipeline
     {
-	enum Shader_Stages_Bits { VERTEX_SHADER_BIT = 1 << 0
-				  , GEOMETRY_SHADER_BIT = 1 << 1
-				  , TESSELATION_SHADER_BIT = 1 << 2
-				  , FRAGMENT_SHADER = 1 << 3};
+	enum Shader_Stages_Bits : int32 { VERTEX_SHADER_BIT = 1 << 0
+					  , GEOMETRY_SHADER_BIT = 1 << 1
+					  , TESSELATION_SHADER_BIT = 1 << 2
+					  , FRAGMENT_SHADER_BIT = 1 << 3};
 
-	Shader_Stages_Bits stages;
-	// "[some_dir]/[name]_[vert/frag/tess/geom].spv"
+	int32 stages;
+	// "[some_dir]/[name]_"
 	const char *base_dir_and_name;
 
 	Vulkan_API::Descriptor_Set_Layout_Handle descriptor_set_layout;
+	
 	VkPipelineLayout layout;
+
+	VkPipeline pipeline;
     };
 
     // creating pipelines takes a LOT of params
-    extern void
-    init_pipeline_vertex_input_info(Model *model /* model contains input information required */
-				    , VkPipelineVertexInputStateCreateInfo *info);
-
-    struct Input_Assembly_Create_Params
+    internal inline void
+    init_shader_pipeline_info(VkShaderModule *module
+			      , VkShaderStageFlagBits stage_bits
+			      , VkPipelineShaderStageCreateInfo *dest_info)
     {
-	// maybe for future use?
-	VkPipelineInputAssemblyStateCreateFlags flags;
-	VkPrimitiveTopology topology;
-	VkBool32 primitive_restart;
-    };
+	dest_info->sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	dest_info->stage = stage_bits;
+	dest_info->module = *module;
+	dest_info->pName = "main";	
+    }
     
-    extern void
-    init_pipeline_input_assembly_info(Input_Assembly_Create_Params *params
-				      , VkPipelineInputAssemblyStateCreateInfo *info);
+    internal inline void
+    init_pipeline_vertex_input_info(Model *model /* model contains input information required */
+				    , VkPipelineVertexInputStateCreateInfo *info)
+    {
+	model->create_vertex_input_state_info(info);
+    }
+    
+    internal inline void
+    init_pipeline_input_assembly_info(VkPipelineInputAssemblyStateCreateFlags flags
+				      , VkPrimitiveTopology topology
+				      , VkBool32 primitive_restart
+				      , VkPipelineInputAssemblyStateCreateInfo *info)
+    {
+	info->sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+	info->topology = topology;
+	info->primitiveRestartEnable = primitive_restart;
+    }
 
-    extern void
-    init_pipeline_viewport_info();
+    internal inline void
+    init_viewport(uint32 width
+		  , uint32 height
+		  , float32 min_depth
+		  , float32 max_depth
+		  , VkViewport *viewport)
+    {
+	viewport->x = 0.0f;
+	viewport->y = 0.0f;
+	viewport->width = (float32)width;
+	viewport->height = (float32)height;
+	viewport->minDepth = min_depth;
+	viewport->maxDepth = max_depth;
+    }
 
-    extern void
-    init_pipeline_rasterization_info();
+    internal inline void
+    init_rect_2D(VkOffset2D offset
+		 , VkExtent2D extent
+		 , VkRect2D *rect)
+    {
+	rect->offset = offset;
+	rect->extent = extent;
+    }
+    
+    internal inline void
+    init_pipeline_viewport_info(Memory_Buffer_View<VkViewport> *viewports
+				, Memory_Buffer_View<VkRect2D> *scissors
+				, VkPipelineViewportStateCreateInfo *info)
+    {
+	info->sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+	info->viewportCount = viewports->count;
+	info->pViewports = viewports->buffer;
+	info->scissorCount = scissors->count;
+	info->pScissors = scissors->buffer;;
+    }
+				
+    
+    internal inline void
+    init_pipeline_rasterization_info(VkPolygonMode polygon_mode
+				     , VkCullModeFlags cull_flags
+				     , float32 line_width
+				     , VkPipelineRasterizationStateCreateFlags flags
+				     , VkPipelineRasterizationStateCreateInfo *info)
+    {
+	info->sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+	info->depthClampEnable = VK_FALSE;
+	info->rasterizerDiscardEnable = VK_FALSE;
+	info->polygonMode = polygon_mode;
+	info->lineWidth = line_width;
+	info->cullMode = cull_flags;
+	info->frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+	info->depthBiasEnable = VK_FALSE;
+	info->depthBiasConstantFactor = 0.0f;
+	info->depthBiasClamp = 0.0f;
+	info->depthBiasSlopeFactor = 0.0f;
+	info->flags = flags;
+    }
+    
+    internal inline void
+    init_pipeline_multisampling_info(VkSampleCountFlagBits rasterization_samples
+				     , VkPipelineMultisampleStateCreateFlags flags
+				     , VkPipelineMultisampleStateCreateInfo *info)
+    {
+	info->sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+	info->sampleShadingEnable = VK_FALSE;
+	info->rasterizationSamples = rasterization_samples;
+	info->minSampleShading = 1.0f;
+	info->pSampleMask = nullptr;
+	info->alphaToCoverageEnable = VK_FALSE;
+	info->alphaToOneEnable = VK_FALSE;
+	info->flags = flags;
+    }
 
-    extern void
-    init_pipeline_multisampling_info();
+    internal inline void
+    init_blend_state_attachment(VkColorComponentFlags color_write_flags
+				, VkBool32 enable_blend
+				, VkBlendFactor src_color
+				, VkBlendFactor dst_color
+				, VkBlendOp color_op
+				, VkBlendFactor src_alpha
+				, VkBlendFactor dst_alpha
+				, VkBlendOp alpha_op
+				, VkPipelineColorBlendAttachmentState *attachment)
+    {
+	attachment->colorWriteMask = color_write_flags;
+	attachment->blendEnable = enable_blend;
+	attachment->srcColorBlendFactor = src_color;
+	attachment->dstColorBlendFactor = dst_color;
+	attachment->colorBlendOp = color_op;
+	attachment->srcAlphaBlendFactor = src_alpha;
+	attachment->dstAlphaBlendFactor = dst_alpha;
+	attachment->alphaBlendOp = alpha_op;
+    }
+    
+    internal inline void
+    init_pipeline_blending_info(VkBool32 enable_logic_op
+				, VkLogicOp logic_op
+				, Memory_Buffer_View<VkPipelineColorBlendAttachmentState> *states
+				, VkPipelineColorBlendStateCreateInfo *info)
+    {
+	info->sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+	info->logicOpEnable = enable_logic_op;
+	info->logicOp = logic_op;
+	info->attachmentCount = states->count;
+	info->pAttachments = states->buffer;
+	info->blendConstants[0] = 0.0f;
+	info->blendConstants[1] = 0.0f;
+	info->blendConstants[2] = 0.0f;
+	info->blendConstants[3] = 0.0f;
+    }
 
-    extern void
-    init_pipeline_blending_info();
+    internal inline void
+    init_pipeline_dynamic_states_info(Memory_Buffer_View<VkDynamicState> *dynamic_states
+				      , VkPipelineDynamicStateCreateInfo *info)
+    {
+	info->sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+	info->dynamicStateCount = dynamic_states->count;
+	info->pDynamicStates = dynamic_states->buffer;
+    }
 
-    extern void
-    init_pipeline_dynamic_states_info();
+    void
+    init_pipeline_layout(Memory_Buffer_View<VkDescriptorSetLayout> *layouts
+			 , Memory_Buffer_View<VkPushConstantRange> *ranges
+			 , GPU *gpu
+			 , VkPipelineLayout *pipeline_layout);
 
-    extern void
-    init_pipeline_layout_info();
+    internal inline void
+    init_pipeline_depth_stencil_info(VkBool32 depth_test_enable
+				     , VkBool32 depth_write_enable
+				     , float32 min_depth_bounds
+				     , float32 max_depth_bounds
+				     , VkBool32 stencil_enable
+				     , VkPipelineDepthStencilStateCreateInfo *info)
+    {
+	info->sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+	info->depthTestEnable = depth_test_enable;
+	info->depthWriteEnable = depth_write_enable;
+	info->depthCompareOp = VK_COMPARE_OP_LESS;
+	info->depthBoundsTestEnable = VK_FALSE;
+	info->minDepthBounds = min_depth_bounds;
+	info->maxDepthBounds = max_depth_bounds;
+	info->stencilTestEnable = VK_FALSE;
+	info->front = {};
+	info->back = {};
+    }
 
-    extern void
-    init_pipeline_depth_stencil_info();
-
-    extern void
-    init_graphics_pipeline( /* ... */ );
+    void
+    init_graphics_pipeline(Memory_Buffer_View<VkPipelineShaderStageCreateInfo> *shaders
+			   , VkPipelineVertexInputStateCreateInfo *vertex_input_info
+			   , VkPipelineInputAssemblyStateCreateInfo *input_assembly_info
+			   , VkPipelineViewportStateCreateInfo *viewport_info
+			   , VkPipelineRasterizationStateCreateInfo *rasterization_info
+			   , VkPipelineMultisampleStateCreateInfo *multisample_info
+			   , VkPipelineColorBlendStateCreateInfo *blend_info
+			   , VkPipelineDynamicStateCreateInfo *dynamic_state_info
+			   , VkPipelineDepthStencilStateCreateInfo *depth_stencil_info
+			   , VkPipelineLayout *layout
+			   , Render_Pass *render_pass
+			   , uint32 subpass
+			   , GPU *gpu
+			   , VkPipeline *pipeline);
     
     struct State
     {
@@ -319,7 +428,7 @@ namespace Vulkan_API
     };
 
     /* entry point for vulkan stuff */
-    extern void
+    void
     init_state(State *state
 	       , GLFWwindow *window);
 

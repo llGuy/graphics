@@ -36,18 +36,21 @@ namespace Vulkan_API
 	    return(0);
 	}
 	
-	extern_impl void
-	allocate_gpu_memory(Allocate_GPU_Memory_Params *params
+	void
+	allocate_gpu_memory(VkDeviceSize allocation_size
+			    , VkMemoryPropertyFlags properties
+			    , VkMemoryRequirements memory_requirements
+			    , GPU *gpu
 			    , VkDeviceMemory *dest_memory)
 	{
 	    VkMemoryAllocateInfo alloc_info = {};
 	    alloc_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-	    alloc_info.allocationSize = params->r_allocation_size;
-	    alloc_info.memoryTypeIndex = find_memory_type_according_to_requirements(params->r_gpu
-										    , params->r_properties
-										    , params->r_memory_requirements);
+	    alloc_info.allocationSize = allocation_size;
+	    alloc_info.memoryTypeIndex = find_memory_type_according_to_requirements(gpu
+										    , properties
+										    , memory_requirements);
 
-	    VK_CHECK(vkAllocateMemory(params->r_gpu->logical_device
+	    VK_CHECK(vkAllocateMemory(gpu->logical_device
 				      , &alloc_info
 				      , nullptr
 				      , dest_memory));
@@ -476,22 +479,25 @@ namespace Vulkan_API
 	}
     }
 
-    extern_impl void
-    init_image_view(Create_Image_View_Params *params
-		      , VkImageView *dest_image_view)
+    void
+    init_image_view(VkImage *image
+		    , VkFormat format
+		    , VkImageAspectFlags aspect_flags
+		    , GPU *gpu
+		    , VkImageView *dest_image_view)
     {
 	VkImageViewCreateInfo view_info			= {};
 	view_info.sType					= VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-	view_info.image					= *params->r_image;
+	view_info.image					= *image;
 	view_info.viewType				= VK_IMAGE_VIEW_TYPE_2D;
-	view_info.format				= params->r_format;
-	view_info.subresourceRange.aspectMask		= params->r_aspect_flags;
+	view_info.format				= format;
+	view_info.subresourceRange.aspectMask		= aspect_flags;
 	view_info.subresourceRange.baseMipLevel		= 0;
 	view_info.subresourceRange.levelCount		= 1;
 	view_info.subresourceRange.baseArrayLayer	= 0;
 	view_info.subresourceRange.layerCount		= 1;
 
-	VK_CHECK(vkCreateImageView(params->r_gpu->logical_device, &view_info, nullptr, dest_image_view));
+	VK_CHECK(vkCreateImageView(gpu->logical_device, &view_info, nullptr, dest_image_view));
     }
 
     internal void
@@ -564,30 +570,32 @@ namespace Vulkan_API
 		 ; i < image_count
 		 ; ++i)
 	{
-	    Create_Image_View_Params image_view_params = {};
-	    image_view_params.r_image = &swapchain->images[i];
-	    image_view_params.r_format = swapchain->format;
-	    image_view_params.r_aspect_flags = VK_IMAGE_ASPECT_COLOR_BIT;
-	    image_view_params.r_gpu = gpu;
-	    init_image_view(&image_view_params, &swapchain->image_views[i]);
+	    init_image_view(&swapchain->images[i]
+			    , swapchain->format
+			    , VK_IMAGE_ASPECT_COLOR_BIT
+			    , gpu
+			    , &swapchain->image_views[i]);
 	}
     }
     
-    extern_impl void
-    init_render_pass(Render_Pass_Create_Params *params
+    void
+    init_render_pass(Memory_Buffer_View<VkAttachmentDescription> *attachment_descriptions
+		     , Memory_Buffer_View<VkSubpassDescription> *subpass_descriptions
+		     , Memory_Buffer_View<VkSubpassDependency> *subpass_dependencies
+		     , GPU *gpu
 		     , Render_Pass *dest_render_pass)
     {
 	VkRenderPassCreateInfo render_pass_info	= {};
 	render_pass_info.sType			= VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-	render_pass_info.attachmentCount	= params->r_attachment_description_count;
-	render_pass_info.pAttachments		= params->r_attachment_descriptions;
-	render_pass_info.subpassCount		= params->r_subpass_count;
-	render_pass_info.pSubpasses		= params->r_subpasses;
-	render_pass_info.dependencyCount	= params->r_dependency_count;
-	render_pass_info.pDependencies		= params->r_dependencies;
+	render_pass_info.attachmentCount	= attachment_descriptions->count;
+	render_pass_info.pAttachments		= attachment_descriptions->buffer;
+	render_pass_info.subpassCount		= subpass_descriptions->count;
+	render_pass_info.pSubpasses		= subpass_descriptions->buffer;
+	render_pass_info.dependencyCount	= subpass_dependencies->count;
+	render_pass_info.pDependencies		= subpass_dependencies->buffer;
 
-	VK_CHECK(vkCreateRenderPass(params->r_gpu->logical_device, &render_pass_info, nullptr, &dest_render_pass->render_pass));
-	dest_render_pass->subpass_count = params->r_subpass_count;
+	VK_CHECK(vkCreateRenderPass(gpu->logical_device, &render_pass_info, nullptr, &dest_render_pass->render_pass));
+	dest_render_pass->subpass_count = subpass_descriptions->count;
     }
 
     // find gpu supported depth format
@@ -635,35 +643,89 @@ namespace Vulkan_API
 								, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
 								, gpu);
     }
-
-    extern_impl void
-    init_shader(Shader_Module_Create_Params *params
-		, Shader_Module *dest_shader_module)
+    
+    void
+    init_shader(VkShaderStageFlagBits stage_bits
+		, uint32 content_size
+		, byte *file_contents
+		, GPU *gpu
+		, VkShaderModule *dest_shader_module)
     {
 	VkShaderModuleCreateInfo shader_info = {};
 	shader_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-	shader_info.codeSize = params->r_content_size;
-	shader_info.pCode = reinterpret_cast<const uint32 *>(params->r_file_contents);
+	shader_info.codeSize = content_size;
+	shader_info.pCode = reinterpret_cast<const uint32 *>(file_contents);
 
-	VK_CHECK(vkCreateShaderModule(params->r_gpu->logical_device
+	VK_CHECK(vkCreateShaderModule(gpu->logical_device
 				      , &shader_info
 				      , nullptr
-				      , &dest_shader_module->shader));
-	dest_shader_module->stage_bits = params->r_stage_bits;
+				      , dest_shader_module));
     }
 
-    extern_impl void
-    init_shader_pipeline_info(Shader_Module *module
-			      , VkPipelineShaderStageCreateInfo *dest_info)
+    void
+    init_pipeline_layout(Memory_Buffer_View<VkDescriptorSetLayout> *layouts
+			 , Memory_Buffer_View<VkPushConstantRange> *ranges
+			 , GPU *gpu
+			 , VkPipelineLayout *pipeline_layout)
     {
-	*dest_info = {};
-	dest_info->sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-	dest_info->stage = module->stage_bits;
-	dest_info->module = module->shader;
-	dest_info->pName = "main";
+	VkPipelineLayoutCreateInfo layout_info = {};
+	layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+	layout_info.setLayoutCount = layouts->count;
+	layout_info.pSetLayouts = layouts->buffer;
+	layout_info.pushConstantRangeCount = ranges->count;
+	layout_info.pPushConstantRanges = ranges->buffer;
+
+	VK_CHECK(vkCreatePipelineLayout(gpu->logical_device
+					, &layout_info
+					, nullptr
+					, pipeline_layout));
+    }
+
+    void
+    init_graphics_pipeline(Memory_Buffer_View<VkPipelineShaderStageCreateInfo> *shaders
+			   , VkPipelineVertexInputStateCreateInfo *vertex_input_info
+			   , VkPipelineInputAssemblyStateCreateInfo *input_assembly_info
+			   , VkPipelineViewportStateCreateInfo *viewport_info
+			   , VkPipelineRasterizationStateCreateInfo *rasterization_info
+			   , VkPipelineMultisampleStateCreateInfo *multisample_info
+			   , VkPipelineColorBlendStateCreateInfo *blend_info
+			   , VkPipelineDynamicStateCreateInfo *dynamic_state_info
+			   , VkPipelineDepthStencilStateCreateInfo *depth_stencil_info
+			   , VkPipelineLayout *pipeline_layout
+			   , Render_Pass *render_pass
+			   , uint32 subpass
+			   , GPU *gpu
+			   , VkPipeline *pipeline)
+    {
+	VkGraphicsPipelineCreateInfo pipeline_info = {};
+	pipeline_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+	pipeline_info.stageCount = shaders->count;
+	pipeline_info.pStages = shaders->buffer;
+	pipeline_info.pVertexInputState = vertex_input_info;
+	pipeline_info.pInputAssemblyState = input_assembly_info;
+	pipeline_info.pViewportState = viewport_info;
+	pipeline_info.pRasterizationState = rasterization_info;
+	pipeline_info.pMultisampleState = multisample_info;
+	pipeline_info.pDepthStencilState = depth_stencil_info;
+	pipeline_info.pColorBlendState = blend_info;
+	pipeline_info.pDynamicState = dynamic_state_info;
+
+	pipeline_info.layout = *pipeline_layout;
+	pipeline_info.renderPass = render_pass->render_pass;
+	pipeline_info.subpass = subpass;
+
+	pipeline_info.basePipelineHandle = VK_NULL_HANDLE;
+	pipeline_info.basePipelineIndex = -1;
+
+	VK_CHECK (vkCreateGraphicsPipelines(gpu->logical_device
+					    , VK_NULL_HANDLE
+					    , 1
+					    , &pipeline_info
+					    , nullptr
+					    , pipeline) != VK_SUCCESS);
     }
     
-    extern_impl void
+    void
     init_state(State *state
 	       , GLFWwindow *window)
     {

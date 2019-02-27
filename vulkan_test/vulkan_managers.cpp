@@ -13,6 +13,7 @@ namespace Vulkan_API
     MAKE_OBJECT_MANAGER_TMP_PARAM_GROUP(RENDER_PASS, 20, 10, Render_Pass, uint8)
     MAKE_OBJECT_MANAGER_TMP_PARAM_GROUP(DESCRIPTOR_SET_LAYOUT, 20, 10, Descriptor_Set_Layout, uint8)
     MAKE_OBJECT_MANAGER_TMP_PARAM_GROUP(MODEL, 30, 10, Model, uint8)
+    MAKE_OBJECT_MANAGER_TMP_PARAM_GROUP(GRAPHICS_PIPELINE, 30, 10, Graphics_Pipeline, uint8)
 
     
     template <typename I_Type /* which type of int */
@@ -83,6 +84,9 @@ namespace Vulkan_API
     global_var Object_Manager<Model, MODEL_MAX_COUNT, Model_Stack_Type, MODEL_STACK_MAX_REMOVED> model_manager;
     global_var Hash_Table_Inline<uint32 /*index of item in the manager struct*/, 20, 8, 3> model_index_map {"map.model_index_map"};
 
+    global_var Object_Manager<Graphics_Pipeline, GRAPHICS_PIPELINE_MAX_COUNT, Graphics_Pipeline_Stack_Type, GRAPHICS_PIPELINE_STACK_MAX_REMOVED> graphics_pipeline_manager;
+    global_var Hash_Table_Inline<uint32 /*index of item in the manager struct*/, 20, 8, 3> graphics_pipeline_index_map {"map.graphics_pipeline_index_map"};
+    
 
     template <typename Manager_Type
 	      , typename Hash_Table_Type> uint32
@@ -113,69 +117,132 @@ namespace Vulkan_API
     
 
     // buffer funcion implementations
-    extern_impl Buffer_Handle
-    add_buffer(const Constant_String &string) {return(add_template<decltype(buffer_manager)
-						      , decltype(buffer_index_map)>(&buffer_manager
-										    , &buffer_index_map
-										    , string));}
-    extern_impl Buffer_Handle
-    get_buffer_handle(const Constant_String &string) {return(get_handle_template<decltype(buffer_manager)
-							     , decltype(buffer_index_map)>(&buffer_manager
-											   , &buffer_index_map
-											   , string));}
-    extern_impl Vulkan_API::Buffer *
-    get_buffer(Buffer_Handle handle) {return(get_template<decltype(buffer_manager)>(&buffer_manager
-										    , handle));}
+    Buffer_Handle
+    add_buffer(const Constant_String &string)
+    {
+	return(add_template<decltype(buffer_manager)
+	       , decltype(buffer_index_map)>(&buffer_manager
+					     , &buffer_index_map
+					     , string));
+    }
+    Buffer_Handle
+    get_buffer_handle(const Constant_String &string)
+    {
+	return(get_handle_template<decltype(buffer_manager)
+	       , decltype(buffer_index_map)>(&buffer_manager
+					     , &buffer_index_map
+					     , string));
+    }
+    Vulkan_API::Buffer *
+    get_buffer(Buffer_Handle handle)
+    {
+	return(get_template<decltype(buffer_manager)>(&buffer_manager
+						      , handle));
+    }
 
 
     // render pass function implementations
-    extern_impl Render_Pass_Handle
-    add_render_pass(const Constant_String &string) {return(add_template<decltype(render_pass_manager)
-							   , decltype(render_pass_index_map)>(&render_pass_manager
-											      , &render_pass_index_map
-											      , string));}
-    extern_impl Render_Pass_Handle
-    get_render_pass_handle(const Constant_String &string) {return(get_handle_template<decltype(render_pass_manager)
-								  , decltype(render_pass_index_map)>(&render_pass_manager
-												     , &render_pass_index_map
-												     , string));}
-    extern_impl Vulkan_API::Render_Pass *
-    get_render_pass(Render_Pass_Handle handle) {return(get_template<decltype(render_pass_manager)>(&render_pass_manager
-										    , handle));}
+    Render_Pass_Handle
+    add_render_pass(const Constant_String &string)
+    {
+	return(add_template<decltype(render_pass_manager)
+	       , decltype(render_pass_index_map)>(&render_pass_manager
+						  , &render_pass_index_map
+						  , string));
+    }
+    Render_Pass_Handle
+    get_render_pass_handle(const Constant_String &string)
+    {
+	return(get_handle_template<decltype(render_pass_manager)
+	       , decltype(render_pass_index_map)>(&render_pass_manager
+						  , &render_pass_index_map
+						  , string));
+    }
+    Vulkan_API::Render_Pass *
+    get_render_pass(Render_Pass_Handle handle)
+    {
+	return(get_template<decltype(render_pass_manager)>(&render_pass_manager
+							   , handle));
+    }
     
 
 
     // descriptor set layout function implementations
-    extern_impl Descriptor_Set_Layout_Handle
-    add_descriptor_set_layout(const Constant_String &string) {return(add_template<decltype(descriptor_set_layout_manager)
-								     , decltype(descriptor_set_layout_index_map)>(&descriptor_set_layout_manager
-														  , &descriptor_set_layout_index_map
-														  , string));}
-    extern_impl Descriptor_Set_Layout_Handle
-    get_descriptor_set_layout_handle(const Constant_String &string) {return(get_handle_template<decltype(descriptor_set_layout_manager)
-									    , decltype(descriptor_set_layout_index_map)>(&descriptor_set_layout_manager
-															 , &descriptor_set_layout_index_map
-															 , string));}
-    extern_impl VkDescriptorSetLayout *
-    get_descriptor_set_layout(Descriptor_Set_Layout_Handle handle) {return(get_template<decltype(descriptor_set_layout_manager)>(&descriptor_set_layout_manager
-																 , handle));}
+    Descriptor_Set_Layout_Handle
+    add_descriptor_set_layout(const Constant_String &string)
+    {
+	return(add_template<decltype(descriptor_set_layout_manager)
+	       , decltype(descriptor_set_layout_index_map)>(&descriptor_set_layout_manager
+							    , &descriptor_set_layout_index_map
+							    , string));
+    }
+    Descriptor_Set_Layout_Handle
+    get_descriptor_set_layout_handle(const Constant_String &string)
+    {
+	return(get_handle_template<decltype(descriptor_set_layout_manager)
+	       , decltype(descriptor_set_layout_index_map)>(&descriptor_set_layout_manager
+							    , &descriptor_set_layout_index_map
+							    , string));
+    }
+    VkDescriptorSetLayout *
+    get_descriptor_set_layout(Descriptor_Set_Layout_Handle handle)
+    {
+	return(get_template<decltype(descriptor_set_layout_manager)>(&descriptor_set_layout_manager
+								     , handle));
+    }
 
 
     
     // model stuff
-    extern_impl Model_Handle
-    add_model(const Constant_String &string) {return(add_template<decltype(model_manager)
-								     , decltype(model_index_map)>(&model_manager
-												  , &model_index_map
-												  , string));}
-    extern_impl Model_Handle
-    get_model_handle(const Constant_String &string) {return(get_handle_template<decltype(model_manager)
-							    , decltype(model_index_map)>(&model_manager
-											 , &model_index_map
-											 , string));}
-    extern_impl Model *
-    get_model(Model_Handle handle) {return(get_template<decltype(model_manager)>(&model_manager
-										 , handle));}
+    Model_Handle
+    add_model(const Constant_String &string)
+    {
+	return(add_template<decltype(model_manager)
+	       , decltype(model_index_map)>(&model_manager
+					    , &model_index_map
+					    , string));
+    }
+    Model_Handle
+    get_model_handle(const Constant_String &string)
+    {
+	return(get_handle_template<decltype(model_manager)
+	       , decltype(model_index_map)>(&model_manager
+					    , &model_index_map
+					    , string));
+    }
+    Model *
+    get_model(Model_Handle handle)
+    {
+	return(get_template<decltype(model_manager)>(&model_manager
+						     , handle));
+    }
+
+
+
+    Graphics_Pipeline_Handle
+    add_graphics_pipeline(const Constant_String &string)
+    {
+	return(add_template<decltype(graphics_pipeline_manager)
+	       , decltype(graphics_pipeline_index_map)>(&graphics_pipeline_manager
+							, &graphics_pipeline_index_map
+							, string));
+    }
+
+    Graphics_Pipeline_Handle
+    get_graphics_pipeline_handle(const Constant_String &string)
+    {
+	return(get_handle_template<decltype(graphics_pipeline_manager)
+	       , decltype(graphics_pipeline_index_map)>(&graphics_pipeline_manager
+							, &graphics_pipeline_index_map
+							, string));
+    }	
+    
+    Graphics_Pipeline *
+    get_graphics_pipeline(Graphics_Pipeline_Handle handle)
+    {
+	return(get_template<decltype(graphics_pipeline_manager)>(&graphics_pipeline_manager
+								 , handle));
+    }
     
 }
 
