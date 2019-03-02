@@ -239,6 +239,17 @@ namespace Rendering
 	VkDescriptorSetLayout *layout = Vulkan_API::get_descriptor_set_layout(handle);
 	VK_CHECK(vkCreateDescriptorSetLayout(gpu->logical_device, &layout_info, nullptr, layout));
     }
+
+    internal void
+    init_command_pool(Vulkan_API::GPU *gpu)
+    {
+	Vulkan_API::Command_Pool_Handle graphics_command_pool_handle = Vulkan_API::add_command_pool("command_pool.graphics_command_pool"_hash);
+	VkCommandPool *graphics_command_pool = Vulkan_API::get_command_pool(graphics_command_pool_handle);
+
+	Vulkan_API::allocate_command_pool(gpu->queue_families.graphics_family
+					  , gpu
+					  , graphics_command_pool);
+    }
     
     void
     init_rendering_state(Vulkan_API::State *vulkan_state
@@ -252,10 +263,13 @@ namespace Rendering
 	init_model_info();
 
 	init_graphics_pipeline(&vulkan_state->swapchain, &vulkan_state->gpu);
+
+	init_command_pool(&vulkan_state->gpu);
 	
 	cache->test_render_pass = Vulkan_API::get_render_pass_handle("render_pass.test_render_pass"_hash);
 	cache->descriptor_set_layout = Vulkan_API::get_descriptor_set_layout_handle("descriptor_set_layout.test_descriptor_set_layout"_hash);
 	cache->graphics_pipeline = Vulkan_API::get_graphics_pipeline_handle("pipeline.main_pipeline"_hash);
+	cache->graphics_command_pool = Vulkan_API::get_command_pool_handle("command_pool.graphics_command_pool"_hash);
     }
 
 }

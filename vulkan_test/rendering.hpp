@@ -18,6 +18,7 @@ namespace Rendering
 	Vulkan_API::Render_Pass_Handle test_render_pass;
 	Vulkan_API::Descriptor_Set_Layout_Handle descriptor_set_layout;
 	Vulkan_API::Graphics_Pipeline_Handle graphics_pipeline;
+	Vulkan_API::Command_Pool_Handle graphics_command_pool;
     };
     
     void

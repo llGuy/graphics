@@ -14,6 +14,7 @@ namespace Vulkan_API
     MAKE_OBJECT_MANAGER_TMP_PARAM_GROUP(DESCRIPTOR_SET_LAYOUT, 20, 10, Descriptor_Set_Layout, uint8)
     MAKE_OBJECT_MANAGER_TMP_PARAM_GROUP(MODEL, 30, 10, Model, uint8)
     MAKE_OBJECT_MANAGER_TMP_PARAM_GROUP(GRAPHICS_PIPELINE, 30, 10, Graphics_Pipeline, uint8)
+    MAKE_OBJECT_MANAGER_TMP_PARAM_GROUP(COMMAND_POOL, 5, 5, Command_Pool, uint8)
 
     
     template <typename I_Type /* which type of int */
@@ -86,7 +87,9 @@ namespace Vulkan_API
 
     global_var Object_Manager<Graphics_Pipeline, GRAPHICS_PIPELINE_MAX_COUNT, Graphics_Pipeline_Stack_Type, GRAPHICS_PIPELINE_STACK_MAX_REMOVED> graphics_pipeline_manager;
     global_var Hash_Table_Inline<uint32 /*index of item in the manager struct*/, 20, 8, 3> graphics_pipeline_index_map {"map.graphics_pipeline_index_map"};
-    
+
+    global_var Object_Manager<VkCommandPool, COMMAND_POOL_MAX_COUNT, Command_Pool_Stack_Type, COMMAND_POOL_STACK_MAX_REMOVED> command_pool_manager;
+    global_var Hash_Table_Inline<uint32 /*index of item in the manager struct*/, 20, 8, 3> command_pool_index_map {"map.command_pool_index_map"};
 
     template <typename Manager_Type
 	      , typename Hash_Table_Type> uint32
@@ -120,24 +123,22 @@ namespace Vulkan_API
     Buffer_Handle
     add_buffer(const Constant_String &string)
     {
-	return(add_template<decltype(buffer_manager)
-	       , decltype(buffer_index_map)>(&buffer_manager
-					     , &buffer_index_map
-					     , string));
+	return(add_template(&buffer_manager
+			    , &buffer_index_map
+			    , string));
     }
     Buffer_Handle
     get_buffer_handle(const Constant_String &string)
     {
-	return(get_handle_template<decltype(buffer_manager)
-	       , decltype(buffer_index_map)>(&buffer_manager
-					     , &buffer_index_map
-					     , string));
+	return(get_handle_template(&buffer_manager
+				   , &buffer_index_map
+				   , string));
     }
     Vulkan_API::Buffer *
     get_buffer(Buffer_Handle handle)
     {
-	return(get_template<decltype(buffer_manager)>(&buffer_manager
-						      , handle));
+	return(get_template(&buffer_manager
+			    , handle));
     }
 
 
@@ -145,24 +146,22 @@ namespace Vulkan_API
     Render_Pass_Handle
     add_render_pass(const Constant_String &string)
     {
-	return(add_template<decltype(render_pass_manager)
-	       , decltype(render_pass_index_map)>(&render_pass_manager
-						  , &render_pass_index_map
-						  , string));
+	return(add_template(&render_pass_manager
+			    , &render_pass_index_map
+			    , string));
     }
     Render_Pass_Handle
     get_render_pass_handle(const Constant_String &string)
     {
-	return(get_handle_template<decltype(render_pass_manager)
-	       , decltype(render_pass_index_map)>(&render_pass_manager
-						  , &render_pass_index_map
-						  , string));
+	return(get_handle_template(&render_pass_manager
+				   , &render_pass_index_map
+				   , string));
     }
     Vulkan_API::Render_Pass *
     get_render_pass(Render_Pass_Handle handle)
     {
-	return(get_template<decltype(render_pass_manager)>(&render_pass_manager
-							   , handle));
+	return(get_template(&render_pass_manager
+			    , handle));
     }
     
 
@@ -171,24 +170,22 @@ namespace Vulkan_API
     Descriptor_Set_Layout_Handle
     add_descriptor_set_layout(const Constant_String &string)
     {
-	return(add_template<decltype(descriptor_set_layout_manager)
-	       , decltype(descriptor_set_layout_index_map)>(&descriptor_set_layout_manager
-							    , &descriptor_set_layout_index_map
-							    , string));
+	return(add_template(&descriptor_set_layout_manager
+			    , &descriptor_set_layout_index_map
+			    , string));
     }
     Descriptor_Set_Layout_Handle
     get_descriptor_set_layout_handle(const Constant_String &string)
     {
-	return(get_handle_template<decltype(descriptor_set_layout_manager)
-	       , decltype(descriptor_set_layout_index_map)>(&descriptor_set_layout_manager
-							    , &descriptor_set_layout_index_map
-							    , string));
+	return(get_handle_template(&descriptor_set_layout_manager
+				   , &descriptor_set_layout_index_map
+				   , string));
     }
     VkDescriptorSetLayout *
     get_descriptor_set_layout(Descriptor_Set_Layout_Handle handle)
     {
-	return(get_template<decltype(descriptor_set_layout_manager)>(&descriptor_set_layout_manager
-								     , handle));
+	return(get_template(&descriptor_set_layout_manager
+			    , handle));
     }
 
 
@@ -197,51 +194,74 @@ namespace Vulkan_API
     Model_Handle
     add_model(const Constant_String &string)
     {
-	return(add_template<decltype(model_manager)
-	       , decltype(model_index_map)>(&model_manager
-					    , &model_index_map
-					    , string));
+	return(add_template(&model_manager
+			    , &model_index_map
+			    , string));
     }
     Model_Handle
     get_model_handle(const Constant_String &string)
     {
-	return(get_handle_template<decltype(model_manager)
-	       , decltype(model_index_map)>(&model_manager
-					    , &model_index_map
-					    , string));
+	return(get_handle_template(&model_manager
+				   , &model_index_map
+				   , string));
     }
     Model *
     get_model(Model_Handle handle)
     {
-	return(get_template<decltype(model_manager)>(&model_manager
-						     , handle));
+	return(get_template(&model_manager
+			    , handle));
     }
 
 
 
+    // graphics pipeline stuff
     Graphics_Pipeline_Handle
     add_graphics_pipeline(const Constant_String &string)
     {
-	return(add_template<decltype(graphics_pipeline_manager)
-	       , decltype(graphics_pipeline_index_map)>(&graphics_pipeline_manager
-							, &graphics_pipeline_index_map
-							, string));
+	return(add_template(&graphics_pipeline_manager
+			    , &graphics_pipeline_index_map
+			    , string));
     }
 
     Graphics_Pipeline_Handle
     get_graphics_pipeline_handle(const Constant_String &string)
     {
-	return(get_handle_template<decltype(graphics_pipeline_manager)
-	       , decltype(graphics_pipeline_index_map)>(&graphics_pipeline_manager
-							, &graphics_pipeline_index_map
-							, string));
+	return(get_handle_template(&graphics_pipeline_manager
+				   , &graphics_pipeline_index_map
+				   , string));
     }	
     
     Graphics_Pipeline *
     get_graphics_pipeline(Graphics_Pipeline_Handle handle)
     {
-	return(get_template<decltype(graphics_pipeline_manager)>(&graphics_pipeline_manager
-								 , handle));
+	return(get_template(&graphics_pipeline_manager
+			    , handle));
+    }
+
+
+
+    // command pool stuff
+    Command_Pool_Handle
+    add_command_pool(const Constant_String &string)
+    {
+	return(add_template(&command_pool_manager
+			    , &command_pool_index_map
+			    , string));
+    }
+
+    Command_Pool_Handle
+    get_command_pool_handle(const Constant_String &string)
+    {
+	return(get_handle_template(&command_pool_manager
+				   , &command_pool_index_map
+				   , string));
+    }
+    
+    VkCommandPool *
+    get_command_pool(Command_Pool_Handle handle)
+    {
+	return(get_template(&command_pool_manager
+			    , handle));
     }
     
 }

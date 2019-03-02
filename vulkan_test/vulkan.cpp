@@ -724,6 +724,19 @@ namespace Vulkan_API
 					    , nullptr
 					    , pipeline) != VK_SUCCESS);
     }
+
+    void
+    allocate_command_pool(uint32 queue_family_index
+			  , GPU *gpu
+			  , VkCommandPool *command_pool)
+    {
+	VkCommandPoolCreateInfo pool_info = {};
+	pool_info.sType			= VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+	pool_info.queueFamilyIndex	= queue_family_index;
+	pool_info.flags			= 0;
+
+	VK_CHECK(vkCreateCommandPool(gpu->logical_device, &pool_info, nullptr, command_pool));
+    }
     
     void
     init_state(State *state

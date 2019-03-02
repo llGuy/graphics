@@ -26,7 +26,7 @@ extern struct Vulkan_State
     VkPipeline graphics_pipeline;
     VkPipelineLayout pipeline_layout;
 
-    VkCommandPool command_pool;
+    //    VkCommandPool command_pool;
 
     VkImage depth_image;
     VkDeviceMemory depth_image_memory;

@@ -518,7 +518,7 @@ init_command_pool(void)
     pool_info.queueFamilyIndex		= indices->graphics_family;
     pool_info.flags			= 0;
 
-    VK_CHECK(vkCreateCommandPool(vulkan_state.gpu.logical_device, &pool_info, nullptr, &vk.command_pool));
+    //    VK_CHECK(vkCreateCommandPool(vulkan_state.gpu.logical_device, &pool_info, nullptr, &vk.command_pool));
 }
 
 internal uint32
@@ -592,10 +592,12 @@ create_image(uint32 width
 internal VkCommandBuffer
 begin_single_time_command(void)
 {
+    VkCommandPool *command_pool = Vulkan_API::get_command_pool(rendering_objects.graphics_command_pool);
+    
     VkCommandBufferAllocateInfo alloc_info = {};
     alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    alloc_info.commandPool = vk.command_pool;
+    alloc_info.commandPool = *command_pool;
     alloc_info.commandBufferCount = 1;
 
     VkCommandBuffer command_buffer;
@@ -614,6 +616,8 @@ begin_single_time_command(void)
 internal void
 end_single_time_command(VkCommandBuffer command_buffer)
 {
+    VkCommandPool *command_pool = Vulkan_API::get_command_pool(rendering_objects.graphics_command_pool);
+    
     vkEndCommandBuffer(command_buffer);
 
     VkSubmitInfo submit_info = {};
@@ -624,7 +628,7 @@ end_single_time_command(VkCommandBuffer command_buffer)
     vkQueueSubmit(vulkan_state.gpu.graphics_queue, 1, &submit_info, VK_NULL_HANDLE);
     vkQueueWaitIdle(vulkan_state.gpu.graphics_queue);
 
-    vkFreeCommandBuffers(vulkan_state.gpu.logical_device, vk.command_pool, 1, &command_buffer);
+    vkFreeCommandBuffers(vulkan_state.gpu.logical_device, *command_pool, 1, &command_buffer);
 }
 
 internal bool
@@ -1131,6 +1135,8 @@ init_descriptor_sets(void)
 internal void
 init_command_buffers(void)
 {
+    VkCommandPool *command_pool = Vulkan_API::get_command_pool(rendering_objects.graphics_command_pool);
+    
     vk.command_buffer_count = vulkan_state.swapchain.image_count;
 
     vk.command_buffers = (VkCommandBuffer *)allocate_stack(sizeof(VkCommandBuffer) * vk.command_buffer_count
@@ -1139,7 +1145,7 @@ init_command_buffers(void)
 
     VkCommandBufferAllocateInfo alloc_info = {};
     alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    alloc_info.commandPool = vk.command_pool;
+    alloc_info.commandPool = *command_pool;
     alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
     alloc_info.commandBufferCount = vk.command_buffer_count;
 

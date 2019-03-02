@@ -60,4 +60,15 @@ namespace Vulkan_API
     Graphics_Pipeline *
     get_graphics_pipeline(Graphics_Pipeline_Handle handle);
 
+
+
+    Command_Pool_Handle
+    add_command_pool(const Constant_String &string);
+
+    Command_Pool_Handle
+    get_command_pool_handle(const Constant_String &string);
+    
+    VkCommandPool *
+    get_command_pool(Command_Pool_Handle handle);
+
 }

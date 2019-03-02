@@ -421,6 +421,11 @@ namespace Vulkan_API
 			   , uint32 subpass
 			   , GPU *gpu
 			   , VkPipeline *pipeline);
+
+    void
+    allocate_command_pool(uint32 queue_family_index
+			  , GPU *gpu
+			  , VkCommandPool *command_pool);
     
     struct State
     {

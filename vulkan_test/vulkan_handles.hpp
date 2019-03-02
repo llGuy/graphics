@@ -15,5 +15,6 @@ namespace Vulkan_API
     using Descriptor_Set_Handle		= uint32;
     using Model_Handle			= uint32;
     using Graphics_Pipeline_Handle      = uint32;
+    using Command_Pool_Handle           = uint32;
 
 }
