@@ -272,6 +272,10 @@ main(int32 argc
 	stack_allocator_global.start = stack_allocator_global.current = malloc(megabytes(8));
 	stack_allocator_global.capacity = STACK_ALLOCATOR_GLOBAL_SIZE;
 
+	free_list_allocator_global.start = malloc(megabytes(8));
+	free_list_allocator_global.available_bytes = megabytes(8);
+	init_free_list_allocator_head(&free_list_allocator_global);
+	
 	OUTPUT_DEBUG_LOG("stack allocator start address : %p\n", stack_allocator_global.current);
     
 	if (!glfwInit())

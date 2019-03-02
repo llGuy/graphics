@@ -244,10 +244,10 @@ struct Vertex
 
 internal Vertex vertices[]
 {
-    {{-1.0f, -0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}},
-    {{0.5f, -0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 0.0f}},
-    {{0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}},
-    {{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
+    {{-1.0f, -0.5f, 1.0f}, {0.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
+    {{0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
+    {{0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
+    {{-0.5f, 0.5f, 1.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}},
 
     {{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
     {{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
@@ -1148,6 +1148,8 @@ init_command_buffers(void)
 				      , vk.command_buffers));
 
     Vulkan_API::Render_Pass *render_pass = Vulkan_API::get_render_pass(rendering_objects.test_render_pass);
+
+    Vulkan_API::Graphics_Pipeline *pipeline_ptr = Vulkan_API::get_graphics_pipeline(rendering_objects.graphics_pipeline);
     
     for (uint32 i = 0
 	     ; i < vk.command_buffer_count
@@ -1183,7 +1185,7 @@ init_command_buffers(void)
 
 	vkCmdBindPipeline(vk.command_buffers[i]
 			  , VK_PIPELINE_BIND_POINT_GRAPHICS
-			  , vk.graphics_pipeline);
+			  , pipeline_ptr->pipeline);
 
 	VkBuffer vertex_buffers[] = {vk.vertex_buffer};
 	VkDeviceSize offset[] = {0};
@@ -1200,7 +1202,7 @@ init_command_buffers(void)
 
 	vkCmdBindDescriptorSets(vk.command_buffers[i]
 				, VK_PIPELINE_BIND_POINT_GRAPHICS
-				, vk.pipeline_layout
+				, pipeline_ptr->layout
 				, 0
 				, 1
 				, &vk.descriptor_sets[i]
@@ -1272,12 +1274,9 @@ init_vk(GLFWwindow *window)
 			   , window);
 
     Rendering::init_rendering_state(&vulkan_state
-				    , &rendering_objects); 
+				    , &rendering_objects);
     
-    //    init_descriptor_layout();
-
-
-    init_graphics_pipeline();
+    //    init_graphics_pipeline();
 
     
     init_command_pool();
@@ -1422,8 +1421,8 @@ recreate(void)
 void
 destroy_vk(void)
 {
-    vkDestroyPipeline(vulkan_state.gpu.logical_device, vk.graphics_pipeline, nullptr);
-    vkDestroyPipelineLayout(vulkan_state.gpu.logical_device, vk.pipeline_layout, nullptr);
+    //    vkDestroyPipeline(vulkan_state.gpu.logical_device, vk.graphics_pipeline, nullptr);
+    //vkDestroyPipelineLayout(vulkan_state.gpu.logical_device, vk.pipeline_layout, nullptr);
     Vulkan_API::Render_Pass *render_pass = Vulkan_API::get_render_pass(rendering_objects.test_render_pass);
     vkDestroyRenderPass(vulkan_state.gpu.logical_device, render_pass->render_pass, nullptr);
 

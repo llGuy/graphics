@@ -91,7 +91,7 @@ namespace Rendering
 
 	binding->push_attribute(0, VK_FORMAT_R32G32B32_SFLOAT, sizeof(Vertex::pos));
 	binding->push_attribute(1, VK_FORMAT_R32G32B32_SFLOAT, sizeof(Vertex::color));
-	binding->push_attribute(2, VK_FORMAT_R32G32B32_SFLOAT, sizeof(Vertex::uvs));
+	binding->push_attribute(2, VK_FORMAT_R32G32_SFLOAT, sizeof(Vertex::uvs));
 
 	binding->end_attributes_creation();
     }
@@ -153,7 +153,7 @@ namespace Rendering
 
 	// init blending info
 	VkPipelineColorBlendAttachmentState blend_attachment = {};
-	Vulkan_API::init_blend_state_attachment(VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT
+	Vulkan_API::init_blend_state_attachment(VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT
 						, VK_FALSE
 						, VK_BLEND_FACTOR_ONE
 						, VK_BLEND_FACTOR_ZERO

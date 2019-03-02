@@ -140,22 +140,25 @@ namespace Vulkan_API
 	VkVertexInputRate input_rate;
 
 	VkVertexInputAttributeDescription *attribute_list = nullptr;
+	uint32 attribute_count = 0;
 	uint32 stride = 0;
 	
 	void
 	begin_attributes_creation(VkVertexInputAttributeDescription *attribute_list)
 	{
 	    this->attribute_list = attribute_list;
+	    attribute_count = 0;
 	}
 	
 	void
 	push_attribute(uint32 location, VkFormat format, uint32 size)
 	{
-	    VkVertexInputAttributeDescription attribute = {};
-	    attribute.binding = binding;
-	    attribute.location = location;
-	    attribute.format = format;
-	    attribute.offset = stride;
+	    VkVertexInputAttributeDescription *attribute = &attribute_list[attribute_count++];
+	    
+	    attribute->binding = binding;
+	    attribute->location = location;
+	    attribute->format = format;
+	    attribute->offset = stride;
 
 	    stride += size;
 	}
@@ -340,6 +343,7 @@ namespace Vulkan_API
 				, VkBlendOp alpha_op
 				, VkPipelineColorBlendAttachmentState *attachment)
     {
+
 	attachment->colorWriteMask = color_write_flags;
 	attachment->blendEnable = enable_blend;
 	attachment->srcColorBlendFactor = src_color;
