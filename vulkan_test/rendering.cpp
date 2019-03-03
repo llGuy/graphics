@@ -291,6 +291,44 @@ namespace Rendering
 					    , command_pool
 					    , gpu);
     }
+
+    internal void
+    init_swapchain_framebuffers(Vulkan_API::GPU *gpu
+		      , Vulkan_API::Swapchain *swapchain)
+    {
+	swapchain->framebuffers.count = swapchain->images.count;
+	swapchain->framebuffers.buffer = (Vulkan_API::Framebuffer_Handle *)allocate_free_list(sizeof(Vulkan_API::Framebuffer_Handle) * swapchain->framebuffers.count);
+	char framebuffer_name[] = "framebuffer.swapchain_framebuffer0";
+	enum { NUMBER_STRING_INDEX = 33 };
+	enum { COLOR_ATTACHMENT = 0 };
+	persist constexpr uint32 COLOR_ATTACHMENTS_PER_FBO = 1;
+
+	Vulkan_API::Render_Pass_Handle compatible_render_pass_handle = Vulkan_API::get_render_pass_handle("render_pass.test_render_pass"_hash);
+	Vulkan_API::Render_Pass *compatible_render_pass = Vulkan_API::get_render_pass(compatible_render_pass_handle);
+	Vulkan_API::Image2D_Handle depth_image_handle = Vulkan_API::get_image2D_handle("image2D.depth_image"_hash);
+	
+	for (uint32 i = 0
+		 ; i < swapchain->images.count
+		 ; ++i)
+	{
+	    // render pass, image views memory view, w, h, gpu, framebuffer ptr
+	    framebuffer_name[NUMBER_STRING_INDEX] = '0' + i;
+	    auto hash = compile_hash(framebuffer_name, sizeof(framebuffer_name));
+	    swapchain->framebuffers.buffer[i] = Vulkan_API::add_framebuffer(Constant_String{framebuffer_name, sizeof(framebuffer_name), hash });
+	    Vulkan_API::Framebuffer *framebuffer = Vulkan_API::get_framebuffer(swapchain->framebuffers.buffer[i]);
+
+	    framebuffer->color_attachments.count = COLOR_ATTACHMENTS_PER_FBO;
+	    framebuffer->color_attachments.buffer = (Vulkan_API::Image2D_Handle *)allocate_free_list(sizeof(Vulkan_API::Image2D_Handle) * COLOR_ATTACHMENTS_PER_FBO);
+	    framebuffer->color_attachments.buffer[COLOR_ATTACHMENT] = swapchain->images.buffer[i];
+	    framebuffer->depth_attachment = depth_image_handle;
+	    
+	    Vulkan_API::init_framebuffer(compatible_render_pass
+					 , swapchain->extent.width
+					 , swapchain->extent.height
+					 , gpu
+					 , framebuffer);
+	}
+    }
     
     void
     init_rendering_state(Vulkan_API::State *vulkan_state
@@ -308,6 +346,8 @@ namespace Rendering
 	init_command_pool(&vulkan_state->gpu);
 
 	init_depth_texture(&vulkan_state->swapchain, &vulkan_state->gpu);
+
+	init_swapchain_framebuffers(&vulkan_state->gpu, &vulkan_state->swapchain);
 	
 	cache->test_render_pass = Vulkan_API::get_render_pass_handle("render_pass.test_render_pass"_hash);
 	cache->descriptor_set_layout = Vulkan_API::get_descriptor_set_layout_handle("descriptor_set_layout.test_descriptor_set_layout"_hash);

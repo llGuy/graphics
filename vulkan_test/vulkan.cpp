@@ -761,29 +761,41 @@ namespace Vulkan_API
 	VK_CHECK(vkCreateSwapchainKHR(gpu->logical_device, &swapchain_info, nullptr, &swapchain->swapchain));
 
 	vkGetSwapchainImagesKHR(gpu->logical_device, swapchain->swapchain, &image_count, nullptr);
-	swapchain->images = (VkImage *)allocate_stack(sizeof(VkImage) * image_count
-						      , Alignment(1)
-						      , "swapchain_images_list_allocation");
-	vkGetSwapchainImagesKHR(gpu->logical_device, swapchain->swapchain, &image_count, swapchain->images);
-	swapchain->image_count = image_count;
+	VkImage *images_array = (VkImage *)allocate_stack(sizeof(VkImage) * image_count
+						    , Alignment(1)
+						    , "swapchain_images_list_allocation");
+	vkGetSwapchainImagesKHR(gpu->logical_device, swapchain->swapchain, &image_count, images_array);
+	swapchain->images.count = image_count;
+	swapchain->images.buffer = (Image2D_Handle *)allocate_free_list(sizeof(Image2D_Handle) * swapchain->images.count
+									, 1
+									, "allocation.swapchain_image_handles_allocation");
 
+	char image2D_hash_name[] = "image2D.swapchain_image0";
+	enum { NUMBER_STRING_INDEX = 23 };
+	for (uint32 i = 0
+		 ; i < image_count
+		 ; ++i)
+	{
+	    image2D_hash_name[NUMBER_STRING_INDEX] = '0' + i;
+	    auto hash = compile_hash(image2D_hash_name, sizeof(image2D_hash_name));
+	    swapchain->images.buffer[i] = add_image2D(Constant_String{image2D_hash_name, sizeof(image2D_hash_name), hash});
+	}
+	
 	swapchain->extent = surface_extent;
 	swapchain->format = surface_format.format;
 	swapchain->present_mode = present_mode;
-
-	swapchain->image_views = (VkImageView *)allocate_stack(sizeof(VkImageView) * image_count
-							       , Alignment(1)
-							       , "swapchain_image_views_list_allocation");
 
 	for (uint32 i = 0
 		 ; i < image_count
 		 ; ++i)
 	{
-	    init_image_view(&swapchain->images[i]
+	    Image2D *image = get_image2D(swapchain->images.buffer[i]);
+	    image->image = images_array[i];
+	    init_image_view(&image->image
 			    , swapchain->format
 			    , VK_IMAGE_ASPECT_COLOR_BIT
 			    , gpu
-			    , &swapchain->image_views[i]);
+			    , &image->image_view);
 	}
     }
     
@@ -949,7 +961,6 @@ namespace Vulkan_API
 
     void
     init_framebuffer(Render_Pass *compatible_render_pass
-		     , const Memory_Buffer_View<VkImageView> &attachments
 		     , uint32 width
 		     , uint32 height
 		     , GPU *gpu

@@ -82,4 +82,15 @@ namespace Vulkan_API
     Image2D *
     get_image2D(Image2D_Handle handle);
 
+
+
+    Framebuffer_Handle
+    add_framebuffer(const Constant_String &string);
+
+    Framebuffer_Handle
+    get_framebuffer_handle(const Constant_String &string);
+    
+    Framebuffer *
+    get_framebuffer(Image2D_Handle handle);
+
 }

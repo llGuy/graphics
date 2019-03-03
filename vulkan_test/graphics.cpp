@@ -487,7 +487,7 @@ init_depth_resources(void)
 internal void
 init_framebuffers(void)
 {
-    vulkan_state.swapchain.fbos = (VkFramebuffer *)(allocate_stack(sizeof(VkFramebuffer) * vulkan_state.swapchain.image_count
+    /*vulkan_state.swapchain.fbos = (VkFramebuffer *)(allocate_stack(sizeof(VkFramebuffer) * vulkan_state.swapchain.images.count
 								   , Alignment(1)
 								   , "framebuffer_list_allocation"));
 
@@ -496,12 +496,14 @@ init_framebuffers(void)
     Vulkan_API::Image2D *depth_image = Vulkan_API::get_image2D(rendering_objects.depth_image);
     
     for (uint32 i = 0
-	     ; i < vulkan_state.swapchain.image_count
+	     ; i < vulkan_state.swapchain.images.count
 	     ; ++i)
     {
+	Vulkan_API::Image2D *image = Vulkan_API::get_image2D(vulkan_state.swapchain.images.buffer[i]);
+
 	VkImageView attachments[]
 	{
-	    vulkan_state.swapchain.image_views[i], depth_image->image_view
+	    image->image_view, depth_image->image_view
 	};
 
 	VkFramebufferCreateInfo fbo_info	= {};
@@ -514,7 +516,7 @@ init_framebuffers(void)
 	fbo_info.layers				= 1;
 
 	VK_CHECK(vkCreateFramebuffer(vulkan_state.gpu.logical_device, &fbo_info, nullptr, &vulkan_state.swapchain.fbos[i]));
-    }
+    }*/
 }
 
 internal void
@@ -768,7 +770,7 @@ init_ubos(void)
 {
     VkDeviceSize buffer_size = sizeof(Uniform_Buffer_Object);
 
-    vk.uniform_buffer_count = vulkan_state.swapchain.image_count;
+    vk.uniform_buffer_count = vulkan_state.swapchain.images.count;
 
     vk.uniform_buffers = (VkBuffer *)allocate_stack(sizeof(VkBuffer) * vk.uniform_buffer_count
 						    , Alignment(1)
@@ -795,17 +797,17 @@ init_descriptor_pool(void)
     VkDescriptorPoolSize pool_sizes[2] = {};
 
     pool_sizes[0].type			= VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    pool_sizes[0].descriptorCount	= vulkan_state.swapchain.image_count;
+    pool_sizes[0].descriptorCount	= vulkan_state.swapchain.images.count;
     
     pool_sizes[1].type			= VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    pool_sizes[1].descriptorCount	= vulkan_state.swapchain.image_count;
+    pool_sizes[1].descriptorCount	= vulkan_state.swapchain.images.count;
 
     VkDescriptorPoolCreateInfo pool_info = {};
     pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
     pool_info.poolSizeCount = 2;
     pool_info.pPoolSizes = pool_sizes;
 
-    pool_info.maxSets = vulkan_state.swapchain.image_count;
+    pool_info.maxSets = vulkan_state.swapchain.images.count;
 
     VK_CHECK(vkCreateDescriptorPool(vulkan_state.gpu.logical_device, &pool_info, nullptr, &vk.descriptor_pool));
 }
@@ -813,7 +815,7 @@ init_descriptor_pool(void)
 internal void
 init_descriptor_sets(void)
 {
-    vk.descriptor_set_count = vulkan_state.swapchain.image_count;
+    vk.descriptor_set_count = vulkan_state.swapchain.images.count;
 
     vk.descriptor_sets = (VkDescriptorSet *)allocate_stack(vk.descriptor_set_count * sizeof(VkDescriptorSet)
 							   , Alignment(1)
@@ -875,11 +877,11 @@ init_descriptor_sets(void)
 }
 
 internal void
-init_command_buffers(void)
+init_command_buffers(Vulkan_API::Swapchain *swapchain)
 {
     VkCommandPool *command_pool = Vulkan_API::get_command_pool(rendering_objects.graphics_command_pool);
     
-    vk.command_buffer_count = vulkan_state.swapchain.image_count;
+    vk.command_buffer_count = vulkan_state.swapchain.images.count;
 
     vk.command_buffers = (VkCommandBuffer *)allocate_stack(sizeof(VkCommandBuffer) * vk.command_buffer_count
 							   , Alignment(1)
@@ -917,7 +919,10 @@ init_command_buffers(void)
 	render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 	render_pass_info.pNext = nullptr;
 	render_pass_info.renderPass = render_pass->render_pass;
-	render_pass_info.framebuffer = vulkan_state.swapchain.fbos[i];
+
+	Vulkan_API::Framebuffer *fbo = Vulkan_API::get_framebuffer(swapchain->framebuffers.buffer[i]);
+	
+	render_pass_info.framebuffer = fbo->framebuffer;
 	render_pass_info.renderArea.offset = {0, 0};
 	render_pass_info.renderArea.extent = vulkan_state.swapchain.extent;
 
@@ -1033,7 +1038,7 @@ init_vk(GLFWwindow *window)
     //    init_depth_resources();
 
     
-    init_framebuffers();
+    //    init_framebuffers();
 
 
     init_texture_image();
@@ -1048,7 +1053,7 @@ init_vk(GLFWwindow *window)
     init_descriptor_sets();
 
 
-    init_command_buffers();
+    init_command_buffers(&vulkan_state.swapchain);
     init_sync();
 }
 
@@ -1175,11 +1180,11 @@ destroy_vk(void)
     vkDestroyRenderPass(vulkan_state.gpu.logical_device, render_pass->render_pass, nullptr);
 
     for (uint32 i = 0
-	     ; i < vulkan_state.swapchain.image_count
+	     ; i < vulkan_state.swapchain.images.count
 	     ; ++i)
     {
 	// images are destroyed by the vkDestroySwapchainKHR()
-	vkDestroyImageView(vulkan_state.gpu.logical_device, vulkan_state.swapchain.image_views[i], nullptr);
+	//	vkDestroyImageView(vulkan_state.gpu.logical_device, vulkan_state.swapchain.image_views[i], nullptr);
     }
 
     vkDestroySwapchainKHR(vulkan_state.gpu.logical_device, vulkan_state.swapchain.swapchain, nullptr);

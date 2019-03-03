@@ -129,13 +129,9 @@ namespace Vulkan_API
 	VkPresentModeKHR present_mode;
 	VkSwapchainKHR swapchain;
 	VkExtent2D extent;
-
-	VkImage *images;
-	VkImageView *image_views;
-	uint32 image_count;
-
-	VkFramebuffer *fbos;
-	uint32 fbo_count;
+	
+	Memory_Buffer_View<Image2D_Handle> images;
+	Memory_Buffer_View<Framebuffer_Handle> framebuffers;
     };
     
     struct Render_Pass
@@ -497,13 +493,13 @@ namespace Vulkan_API
     {
 	VkFramebuffer framebuffer;
 
+	// for color attachments only
 	Memory_Buffer_View<Image2D_Handle> color_attachments;
 	Image2D_Handle depth_attachment = UNINITIALIZED_HANDLE;
     };
     
     void
     init_framebuffer(Render_Pass *compatible_render_pass
-		     , const Memory_Buffer_View<VkImageView> &attachments
 		     , uint32 width
 		     , uint32 height
 		     , GPU *gpu

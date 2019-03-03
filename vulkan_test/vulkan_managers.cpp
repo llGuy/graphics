@@ -16,6 +16,7 @@ namespace Vulkan_API
     MAKE_OBJECT_MANAGER_TMP_PARAM_GROUP(GRAPHICS_PIPELINE, 30, 10, Graphics_Pipeline, uint8)
     MAKE_OBJECT_MANAGER_TMP_PARAM_GROUP(COMMAND_POOL, 5, 5, Command_Pool, uint8)
     MAKE_OBJECT_MANAGER_TMP_PARAM_GROUP(IMAGE2D, 20, 6, Image2D, uint8)
+    MAKE_OBJECT_MANAGER_TMP_PARAM_GROUP(FRAMEBUFFER, 20, 6, Framebuffer, uint8)
 
     
     template <typename I_Type /* which type of int */
@@ -63,7 +64,7 @@ namespace Vulkan_API
 	uint32 /* handle */
 	add(void)
 	{
-	    uint32 handle = object_count;
+	    uint32 handle = object_count++;
 
 	    if (object_count == N)
 	    {
@@ -94,6 +95,9 @@ namespace Vulkan_API
 
     global_var Object_Manager<Image2D, IMAGE2D_MAX_COUNT, Image2D_Stack_Type, IMAGE2D_STACK_MAX_REMOVED> image2D_manager;
     global_var Hash_Table_Inline<uint32 /*index of item in the manager struct*/, 20, 8, 3> image2D_index_map {"map.image2D_index_map"};
+
+    global_var Object_Manager<Framebuffer, FRAMEBUFFER_MAX_COUNT, Framebuffer_Stack_Type, FRAMEBUFFER_STACK_MAX_REMOVED> framebuffer_manager;
+    global_var Hash_Table_Inline<uint32 /*index of item in the manager struct*/, 20, 8, 3> framebuffer_index_map {"map.framebuffer_index_map"};
 
 
     
@@ -293,6 +297,31 @@ namespace Vulkan_API
     get_image2D(Image2D_Handle handle)
     {
 	return(get_template(&image2D_manager
+			    , handle));
+    }
+
+
+
+    Framebuffer_Handle
+    add_framebuffer(const Constant_String &string)
+    {
+	return(add_template(&framebuffer_manager
+			    , &framebuffer_index_map
+			    , string));
+    }
+
+    Framebuffer_Handle
+    get_framebuffer_handle(const Constant_String &string)
+    {
+	return(get_handle_template(&framebuffer_manager
+				   , &framebuffer_index_map
+				   , string));
+    }
+    
+    Framebuffer *
+    get_framebuffer(Image2D_Handle handle)
+    {
+	return(get_template(&framebuffer_manager
 			    , handle));
     }
     
