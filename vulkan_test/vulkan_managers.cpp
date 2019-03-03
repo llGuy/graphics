@@ -15,6 +15,7 @@ namespace Vulkan_API
     MAKE_OBJECT_MANAGER_TMP_PARAM_GROUP(MODEL, 30, 10, Model, uint8)
     MAKE_OBJECT_MANAGER_TMP_PARAM_GROUP(GRAPHICS_PIPELINE, 30, 10, Graphics_Pipeline, uint8)
     MAKE_OBJECT_MANAGER_TMP_PARAM_GROUP(COMMAND_POOL, 5, 5, Command_Pool, uint8)
+    MAKE_OBJECT_MANAGER_TMP_PARAM_GROUP(IMAGE2D, 20, 6, Image2D, uint8)
 
     
     template <typename I_Type /* which type of int */
@@ -91,6 +92,11 @@ namespace Vulkan_API
     global_var Object_Manager<VkCommandPool, COMMAND_POOL_MAX_COUNT, Command_Pool_Stack_Type, COMMAND_POOL_STACK_MAX_REMOVED> command_pool_manager;
     global_var Hash_Table_Inline<uint32 /*index of item in the manager struct*/, 20, 8, 3> command_pool_index_map {"map.command_pool_index_map"};
 
+    global_var Object_Manager<Image2D, IMAGE2D_MAX_COUNT, Image2D_Stack_Type, IMAGE2D_STACK_MAX_REMOVED> image2D_manager;
+    global_var Hash_Table_Inline<uint32 /*index of item in the manager struct*/, 20, 8, 3> image2D_index_map {"map.image2D_index_map"};
+
+
+    
     template <typename Manager_Type
 	      , typename Hash_Table_Type> uint32
     add_template(Manager_Type *manager
@@ -261,6 +267,32 @@ namespace Vulkan_API
     get_command_pool(Command_Pool_Handle handle)
     {
 	return(get_template(&command_pool_manager
+			    , handle));
+    }
+
+
+
+    // image2D stuff
+    Image2D_Handle
+    add_image2D(const Constant_String &string)
+    {
+	return(add_template(&image2D_manager
+			    , &image2D_index_map
+			    , string));
+    }
+
+    Image2D_Handle
+    get_image2D_handle(const Constant_String &string)
+    {
+	return(get_handle_template(&image2D_manager
+				   , &image2D_index_map
+				   , string));
+    }
+    
+    Image2D *
+    get_image2D(Image2D_Handle handle)
+    {
+	return(get_template(&image2D_manager
 			    , handle));
     }
     

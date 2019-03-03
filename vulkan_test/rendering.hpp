@@ -19,6 +19,7 @@ namespace Rendering
 	Vulkan_API::Descriptor_Set_Layout_Handle descriptor_set_layout;
 	Vulkan_API::Graphics_Pipeline_Handle graphics_pipeline;
 	Vulkan_API::Command_Pool_Handle graphics_command_pool;
+	Vulkan_API::Image2D_Handle depth_image;
     };
     
     void

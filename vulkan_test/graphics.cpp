@@ -261,266 +261,6 @@ internal uint32 mesh_indices[]
     4, 5, 6, 6, 7, 4
 };
 
-internal void
-init_graphics_pipeline(void)
-{
-    File_Contents vsh_bytecode = read_file("../vulkan/shaders/vert.spv");
-    File_Contents fsh_bytecode = read_file("../vulkan/shaders/frag.spv");
-
-    VkShaderModule v_module = create_shader(&vsh_bytecode);
-    VkShaderModule f_module = create_shader(&fsh_bytecode);
-
-    VkPipelineShaderStageCreateInfo vsh_stage_info	= {};
-    vsh_stage_info.sType				= VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    vsh_stage_info.stage				= VK_SHADER_STAGE_VERTEX_BIT;
-    vsh_stage_info.module				= v_module;
-    vsh_stage_info.pName				= "main";
-
-    VkPipelineShaderStageCreateInfo fsh_stage_info	= {};
-    fsh_stage_info.sType				= VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    fsh_stage_info.stage				= VK_SHADER_STAGE_FRAGMENT_BIT;
-    fsh_stage_info.module				= f_module;
-    fsh_stage_info.pName				= "main";
-
-    VkPipelineShaderStageCreateInfo shader_infos[] = {vsh_stage_info, fsh_stage_info};
-
-    VkPipelineVertexInputStateCreateInfo vertex_input_info	= {};
-    vertex_input_info.sType					= VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-
-    Vertex::Vertex_Attributes attributes	= Vertex::get_attribute_descriptions();
-    VkVertexInputBindingDescription binding	= Vertex::get_binding_description();
-
-    vertex_input_info.vertexBindingDescriptionCount	= 1;
-    vertex_input_info.pVertexBindingDescriptions	= &binding;
-    vertex_input_info.vertexAttributeDescriptionCount	= (uint32)Vertex::Vertex_Attributes::attribute_count;
-    vertex_input_info.pVertexAttributeDescriptions	= attributes.attributes;
-
-    VkPipelineInputAssemblyStateCreateInfo input_assembly	= {};
-    input_assembly.sType					= VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-    input_assembly.topology					= VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-    input_assembly.primitiveRestartEnable			= VK_FALSE;
-
-    VkViewport viewport = {};
-    viewport.x		= 0.0f;
-    viewport.y		= 0.0f;
-    viewport.width	= (float32)vulkan_state.swapchain.extent.width;
-    viewport.height	= (float32)vulkan_state.swapchain.extent.height;
-    viewport.minDepth	= 0.0f;
-    viewport.maxDepth	= 1.0f;
-
-    VkRect2D scissor	= {};
-    scissor.offset	= {0, 0};
-    scissor.extent	= vulkan_state.swapchain.extent;
-
-    VkPipelineViewportStateCreateInfo viewport_info	= {};
-    viewport_info.sType					= VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-    viewport_info.viewportCount				= 1;
-    viewport_info.pViewports				= &viewport;
-    viewport_info.scissorCount				= 1;
-    viewport_info.pScissors				= &scissor;
-
-    VkPipelineRasterizationStateCreateInfo rasterizer = {};
-    rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;    
-    rasterizer.depthClampEnable = VK_FALSE;
-    rasterizer.rasterizerDiscardEnable = VK_FALSE;
-    rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
-    rasterizer.lineWidth = 1.0f;
-    rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-    rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-    rasterizer.depthBiasEnable = VK_FALSE;
-    rasterizer.depthBiasConstantFactor = 0.0f;
-    rasterizer.depthBiasClamp = 0.0f;
-    rasterizer.depthBiasSlopeFactor = 0.0f;
-
-    VkPipelineMultisampleStateCreateInfo multisampling = {};
-    multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-    multisampling.sampleShadingEnable = VK_FALSE;
-    multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
-    multisampling.minSampleShading = 1.0f;
-    multisampling.pSampleMask = nullptr;
-    multisampling.alphaToCoverageEnable = VK_FALSE;
-    multisampling.alphaToOneEnable = VK_FALSE;
-
-    VkPipelineColorBlendAttachmentState color_blend_attachment = {};
-    color_blend_attachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-    color_blend_attachment.blendEnable = VK_FALSE; 
-    color_blend_attachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;  // VK_BLEND_FACTOR_SRC_ALPHA
-    color_blend_attachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO; // VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA
-    color_blend_attachment.colorBlendOp = VK_BLEND_OP_ADD;
-    color_blend_attachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-    color_blend_attachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-    color_blend_attachment.alphaBlendOp = VK_BLEND_OP_ADD;
-
-    VkPipelineColorBlendStateCreateInfo color_blending = {};
-    color_blending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-    color_blending.logicOpEnable = VK_FALSE;
-    color_blending.logicOp = VK_LOGIC_OP_COPY;
-    color_blending.attachmentCount = 1;
-    color_blending.pAttachments = &color_blend_attachment;
-    color_blending.blendConstants[0] = 0.0f;
-    color_blending.blendConstants[1] = 0.0f;
-    color_blending.blendConstants[2] = 0.0f;
-    color_blending.blendConstants[3] = 0.0f;
-
-    VkDynamicState dynamic_states[]
-    {
-	VK_DYNAMIC_STATE_VIEWPORT,
-	VK_DYNAMIC_STATE_LINE_WIDTH
-    };
-    VkPipelineDynamicStateCreateInfo dynamic_state = {};
-    dynamic_state.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-    dynamic_state.dynamicStateCount = 2;
-    dynamic_state.pDynamicStates = dynamic_states;
-
-    VkPipelineLayoutCreateInfo pipeline_layout_info = {};
-    pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipeline_layout_info.setLayoutCount = 1;
-    VkDescriptorSetLayout *descriptor_layout = Vulkan_API::get_descriptor_set_layout(rendering_objects.descriptor_set_layout);
-    pipeline_layout_info.pSetLayouts = descriptor_layout;
-    pipeline_layout_info.pushConstantRangeCount = 0;
-    pipeline_layout_info.pPushConstantRanges = nullptr;
-
-    VK_CHECK(vkCreatePipelineLayout(vulkan_state.gpu.logical_device, &pipeline_layout_info, nullptr, &vk.pipeline_layout));
-
-    VkPipelineDepthStencilStateCreateInfo depth_stencil = {};
-    depth_stencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-    depth_stencil.depthTestEnable = VK_TRUE;
-    depth_stencil.depthWriteEnable = VK_TRUE;
-    depth_stencil.depthCompareOp = VK_COMPARE_OP_LESS;
-    depth_stencil.depthBoundsTestEnable = VK_FALSE;
-    depth_stencil.minDepthBounds = 0.0f;
-    depth_stencil.maxDepthBounds = 1.0f;
-    depth_stencil.stencilTestEnable = VK_FALSE;
-    depth_stencil.front = {};
-    depth_stencil.back = {};
-
-    VkGraphicsPipelineCreateInfo pipeline_info = {};
-    pipeline_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-    pipeline_info.stageCount = 2;
-    pipeline_info.pStages = shader_infos;
-    pipeline_info.pVertexInputState = &vertex_input_info;
-    pipeline_info.pInputAssemblyState = &input_assembly;
-    pipeline_info.pViewportState = &viewport_info;
-    pipeline_info.pRasterizationState = &rasterizer;
-    pipeline_info.pMultisampleState = &multisampling;
-    pipeline_info.pDepthStencilState = &depth_stencil;
-    pipeline_info.pColorBlendState = &color_blending;
-    pipeline_info.pDynamicState = nullptr;
-
-    pipeline_info.layout = vk.pipeline_layout;
-    Vulkan_API::Render_Pass *render_pass = Vulkan_API::get_render_pass(rendering_objects.test_render_pass);
-    pipeline_info.renderPass = render_pass->render_pass;
-    pipeline_info.subpass = 0;
-
-    pipeline_info.basePipelineHandle = VK_NULL_HANDLE;
-    pipeline_info.basePipelineIndex = -1;
-
-    //VK_CHECK(vkCreateGraphicsPipelines(vulkan_state.gpu.logical_device, VK_NULL_HANDLE, 1, &pipeline_info, nullptr, &vk.graphics_pipeline));
-    if (vkCreateGraphicsPipelines(vulkan_state.gpu.logical_device, VK_NULL_HANDLE, 1, &pipeline_info, nullptr, &vk.graphics_pipeline) != VK_SUCCESS)
-    {
-	OUTPUT_DEBUG_LOG("%s\n", "error creating graphics pipeline");
-    }
-
-    vkDestroyShaderModule(vulkan_state.gpu.logical_device, v_module, nullptr);
-    vkDestroyShaderModule(vulkan_state.gpu.logical_device, f_module, nullptr);
-
-    pop_stack();
-    pop_stack();
-}
-
-// get validation support
-internal constexpr uint32 requested_layer_count = 1;
-internal const char *requested_layers[requested_layer_count] { "VK_LAYER_LUNARG_standard_validation" };
-
-internal VkInstance
-create_instance(const char **extension_names
-		, const char **layer_names
-		, VkApplicationInfo app_info = {})
-{
-    
-}
-
-internal void
-init_instance(void)
-{
-    VkInstanceCreateInfo instance_info = {};
-    instance_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-
-    VkApplicationInfo app_info = {};
-    app_info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-    app_info.pApplicationName = "Vulkan Engine";
-    app_info.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-    app_info.pEngineName = "No Engine";
-    app_info.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-    app_info.apiVersion = VK_API_VERSION_1_0;
-
-    instance_info.pApplicationInfo = &app_info;
-    
-
-
-    uint32 layer_count;
-    vkEnumerateInstanceLayerProperties(&layer_count
-				       , nullptr);
-
-    VkLayerProperties *properties = (VkLayerProperties *)allocate_stack(sizeof(VkLayerProperties) * layer_count
-									, Alignment(1)
-									, "validation_layer_list_allocation");
-    vkEnumerateInstanceLayerProperties(&layer_count
-				       , properties);
-
-    for (uint32 r = 0; r < requested_layer_count; ++r)
-    {
-	bool found_layer = false;
-	for (uint32 l = 0; l < layer_count; ++l)
-	{
-	    if (!strcmp(properties[l].layerName, requested_layers[r])) found_layer = true;
-	}
-
-	if (!found_layer) assert(false);
-    }
-
-    // if found then add to the instance information
-    instance_info.enabledLayerCount = requested_layer_count;
-    instance_info.ppEnabledLayerNames = requested_layers;
-
-    // get extensions needed
-    uint32 glfw_extension_count = 0;
-    const char **glfw_extensions = glfwGetRequiredInstanceExtensions(&glfw_extension_count);
-
-    const char **extensions = (const char **)allocate_stack(sizeof(const char *) * (glfw_extension_count + 1)
-							    , Alignment(1)
-							    , "extension_layer_list_allocation");
-
-    memcpy(extensions, glfw_extensions, sizeof(const char *) * glfw_extension_count);
-    
-    // add the debug utils extension to the list
-    extensions[glfw_extension_count] = VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
-
-    instance_info.enabledExtensionCount = glfw_extension_count + 1;
-    instance_info.ppEnabledExtensionNames = extensions;
-
-    VK_CHECK(vkCreateInstance(&instance_info
-			      , nullptr
-			      , &vulkan_state.instance)
-	     , "failed to create instance\n");
-
-    pop_stack();
-    pop_stack();
-}
-
-internal void
-init_command_pool(void)
-{
-    Vulkan_API::Queue_Families *indices = &vulkan_state.gpu.queue_families;
-
-    VkCommandPoolCreateInfo pool_info	= {};
-    pool_info.sType			= VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-    pool_info.queueFamilyIndex		= indices->graphics_family;
-    pool_info.flags			= 0;
-
-    //    VK_CHECK(vkCreateCommandPool(vulkan_state.gpu.logical_device, &pool_info, nullptr, &vk.command_pool));
-}
-
 internal uint32
 find_memory_type(uint32 type_filter
 		 , VkMemoryPropertyFlags properties)
@@ -721,7 +461,7 @@ transition_image_layout(VkImage image
     end_single_time_command(command_buffer);
 }
 
-internal void
+/*internal void
 init_depth_resources(void)
 {
     VkFormat depth_format = find_depth_format();
@@ -742,7 +482,7 @@ init_depth_resources(void)
 			    , depth_format
 			    , VK_IMAGE_LAYOUT_UNDEFINED
 			    , VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
-}
+}*/
 
 internal void
 init_framebuffers(void)
@@ -752,6 +492,8 @@ init_framebuffers(void)
 								   , "framebuffer_list_allocation"));
 
     Vulkan_API::Render_Pass *render_pass = Vulkan_API::get_render_pass(rendering_objects.test_render_pass);
+
+    Vulkan_API::Image2D *depth_image = Vulkan_API::get_image2D(rendering_objects.depth_image);
     
     for (uint32 i = 0
 	     ; i < vulkan_state.swapchain.image_count
@@ -759,7 +501,7 @@ init_framebuffers(void)
     {
 	VkImageView attachments[]
 	{
-	    vulkan_state.swapchain.image_views[i], vk.depth_image_view
+	    vulkan_state.swapchain.image_views[i], depth_image->image_view
 	};
 
 	VkFramebufferCreateInfo fbo_info	= {};
@@ -1285,10 +1027,10 @@ init_vk(GLFWwindow *window)
     //    init_graphics_pipeline();
 
     
-    init_command_pool();
+    //init_command_pool();
 
     
-    init_depth_resources();
+    //    init_depth_resources();
 
     
     init_framebuffers();

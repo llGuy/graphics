@@ -82,7 +82,7 @@ extern struct Stack_Allocator
 
 void *
 allocate_stack(uint32 allocation_size
-	       , Alignment alignment
+	       , Alignment alignment = 1
 	       , const char *name = ""
 	       , Stack_Allocator *allocator = &stack_allocator_global);
 
@@ -121,7 +121,7 @@ extern struct Free_List_Allocator
 
 void *
 allocate_free_list(uint32 allocation_size
-		   , Alignment alignment
+		   , Alignment alignment = 1
 		   , const char *name = ""
 		   , Free_List_Allocator *allocator = &free_list_allocator_global);
 

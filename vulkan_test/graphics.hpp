@@ -23,14 +23,14 @@ extern struct Vulkan_State
 
     //    VkRenderPass render_pass;
     //VkDescriptorSetLayout descriptor_layout;
-    VkPipeline graphics_pipeline;
-    VkPipelineLayout pipeline_layout;
+    //    VkPipeline graphics_pipeline;
+    //VkPipelineLayout pipeline_layout;
 
     //    VkCommandPool command_pool;
 
-    VkImage depth_image;
-    VkDeviceMemory depth_image_memory;
-    VkImageView depth_image_view;
+    //    VkImage depth_image;
+    //    VkDeviceMemory depth_image_memory;
+    //    VkImageView depth_image_view;
 
     VkImage texture_image;
     VkDeviceMemory texture_image_memory;

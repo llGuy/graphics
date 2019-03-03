@@ -250,6 +250,47 @@ namespace Rendering
 					  , gpu
 					  , graphics_command_pool);
     }
+
+    internal void
+    init_depth_texture(Vulkan_API::Swapchain *swapchain
+		       , Vulkan_API::GPU *gpu)
+    {
+	VkFormat depth_format = gpu->supported_depth_format;
+
+	Vulkan_API::Image2D_Handle depth_image_handle = Vulkan_API::add_image2D("image2D.depth_image"_hash);
+	Vulkan_API::Image2D *depth_image = Vulkan_API::get_image2D(depth_image_handle);
+
+	Vulkan_API::init_image(swapchain->extent.width
+			       , swapchain->extent.height
+			       , depth_format
+			       , VK_IMAGE_TILING_OPTIMAL
+			       , VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT
+			       , VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+			       , gpu
+			       , &depth_image->image);
+
+	VkMemoryRequirements requirements = depth_image->get_memory_requirements(gpu);
+	Vulkan_API::Memory::allocate_gpu_memory(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+						, requirements
+						, gpu
+						, &depth_image->device_memory);
+	vkBindImageMemory(gpu->logical_device, depth_image->image, depth_image->device_memory, 0);
+
+	Vulkan_API::init_image_view(&depth_image->image
+				    , depth_format
+				    , VK_IMAGE_ASPECT_DEPTH_BIT
+				    , gpu
+				    , &depth_image->image_view);
+
+	Vulkan_API::Command_Pool_Handle command_pool_handle = Vulkan_API::get_command_pool_handle("command_pool.graphics_command_pool"_hash);
+	VkCommandPool *command_pool = Vulkan_API::get_command_pool(command_pool_handle);
+	Vulkan_API::transition_image_layout(&depth_image->image
+					    , depth_format
+					    , VK_IMAGE_LAYOUT_UNDEFINED
+					    , VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
+					    , command_pool
+					    , gpu);
+    }
     
     void
     init_rendering_state(Vulkan_API::State *vulkan_state
@@ -265,11 +306,14 @@ namespace Rendering
 	init_graphics_pipeline(&vulkan_state->swapchain, &vulkan_state->gpu);
 
 	init_command_pool(&vulkan_state->gpu);
+
+	init_depth_texture(&vulkan_state->swapchain, &vulkan_state->gpu);
 	
 	cache->test_render_pass = Vulkan_API::get_render_pass_handle("render_pass.test_render_pass"_hash);
 	cache->descriptor_set_layout = Vulkan_API::get_descriptor_set_layout_handle("descriptor_set_layout.test_descriptor_set_layout"_hash);
 	cache->graphics_pipeline = Vulkan_API::get_graphics_pipeline_handle("pipeline.main_pipeline"_hash);
 	cache->graphics_command_pool = Vulkan_API::get_command_pool_handle("command_pool.graphics_command_pool"_hash);
+	cache->depth_image = Vulkan_API::get_image2D_handle("image2D.depth_image"_hash);
     }
 
 }

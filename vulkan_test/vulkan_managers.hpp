@@ -71,4 +71,15 @@ namespace Vulkan_API
     VkCommandPool *
     get_command_pool(Command_Pool_Handle handle);
 
+
+
+    Image2D_Handle
+    add_image2D(const Constant_String &string);
+
+    Image2D_Handle
+    get_image2D_handle(const Constant_String &string);
+    
+    Image2D *
+    get_image2D(Image2D_Handle handle);
+
 }

@@ -52,8 +52,7 @@ namespace Vulkan_API
 
 	// allocates memory for stuff like buffers and images
 	void
-	allocate_gpu_memory(VkDeviceSize allocation_size
-			    , VkMemoryPropertyFlags properties
+	allocate_gpu_memory(VkMemoryPropertyFlags properties
 			    , VkMemoryRequirements memory_requirements
 			    , GPU *gpu
 			    , VkDeviceMemory *dest_memory);
@@ -72,12 +71,21 @@ namespace Vulkan_API
 		  , VkSharingMode sharing_mode
 		  , Buffer *dest_buffer);
 
-    struct Texture
+    struct Image2D
     {
-	VkImage image;
-	VkImageView image_view;
-	// optional : ex: swapchain images won't store the VkDeviceMemory objects in the Image struct
-	VkDeviceMemory memory;
+	VkImage image = VK_NULL_HANDLE;
+	VkImageView image_view = VK_NULL_HANDLE;
+	VkSampler image_sampler = VK_NULL_HANDLE;
+	VkDeviceMemory device_memory = VK_NULL_HANDLE;
+
+	inline VkMemoryRequirements
+	get_memory_requirements(GPU *gpu)
+	{
+	    VkMemoryRequirements requirements = {};
+	    vkGetImageMemoryRequirements(gpu->logical_device, image, &requirements);
+
+	    return(requirements);
+	}
     };
     
     void
@@ -96,6 +104,24 @@ namespace Vulkan_API
 		    , VkImageAspectFlags aspect_flags
 		    , GPU *gpu
 		    , VkImageView *dest_image_view);
+
+    void
+    init_image_sampler(VkFilter mag_filter
+		       , VkFilter min_filter
+		       , VkSamplerAddressMode u_sampler_address_mode
+		       , VkSamplerAddressMode v_sampler_address_mode
+		       , VkSamplerAddressMode w_sampler_address_mode
+		       , VkBool32 anisotropy_enable
+		       , uint32 max_anisotropy
+		       , VkBorderColor clamp_border_color
+		       , VkBool32 compare_enable
+		       , VkCompareOp compare_op
+		       , VkSamplerMipmapMode mipmap_mode
+		       , float32 mip_lod_bias
+		       , float32 min_lod
+		       , float32 max_lod
+		       , GPU *gpu
+		       , VkSampler *dest_sampler);
 
     struct Swapchain
     {
@@ -426,6 +452,62 @@ namespace Vulkan_API
     allocate_command_pool(uint32 queue_family_index
 			  , GPU *gpu
 			  , VkCommandPool *command_pool);
+
+    void
+    allocate_command_buffers(VkCommandPool *command_pool_source
+			     , VkCommandBufferLevel level
+			     , GPU *gpu
+			     , const Memory_Buffer_View<VkCommandBuffer> &command_buffers);
+
+    inline void
+    free_command_buffer(const Memory_Buffer_View<VkCommandBuffer> &command_buffers
+			, VkCommandPool *pool
+			, GPU *gpu)
+    {
+	vkFreeCommandBuffers(gpu->logical_device
+			     , *pool
+			     , command_buffers.count
+			     , command_buffers.buffer);
+    }
+    
+    void
+    begin_command_buffer(VkCommandBuffer *command_buffer
+			 , VkCommandBufferUsageFlags usage_flags
+			 , VkCommandBufferInheritanceInfo *inheritance);
+
+    inline void
+    end_command_buffer(VkCommandBuffer *command_buffer)
+    {
+	vkEndCommandBuffer(*command_buffer);
+    }
+
+    void
+    submit(const Memory_Buffer_View<VkCommandBuffer> &command_buffers
+	   , VkQueue *queue);
+
+    void
+    transition_image_layout(VkImage *image
+			    , VkFormat format
+			    , VkImageLayout old_layout
+			    , VkImageLayout new_layout
+			    , VkCommandPool *graphics_command_pool
+			    , GPU *gpu);
+
+    struct Framebuffer
+    {
+	VkFramebuffer framebuffer;
+
+	Memory_Buffer_View<Image2D_Handle> color_attachments;
+	Image2D_Handle depth_attachment = UNINITIALIZED_HANDLE;
+    };
+    
+    void
+    init_framebuffer(Render_Pass *compatible_render_pass
+		     , const Memory_Buffer_View<VkImageView> &attachments
+		     , uint32 width
+		     , uint32 height
+		     , GPU *gpu
+		     , Framebuffer *framebuffer); // need to initialize the attachment handles
     
     struct State
     {

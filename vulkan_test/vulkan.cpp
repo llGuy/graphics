@@ -6,6 +6,7 @@
 #include <limits.h>
 #include <GLFW/glfw3.h>
 #include <vulkan/vulkan.h>
+#include "vulkan_managers.hpp"
 
 namespace Vulkan_API
 {
@@ -37,15 +38,14 @@ namespace Vulkan_API
 	}
 	
 	void
-	allocate_gpu_memory(VkDeviceSize allocation_size
-			    , VkMemoryPropertyFlags properties
+	allocate_gpu_memory(VkMemoryPropertyFlags properties
 			    , VkMemoryRequirements memory_requirements
 			    , GPU *gpu
 			    , VkDeviceMemory *dest_memory)
 	{
 	    VkMemoryAllocateInfo alloc_info = {};
 	    alloc_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-	    alloc_info.allocationSize = allocation_size;
+	    alloc_info.allocationSize = memory_requirements.size;
 	    alloc_info.memoryTypeIndex = find_memory_type_according_to_requirements(gpu
 										    , properties
 										    , memory_requirements);
@@ -177,7 +177,7 @@ namespace Vulkan_API
 
     internal void
     init_debug_messenger(VkInstance *instance
-			  , VkDebugUtilsMessengerEXT *messenger)
+			 , VkDebugUtilsMessengerEXT *messenger)
     {
 	// setup debugger
 	VkDebugUtilsMessengerCreateInfoEXT debug_info = {};
@@ -480,6 +480,34 @@ namespace Vulkan_API
     }
 
     void
+    init_image(uint32 width
+	       , uint32 height
+	       , VkFormat format
+	       , VkImageTiling tiling
+	       , VkImageUsageFlags usage
+	       , VkMemoryPropertyFlags properties
+	       , GPU *gpu
+	       , VkImage *dest_image)
+    {
+	VkImageCreateInfo image_info = {};
+	image_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+	image_info.imageType = VK_IMAGE_TYPE_2D;
+	image_info.extent.width = width;
+	image_info.extent.height = height;
+	image_info.extent.depth = 1;
+	image_info.mipLevels = 1;
+	image_info.arrayLayers = 1;
+	image_info.format = format;
+	image_info.tiling = tiling;
+	image_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	image_info.usage = usage;
+	image_info.samples = VK_SAMPLE_COUNT_1_BIT;
+	image_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+	VK_CHECK(vkCreateImage(gpu->logical_device, &image_info, nullptr, dest_image));
+    }
+    
+    void
     init_image_view(VkImage *image
 		    , VkFormat format
 		    , VkImageAspectFlags aspect_flags
@@ -498,6 +526,187 @@ namespace Vulkan_API
 	view_info.subresourceRange.layerCount		= 1;
 
 	VK_CHECK(vkCreateImageView(gpu->logical_device, &view_info, nullptr, dest_image_view));
+    }
+
+    void
+    init_image_sampler(VkFilter mag_filter
+		       , VkFilter min_filter
+		       , VkSamplerAddressMode u_sampler_address_mode
+		       , VkSamplerAddressMode v_sampler_address_mode
+		       , VkSamplerAddressMode w_sampler_address_mode
+		       , VkBool32 anisotropy_enable
+		       , uint32 max_anisotropy
+		       , VkBorderColor clamp_border_color
+		       , VkBool32 compare_enable
+		       , VkCompareOp compare_op
+		       , VkSamplerMipmapMode mipmap_mode
+		       , float32 mip_lod_bias
+		       , float32 min_lod
+		       , float32 max_lod
+		       , GPU *gpu
+		       , VkSampler *dest_sampler)
+    {
+	VkSamplerCreateInfo sampler_info = {};
+	sampler_info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+	sampler_info.magFilter = mag_filter;
+	sampler_info.minFilter = min_filter;
+	sampler_info.addressModeU = u_sampler_address_mode;
+	sampler_info.addressModeV = v_sampler_address_mode;
+	sampler_info.addressModeW = w_sampler_address_mode;
+	sampler_info.anisotropyEnable = anisotropy_enable;
+	sampler_info.maxAnisotropy = max_anisotropy;
+	sampler_info.borderColor = clamp_border_color; // when clamping
+	sampler_info.compareEnable = compare_enable;
+	sampler_info.compareOp = compare_op;
+	sampler_info.mipmapMode = mipmap_mode;
+	sampler_info.mipLodBias = mip_lod_bias;
+	sampler_info.minLod = min_lod;
+	sampler_info.maxLod = max_lod;
+
+	VK_CHECK(vkCreateSampler(gpu->logical_device, &sampler_info, nullptr, dest_sampler));
+    }
+
+    void
+    begin_command_buffer(VkCommandBuffer *command_buffer
+			 , VkCommandBufferUsageFlags usage_flags
+			 , VkCommandBufferInheritanceInfo *inheritance)
+    {
+	VkCommandBufferBeginInfo begin_info = {};
+	begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	begin_info.flags = usage_flags;
+	begin_info.pInheritanceInfo = inheritance;
+
+	VK_CHECK(vkBeginCommandBuffer(*command_buffer
+				      , &begin_info));
+    }
+
+    void
+    allocate_command_buffers(VkCommandPool *command_pool_source
+			     , VkCommandBufferLevel level
+			     , GPU *gpu
+			     , const Memory_Buffer_View<VkCommandBuffer> &command_buffers)
+    {
+	VkCommandBufferAllocateInfo allocate_info = {};
+	allocate_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+	allocate_info.level = level;
+	allocate_info.commandPool = *command_pool_source;
+	allocate_info.commandBufferCount = command_buffers.count;
+
+	vkAllocateCommandBuffers(gpu->logical_device
+				 , &allocate_info
+				 , command_buffers.buffer);
+    }
+    
+    void
+    submit(const Memory_Buffer_View<VkCommandBuffer> &command_buffers
+	   , VkQueue *queue)
+    {
+	VkSubmitInfo submit_info = {};
+	submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	submit_info.commandBufferCount = command_buffers.count;
+	submit_info.pCommandBuffers = command_buffers.buffer;
+
+	vkQueueSubmit(*queue, 1, &submit_info, VK_NULL_HANDLE);
+    }
+
+    internal bool
+    has_stencil_component(VkFormat format)
+    {
+	return(format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT);
+    }
+    
+    void
+    transition_image_layout(VkImage *image
+			    , VkFormat format
+			    , VkImageLayout old_layout
+			    , VkImageLayout new_layout
+			    , VkCommandPool *graphics_command_pool
+			    , GPU *gpu)
+    {
+	VkCommandBuffer single_command;
+	allocate_command_buffers(graphics_command_pool
+				 , VK_COMMAND_BUFFER_LEVEL_PRIMARY
+				 , gpu
+				 , Memory_Buffer_View<VkCommandBuffer>{1, &single_command});
+	
+	begin_command_buffer(&single_command, VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT, nullptr);
+	
+	VkImageMemoryBarrier barrier = {};
+	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+	barrier.oldLayout = old_layout;
+	barrier.newLayout = new_layout;
+
+	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+   
+	barrier.image				= *image;
+	barrier.subresourceRange.aspectMask	= VK_IMAGE_ASPECT_COLOR_BIT;
+	barrier.subresourceRange.baseMipLevel	= 0;
+	barrier.subresourceRange.levelCount	= 1;
+	barrier.subresourceRange.baseArrayLayer	= 0;
+	barrier.subresourceRange.layerCount	= 1;
+
+	VkPipelineStageFlags source_stage;
+	VkPipelineStageFlags destination_stage;
+
+	if (old_layout == VK_IMAGE_LAYOUT_UNDEFINED && new_layout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
+	{
+	    barrier.srcAccessMask = 0;
+	    barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+
+	    source_stage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+	    destination_stage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+	}
+	else if (old_layout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && new_layout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+	{
+	    barrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+	    barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+	    source_stage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+	    destination_stage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+	}
+	else if (old_layout == VK_IMAGE_LAYOUT_UNDEFINED && new_layout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
+	{
+	    barrier.srcAccessMask = 0;
+	    barrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT
+		| VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+
+	    source_stage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+	    destination_stage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+	}
+	else
+	{
+	    OUTPUT_DEBUG_LOG("%s\n", "unsupported layout transition");
+	    assert(false);
+	}
+
+	if (new_layout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
+	{
+	    barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+	    if (has_stencil_component(format))
+	    {
+		barrier.subresourceRange.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
+	    }
+	}
+	else
+	{
+	    barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	}
+
+	vkCmdPipelineBarrier(single_command
+			     , source_stage
+			     , destination_stage
+			     , 0
+			     , 0
+			     , nullptr
+			     , 0
+			     , nullptr
+			     , 1
+			     , &barrier);
+
+	end_command_buffer(&single_command);
+	submit(Memory_Buffer_View<VkCommandBuffer>{1, &single_command}, &gpu->graphics_queue);
+	free_command_buffer(Memory_Buffer_View<VkCommandBuffer>{1, &single_command}, graphics_command_pool, gpu);
     }
 
     internal void
@@ -554,7 +763,7 @@ namespace Vulkan_API
 	vkGetSwapchainImagesKHR(gpu->logical_device, swapchain->swapchain, &image_count, nullptr);
 	swapchain->images = (VkImage *)allocate_stack(sizeof(VkImage) * image_count
 						      , Alignment(1)
-							, "swapchain_images_list_allocation");
+						      , "swapchain_images_list_allocation");
 	vkGetSwapchainImagesKHR(gpu->logical_device, swapchain->swapchain, &image_count, swapchain->images);
 	swapchain->image_count = image_count;
 
@@ -631,11 +840,11 @@ namespace Vulkan_API
     find_depth_format(GPU *gpu)
     {
 	VkFormat formats[] = 
-	{
-	    VK_FORMAT_D32_SFLOAT
-	    , VK_FORMAT_D32_SFLOAT_S8_UINT
-	    , VK_FORMAT_D24_UNORM_S8_UINT
-	};
+	    {
+		VK_FORMAT_D32_SFLOAT
+		, VK_FORMAT_D32_SFLOAT_S8_UINT
+		, VK_FORMAT_D24_UNORM_S8_UINT
+	    };
     
 	gpu->supported_depth_format	= find_supported_format(formats
 								, 3
@@ -736,6 +945,46 @@ namespace Vulkan_API
 	pool_info.flags			= 0;
 
 	VK_CHECK(vkCreateCommandPool(gpu->logical_device, &pool_info, nullptr, command_pool));
+    }
+
+    void
+    init_framebuffer(Render_Pass *compatible_render_pass
+		     , const Memory_Buffer_View<VkImageView> &attachments
+		     , uint32 width
+		     , uint32 height
+		     , GPU *gpu
+		     , Framebuffer *framebuffer)
+    {
+	Memory_Buffer_View<VkImageView> image_view_attachments;
+	
+	image_view_attachments.count = framebuffer->color_attachments.count;
+	image_view_attachments.buffer = (VkImageView *)allocate_stack(sizeof(VkImageView) * image_view_attachments.count);
+	for (uint32 i = 0
+		 ; i < image_view_attachments.count
+		 ; ++i)
+	{
+	    VkImageView *image = &get_image2D(framebuffer->color_attachments.buffer[i])->image_view;
+	    image_view_attachments.buffer[i] = *image;
+	}
+
+	if (framebuffer->depth_attachment != UNINITIALIZED_HANDLE)
+	{
+	    VkImageView *depth_image = &get_image2D(framebuffer->depth_attachment)->image_view;
+	    extend_stack_top(sizeof(VkImageView));
+	    image_view_attachments.buffer[image_view_attachments.count++] = *depth_image;
+	}
+	
+	VkFramebufferCreateInfo fbo_info	= {};
+	fbo_info.sType				= VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+	fbo_info.renderPass			= compatible_render_pass->render_pass;
+	fbo_info.attachmentCount		= image_view_attachments.count;
+	fbo_info.pAttachments			= image_view_attachments.buffer;
+	fbo_info.width				= width;
+	fbo_info.height				= height;
+	// for the moment, framebuffer layer count is 1
+	fbo_info.layers				= 1;
+
+	VK_CHECK(vkCreateFramebuffer(gpu->logical_device, &fbo_info, nullptr, &framebuffer->framebuffer));
     }
     
     void
