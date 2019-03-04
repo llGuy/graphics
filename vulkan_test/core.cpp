@@ -46,25 +46,25 @@ output_debug(const char *format
 }
 
 void *
-allocate_stack(uint32 allocation_size
+allocate_stack(u32 allocation_size
 	       , Alignment alignment
 	       , const char *name
 	       , Stack_Allocator *allocator)
 {
     byte *would_be_address;
 
-    if (allocator->allocation_count == 0) would_be_address = (uint8 *)allocator->current + sizeof(Stack_Allocation_Header);
-    else would_be_address = (uint8 *)allocator->current
+    if (allocator->allocation_count == 0) would_be_address = (u8 *)allocator->current + sizeof(Stack_Allocation_Header);
+    else would_be_address = (u8 *)allocator->current
 					      + sizeof(Stack_Allocation_Header) * 2 
 	                                      + ((Stack_Allocation_Header *)(allocator->current))->size;
     
     // calculate the aligned address that is needed
-    uint8 alignment_adjustment = get_alignment_adjust(would_be_address
+    u8 alignment_adjustment = get_alignment_adjust(would_be_address
 						      , alignment);
 
     // start address of (header + allocation)
     byte *start_address = (would_be_address + alignment_adjustment) - sizeof(Stack_Allocation_Header);
-    assert((start_address + sizeof(Stack_Allocation_Header) + allocation_size) < (uint8 *)allocator->start + allocator->capacity);
+    assert((start_address + sizeof(Stack_Allocation_Header) + allocation_size) < (u8 *)allocator->start + allocator->capacity);
 
     Stack_Allocation_Header *header = (Stack_Allocation_Header *)start_address;
     
@@ -83,7 +83,7 @@ allocate_stack(uint32 allocation_size
 }
 
 void
-extend_stack_top(uint32 extension_size
+extend_stack_top(u32 extension_size
 	       , Stack_Allocator *allocator)
 {
     Stack_Allocation_Header *current_header = (Stack_Allocation_Header *)allocator->current;
@@ -124,12 +124,12 @@ init_free_list_allocator_head(Free_List_Allocator *allocator = &free_list_alloca
 }
 
 void *
-allocate_free_list(uint32 allocation_size
+allocate_free_list(u32 allocation_size
 		   , Alignment alignment
 		   , const char *name
 		   , Free_List_Allocator *allocator)
 {
-    uint32 total_allocation_size = allocation_size + sizeof(Free_List_Allocation_Header);
+    u32 total_allocation_size = allocation_size + sizeof(Free_List_Allocation_Header);
     // find best fit free block
     // TODO(luc) : make free list allocator adjust the smallest free block according to the alignment as well
     Free_Block_Header *previous_free_block = nullptr;
@@ -151,7 +151,7 @@ allocate_free_list(uint32 allocation_size
     Free_Block_Header *next = smallest_free_block->next_free_block;
     if (previous_free_block)
     {
-	uint32 previous_smallest_block_size = smallest_free_block->free_block_size;
+	u32 previous_smallest_block_size = smallest_free_block->free_block_size;
 	previous_free_block->next_free_block = (Free_Block_Header *)(((byte *)smallest_free_block) + total_allocation_size);
 	previous_free_block->next_free_block->free_block_size = previous_smallest_block_size - total_allocation_size;
 	previous_free_block->next_free_block->next_free_block = next;
@@ -259,8 +259,8 @@ deallocate_free_list(void *pointer
     }
 }
 
-int32
-main(int32 argc
+s32
+main(s32 argc
      , char * argv[])
 {
     try
@@ -292,7 +292,7 @@ main(int32 argc
 
 	init_vk(window);
 	
-	uint32 current_frame = 0;
+	u32 current_frame = 0;
 	while(!glfwWindowShouldClose(window))
 	{
 	    glfwPollEvents();
@@ -300,7 +300,7 @@ main(int32 argc
 	}
 
 	OUTPUT_DEBUG_LOG("stack allocator start address is : %p\n", stack_allocator_global.current);
-	OUTPUT_DEBUG_LOG("stack allocator allocated %d bytes\n", (uint32)((uint8 *)stack_allocator_global.current - (uint8 *)stack_allocator_global.start));
+	OUTPUT_DEBUG_LOG("stack allocator allocated %d bytes\n", (u32)((u8 *)stack_allocator_global.current - (u8 *)stack_allocator_global.start));
 	
 	OUTPUT_DEBUG_LOG("finished session\n", 1);
 

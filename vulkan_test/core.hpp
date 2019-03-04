@@ -7,19 +7,26 @@
 
 #define DEBUG true
 
-typedef int8_t int8;
-typedef int16_t int16;
-typedef int32_t int32;
-typedef int64_t int64;
+typedef int8_t s8;
+typedef int16_t s16;
+typedef int32_t s32;
+typedef int64_t s64;
 
-typedef uint8_t uint8;
-typedef uint16_t uint16;
-typedef uint32_t uint32;
-typedef uint64_t uint64;
+typedef uint8_t u8;
+typedef uint16_t u16;
+typedef uint32_t u32;
+typedef uint64_t u64;
 
-typedef float float32;
+typedef float f32;
+typedef double f64;
 
-typedef uint8 byte;
+typedef u8 byte;
+
+#ifdef __GNUC__
+#define FORCEINLINE inline
+#else
+#define FORCEINLINE __forceinline
+#endif
 
 #define MAX(x, y) (((x) > (y)) ? (x) : (y))
 #define MIN(x, y) (((x) < (y)) ? (x) : (y))
@@ -44,8 +51,8 @@ typedef uint8 byte;
 #define internal static
 #define global_var static
 
-inline constexpr uint32
-left_shift(uint32 n)
+inline constexpr u32
+left_shift(u32 n)
 {
     return 1 << n;
 }
@@ -59,7 +66,7 @@ void
 output_debug(const char *format
 	     , ...);
 
-using Alignment = uint8;
+using Alignment = u8;
 
 struct Stack_Allocation_Header
 {
@@ -67,7 +74,7 @@ struct Stack_Allocation_Header
     const char *allocation_name;
     #endif
     
-    uint32 size;
+    u32 size;
     void *prev;
 };
 
@@ -76,19 +83,19 @@ extern struct Stack_Allocator
     void *start = nullptr;
     void *current = nullptr;
     
-    uint32 allocation_count = 0;
-    uint32 capacity;
+    u32 allocation_count = 0;
+    u32 capacity;
 } stack_allocator_global;
 
 void *
-allocate_stack(uint32 allocation_size
+allocate_stack(u32 allocation_size
 	       , Alignment alignment = 1
 	       , const char *name = ""
 	       , Stack_Allocator *allocator = &stack_allocator_global);
 
 // only applies to the allocation at the top of the stack
 void
-extend_stack_top(uint32 extension_size
+extend_stack_top(u32 extension_size
 	     , Stack_Allocator *allocator = &stack_allocator_global);
 
 // contents in the allocation must be destroyed by the user
@@ -98,12 +105,12 @@ pop_stack(Stack_Allocator *allocator = &stack_allocator_global);
 struct Free_Block_Header
 {
     Free_Block_Header *next_free_block = nullptr;
-    uint32 free_block_size = 0;
+    u32 free_block_size = 0;
 };
 
 struct Free_List_Allocation_Header
 {
-    uint32 size;
+    u32 size;
 #if DEBUG
     const char *name;
 #endif
@@ -114,13 +121,13 @@ extern struct Free_List_Allocator
     Free_Block_Header *free_block_head;
     
     void *start;
-    uint32 available_bytes;
+    u32 available_bytes;
 
-    uint32 allocation_count = 0;
+    u32 allocation_count = 0;
 } free_list_allocator_global;
 
 void *
-allocate_free_list(uint32 allocation_size
+allocate_free_list(u32 allocation_size
 		   , Alignment alignment = 1
 		   , const char *name = ""
 		   , Free_List_Allocator *allocator = &free_list_allocator_global);
@@ -131,7 +138,7 @@ deallocate_free_list(void *pointer
 
 struct File_Contents
 {
-    uint32 size;
+    u32 size;
     byte *content;
 };
 
@@ -146,7 +153,7 @@ read_file(const char *filename
 	assert(false);
     }
     fseek(file, 0, SEEK_END);
-    uint32 size = ftell(file);
+    u32 size = ftell(file);
     rewind(file);
 
     byte *buffer = (byte *)allocate_stack(size
@@ -162,12 +169,12 @@ read_file(const char *filename
     return(contents);
 }
  
-inline uint8
+inline u8
 get_alignment_adjust(void *ptr
-      , uint32 alignment)
+      , u32 alignment)
 {
     byte *byte_cast_ptr = (byte *)ptr;
-    uint8 adjustment = alignment - reinterpret_cast<uint64>(ptr) & static_cast<uint64>(alignment - 1);
+    u8 adjustment = alignment - reinterpret_cast<u64>(ptr) & static_cast<u64>(alignment - 1);
     if (adjustment == 0) return(0);
     
     return(adjustment);
@@ -176,9 +183,9 @@ get_alignment_adjust(void *ptr
 template <typename T>
 inline void
 destroy(T *ptr
-	, uint32 size = 1)
+	, u32 size = 1)
 {
-    for (uint32 i = 0
+    for (u32 i = 0
 	     ; i < size
 	     ; ++i)
     {
@@ -186,14 +193,14 @@ destroy(T *ptr
     }
 }
 
-inline constexpr uint64
-kilobytes(uint32 kb)
+inline constexpr u64
+kilobytes(u32 kb)
 {
     return(kb * 1024);
 }
 
-inline constexpr uint64
-megabytes(uint32 mb)
+inline constexpr u64
+megabytes(u32 mb)
 {
     return(kilobytes(mb * 1024));
 }
@@ -201,16 +208,16 @@ megabytes(uint32 mb)
 // math TODO()
 struct alignas(16) V2f_32
 {
-    static constexpr uint32 dimension = 2;
+    static constexpr u32 dimension = 2;
     
     union
     {
-	struct { float32 x, y; };
-	float32 v[2];
+	struct { f32 x, y; };
+	f32 v[2];
     };
 
-    inline float32 &
-    operator[](uint32 i)
+    inline f32 &
+    operator[](u32 i)
     {
 	return v[i];
     }
@@ -218,16 +225,16 @@ struct alignas(16) V2f_32
 
 struct alignas(16) V3f_32
 {
-    static constexpr uint32 dimension = 3;
+    static constexpr u32 dimension = 3;
 
     union
     {
-	struct { float32 x, y, z; };
-	float32 v[3];
+	struct { f32 x, y, z; };
+	f32 v[3];
     };
 
-    inline float32 &
-    operator[](uint32 i)
+    inline f32 &
+    operator[](u32 i)
     {
 	return v[i];
     }
@@ -235,28 +242,28 @@ struct alignas(16) V3f_32
 
 struct alignas(16) V4f_32
 {
-    static constexpr uint32 dimension = 4;
+    static constexpr u32 dimension = 4;
 
     union
     {
-	struct { float32 x, y, z, w; };
-	float32 v[4];
+	struct { f32 x, y, z, w; };
+	f32 v[4];
     };
 
-    inline float32 &
-    operator[](uint32 i)
+    inline f32 &
+    operator[](u32 i)
     {
 	return v[i];
     }
 };
 
 inline void
-add(float32 *dest
-    , float32 *__restrict a
-    , float32 *__restrict b
-    , uint32 dim)
+add(f32 *dest
+    , f32 *__restrict a
+    , f32 *__restrict b
+    , u32 dim)
 {
-    for (uint32 i = 0
+    for (u32 i = 0
 	     ; i < dim
 	     ; ++i)
 
@@ -266,9 +273,9 @@ add(float32 *dest
 }
 
 inline void
-add_simd(float32 *__restrict a
-    , float32 *__restrict b
-    , uint8 dim)
+add_simd(f32 *__restrict a
+    , f32 *__restrict b
+    , u8 dim)
 {
     
 }
@@ -279,9 +286,9 @@ add_simd(float32 *__restrict a
 
 struct Bitset_32
 {
-    uint32 bitset = 0;
+    u32 bitset = 0;
 
-    inline uint32
+    inline u32
     pop_count(void)
     {
 #ifndef __GNUC__
@@ -292,19 +299,19 @@ struct Bitset_32
     }
 
     inline void
-    set1(uint32 bit)
+    set1(u32 bit)
     {
 	bitset |= left_shift(bit);
     }
 
     inline void
-    set0(uint32 bit)
+    set0(u32 bit)
     {
 	bitset &= ~(left_shift(bit));
     }
 
     inline bool
-    get(uint32 bit)
+    get(u32 bit)
     {
 	return bitset & left_shift(bit);
     }
@@ -313,15 +320,15 @@ struct Bitset_32
 struct Constant_String
 {
     const char* str;
-    uint32 size;
-    uint32 hash;
+    u32 size;
+    u32 hash;
 
     inline bool
     operator==(const Constant_String &other) {return(other.hash == this->hash);}
 };
 
-internal inline constexpr uint32
-compile_hash(const char *string, uint32 size)
+internal inline constexpr u32
+compile_hash(const char *string, u32 size)
 {
     return ((size ? compile_hash(string, size - 1) : 2166136261u) ^ string[size]) * 16777619u;
 }
@@ -329,27 +336,27 @@ compile_hash(const char *string, uint32 size)
 internal inline constexpr Constant_String
 operator""_hash(const char *string, size_t size)
 {
-    return(Constant_String{string, (uint32)size, compile_hash(string, (uint32)size)});
+    return(Constant_String{string, (u32)size, compile_hash(string, (u32)size)});
 }
 
 // fast and relatively cheap hash table
 template <typename T
-	  , uint32 Bucket_Count
-	  , uint32 Bucket_Size
-	  , uint32 Bucket_Search_Count> struct Hash_Table_Inline
+	  , u32 Bucket_Count
+	  , u32 Bucket_Size
+	  , u32 Bucket_Search_Count> struct Hash_Table_Inline
 {
     enum { UNINITIALIZED_HASH = 0xFFFFFFFF };
     enum { ITEM_POUR_LIMIT    = Bucket_Search_Count };
 
     struct Item
     {
-	uint32 hash = UNINITIALIZED_HASH;
+	u32 hash = UNINITIALIZED_HASH;
 	T value = T();
     };
 
     struct Bucket
     {
-	uint32 bucket_usage_count = 0;
+	u32 bucket_usage_count = 0;
 	Item items[Bucket_Size] = {};
     };
 
@@ -359,15 +366,15 @@ template <typename T
     Hash_Table_Inline(const char *name) : map_debug_name(name) {}
 
     void
-    insert(uint32 hash, T value, const char *debug_name = "")
+    insert(u32 hash, T value, const char *debug_name = "")
     {
-	uint32 start_index = hash % Bucket_Count;
-	uint32 limit = start_index + ITEM_POUR_LIMIT;
+	u32 start_index = hash % Bucket_Count;
+	u32 limit = start_index + ITEM_POUR_LIMIT;
 	for (Bucket *bucket = &buckets[start_index]
 		 ; bucket->bucket_usage_count != Bucket_Size && start_index < limit
 		 ; ++bucket)
 	{
-	    for (uint32 bucket_item = 0
+	    for (u32 bucket_item = 0
 		     ; bucket_item < Bucket_Size
 		     ; ++bucket_item)
 	    {
@@ -388,15 +395,15 @@ template <typename T
     }
 
     void
-    remove(uint32 hash)
+    remove(u32 hash)
     {
-	uint32 start_index = hash % Bucket_Count;
-	uint32 limit = start_index + ITEM_POUR_LIMIT;
+	u32 start_index = hash % Bucket_Count;
+	u32 limit = start_index + ITEM_POUR_LIMIT;
 	for (Bucket *bucket = &buckets[start_index]
 		 ; bucket->bucket_usage_count != Bucket_Size && start_index < limit
 		 ; ++bucket)
 	{
-	    for (uint32 bucket_item = 0
+	    for (u32 bucket_item = 0
 		     ; bucket_item < Bucket_Size
 		     ; ++bucket_item)
 	    {
@@ -411,15 +418,15 @@ template <typename T
     }
 
     T 
-    get(uint32 hash)
+    get(u32 hash)
     {
-	uint32 start_index = hash % Bucket_Count;
-	uint32 limit = start_index + ITEM_POUR_LIMIT;
+	u32 start_index = hash % Bucket_Count;
+	u32 limit = start_index + ITEM_POUR_LIMIT;
 	for (Bucket *bucket = &buckets[start_index]
 		 ; bucket->bucket_usage_count != Bucket_Size && start_index < limit
 		 ; ++bucket)
 	{
-	    for (uint32 bucket_item = 0
+	    for (u32 bucket_item = 0
 		     ; bucket_item < Bucket_Size
 		     ; ++bucket_item)
 	    {
@@ -439,6 +446,6 @@ template <typename T
 template <typename T>
 struct Memory_Buffer_View
 {
-    uint32 count;
+    u32 count;
     T *buffer;
 };

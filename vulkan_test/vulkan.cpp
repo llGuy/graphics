@@ -14,14 +14,14 @@ namespace Vulkan_API
     namespace Memory
     {
 
-	internal uint32
+	internal u32
 	find_memory_type_according_to_requirements(GPU *gpu
 						   , VkMemoryPropertyFlags properties
 						   , VkMemoryRequirements memory_requirements)
 	{
 	    VkPhysicalDeviceMemoryProperties *gpu_mem_properties = &gpu->memory_properties;
 
-	    for (uint32 i = 0
+	    for (u32 i = 0
 		     ; i < gpu_mem_properties->memoryTypeCount
 		     ; ++i)
 	    {
@@ -61,7 +61,7 @@ namespace Vulkan_API
     void
     GPU::find_queue_families(VkSurfaceKHR *surface)
     {
-	uint32 queue_family_count = 0;
+	u32 queue_family_count = 0;
 	vkGetPhysicalDeviceQueueFamilyProperties(hardware
 						 , &queue_family_count
 						 , nullptr);
@@ -73,7 +73,7 @@ namespace Vulkan_API
 						 , &queue_family_count
 						 , queue_properties);
 
-	for (uint32 i = 0
+	for (u32 i = 0
 		 ; i < queue_family_count
 		 ; ++i)
 	{
@@ -105,13 +105,13 @@ namespace Vulkan_API
     struct Instance_Create_Validation_Layer_Params
     {
 	bool r_enable;
-	uint32 o_layer_count;
+	u32 o_layer_count;
 	const char **o_layer_names;
     };
 
     struct Instance_Create_Extension_Params
     {
-	uint32 r_extension_count;
+	u32 r_extension_count;
 	const char **r_extension_names;
     };
 
@@ -126,7 +126,7 @@ namespace Vulkan_API
 	instance_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
 	instance_info.pApplicationInfo = app_info;
 
-	uint32 layer_count;
+	u32 layer_count;
 	vkEnumerateInstanceLayerProperties(&layer_count
 					   , nullptr);
 
@@ -136,10 +136,10 @@ namespace Vulkan_API
 	vkEnumerateInstanceLayerProperties(&layer_count
 					   , properties);
 
-	for (uint32 r = 0; r < validation_params->o_layer_count; ++r)
+	for (u32 r = 0; r < validation_params->o_layer_count; ++r)
 	{
 	    bool found_layer = false;
-	    for (uint32 l = 0; l < layer_count; ++l)
+	    for (u32 l = 0; l < layer_count; ++l)
 	    {
 		if (!strcmp(properties[l].layerName, validation_params->o_layer_names[r])) found_layer = true;
 	    }
@@ -229,7 +229,7 @@ namespace Vulkan_API
     
     struct Physical_Device_Extensions_Params
     {
-	uint32 r_extension_count;
+	u32 r_extension_count;
 	const char **r_extension_names;
     };
 
@@ -237,7 +237,7 @@ namespace Vulkan_API
     check_if_physical_device_supports_extensions(Physical_Device_Extensions_Params *extension_params
 						 , VkPhysicalDevice gpu)
     {
-	uint32 extension_count;
+	u32 extension_count;
 	vkEnumerateDeviceExtensionProperties(gpu
 					     , nullptr
 					     , &extension_count
@@ -251,12 +251,12 @@ namespace Vulkan_API
 					     , &extension_count
 					     , extension_properties);
     
-	uint32 required_extensions_left = extension_params->r_extension_count;
-	for (uint32 i = 0
+	u32 required_extensions_left = extension_params->r_extension_count;
+	for (u32 i = 0
 		 ; i < extension_count && required_extensions_left > 0
 		 ; ++i)
 	{
-	    for (uint32 j = 0
+	    for (u32 j = 0
 		     ; j < extension_params->r_extension_count
 		     ; ++j)
 	    {
@@ -309,7 +309,7 @@ namespace Vulkan_API
 	       , VkInstance *instance
 	       , GPU *gpu_result)
     {
-	uint32 device_count = 0;
+	u32 device_count = 0;
 	vkEnumeratePhysicalDevices(*instance
 				   , &device_count
 				   , nullptr);
@@ -323,7 +323,7 @@ namespace Vulkan_API
 
 	OUTPUT_DEBUG_LOG("available physical hardware devices count : %d\n", device_count);
 
-	for (uint32 i = 0
+	for (u32 i = 0
 		 ; i < device_count
 		 ; ++i)
 	{
@@ -356,9 +356,9 @@ namespace Vulkan_API
 	bitset.set1(indices->graphics_family);
 	bitset.set1(indices->present_family);
 
-	uint32 unique_sets = bitset.pop_count();
+	u32 unique_sets = bitset.pop_count();
 
-	uint32 *unique_family_indices = (uint32 *)allocate_stack(sizeof(uint32) * unique_sets
+	u32 *unique_family_indices = (u32 *)allocate_stack(sizeof(u32) * unique_sets
 								 , Alignment(1)
 								 , "unique_queue_family_indices_allocation");
 	VkDeviceQueueCreateInfo *unique_queue_infos = (VkDeviceQueueCreateInfo *)allocate_stack(sizeof(VkDeviceCreateInfo) * unique_sets
@@ -366,7 +366,7 @@ namespace Vulkan_API
 												, "unique_queue_list_allocation");
 
 	// fill the unique_family_indices with the indices
-	for (uint32 b = 0, set_bit = 0
+	for (u32 b = 0, set_bit = 0
 		 ; b < 32 && set_bit < unique_sets
 		 ; ++b)
 	{
@@ -376,8 +376,8 @@ namespace Vulkan_API
 	    }
 	}
     
-	float32 priority1 = 1.0f;
-	for (uint32 i = 0
+	f32 priority1 = 1.0f;
+	for (u32 i = 0
 		 ; i < unique_sets
 		 ; ++i)
 	{
@@ -415,7 +415,7 @@ namespace Vulkan_API
 
     internal VkSurfaceFormatKHR
     choose_surface_format(VkSurfaceFormatKHR *available_formats
-			  , uint32 format_count)
+			  , u32 format_count)
     {
 	if (format_count == 1 && available_formats[0].format == VK_FORMAT_UNDEFINED)
 	{
@@ -423,7 +423,7 @@ namespace Vulkan_API
 	    format.format		= VK_FORMAT_B8G8R8A8_UNORM;
 	    format.colorSpace	= VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
 	}
-	for (uint32 i = 0
+	for (u32 i = 0
 		 ; i < format_count
 		 ; ++i)
 	{
@@ -438,11 +438,11 @@ namespace Vulkan_API
 
     internal VkPresentModeKHR
     choose_surface_present_mode(const VkPresentModeKHR *available_present_modes
-				, uint32 present_modes_count)
+				, u32 present_modes_count)
     {
 	// supported by most hardware
 	VkPresentModeKHR best_mode = VK_PRESENT_MODE_FIFO_KHR;
-	for (uint32 i = 0
+	for (u32 i = 0
 		 ; i < present_modes_count
 		 ; ++i)
 	{
@@ -468,10 +468,10 @@ namespace Vulkan_API
 	}
 	else
 	{
-	    int32 width, height;
+	    s32 width, height;
 	    glfwGetFramebufferSize(window, &width, &height);
 
-	    VkExtent2D actual_extent	= { (uint32)width, (uint32)height };
+	    VkExtent2D actual_extent	= { (u32)width, (u32)height };
 	    actual_extent.width		= MAX(capabilities->minImageExtent.width, MIN(capabilities->maxImageExtent.width, actual_extent.width));
 	    actual_extent.height	= MAX(capabilities->minImageExtent.height, MIN(capabilities->maxImageExtent.height, actual_extent.height));
 
@@ -480,8 +480,8 @@ namespace Vulkan_API
     }
 
     void
-    init_image(uint32 width
-	       , uint32 height
+    init_image(u32 width
+	       , u32 height
 	       , VkFormat format
 	       , VkImageTiling tiling
 	       , VkImageUsageFlags usage
@@ -535,14 +535,14 @@ namespace Vulkan_API
 		       , VkSamplerAddressMode v_sampler_address_mode
 		       , VkSamplerAddressMode w_sampler_address_mode
 		       , VkBool32 anisotropy_enable
-		       , uint32 max_anisotropy
+		       , u32 max_anisotropy
 		       , VkBorderColor clamp_border_color
 		       , VkBool32 compare_enable
 		       , VkCompareOp compare_op
 		       , VkSamplerMipmapMode mipmap_mode
-		       , float32 mip_lod_bias
-		       , float32 min_lod
-		       , float32 max_lod
+		       , f32 mip_lod_bias
+		       , f32 min_lod
+		       , f32 max_lod
 		       , GPU *gpu
 		       , VkSampler *dest_sampler)
     {
@@ -721,7 +721,7 @@ namespace Vulkan_API
 	VkPresentModeKHR present_mode = choose_surface_present_mode(swapchain_details->available_present_modes, swapchain_details->available_present_modes_count);
 
 	// add 1 to the minimum images supported in the swapchain
-	uint32 image_count = swapchain_details->capabilities.minImageCount + 1;
+	u32 image_count = swapchain_details->capabilities.minImageCount + 1;
 	if (image_count > swapchain_details->capabilities.maxImageCount)
 	{
 	    image_count = swapchain_details->capabilities.maxImageCount;
@@ -737,7 +737,7 @@ namespace Vulkan_API
 	swapchain_info.imageArrayLayers = 1;
 	swapchain_info.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
-	uint32 queue_family_indices[] = { (uint32)gpu->queue_families.graphics_family, (uint32)gpu->queue_families.present_family };
+	u32 queue_family_indices[] = { (u32)gpu->queue_families.graphics_family, (u32)gpu->queue_families.present_family };
 
 	if (gpu->queue_families.graphics_family != gpu->queue_families.present_family)
 	{
@@ -772,7 +772,7 @@ namespace Vulkan_API
 
 	char image2D_hash_name[] = "image2D.swapchain_image0";
 	enum { NUMBER_STRING_INDEX = 23 };
-	for (uint32 i = 0
+	for (u32 i = 0
 		 ; i < image_count
 		 ; ++i)
 	{
@@ -785,7 +785,7 @@ namespace Vulkan_API
 	swapchain->format = surface_format.format;
 	swapchain->present_mode = present_mode;
 
-	for (uint32 i = 0
+	for (u32 i = 0
 		 ; i < image_count
 		 ; ++i)
 	{
@@ -822,12 +822,12 @@ namespace Vulkan_API
     // find gpu supported depth format
     internal VkFormat
     find_supported_format(const VkFormat *candidates
-			  , uint32 candidate_size
+			  , u32 candidate_size
 			  , VkImageTiling tiling
 			  , VkFormatFeatureFlags features
 			  , GPU *gpu)
     {
-	for (uint32 i = 0
+	for (u32 i = 0
 		 ; i < candidate_size
 		 ; ++i)
 	{
@@ -867,7 +867,7 @@ namespace Vulkan_API
     
     void
     init_shader(VkShaderStageFlagBits stage_bits
-		, uint32 content_size
+		, u32 content_size
 		, byte *file_contents
 		, GPU *gpu
 		, VkShaderModule *dest_shader_module)
@@ -875,7 +875,7 @@ namespace Vulkan_API
 	VkShaderModuleCreateInfo shader_info = {};
 	shader_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
 	shader_info.codeSize = content_size;
-	shader_info.pCode = reinterpret_cast<const uint32 *>(file_contents);
+	shader_info.pCode = reinterpret_cast<const u32 *>(file_contents);
 
 	VK_CHECK(vkCreateShaderModule(gpu->logical_device
 				      , &shader_info
@@ -914,7 +914,7 @@ namespace Vulkan_API
 			   , VkPipelineDepthStencilStateCreateInfo *depth_stencil_info
 			   , VkPipelineLayout *pipeline_layout
 			   , Render_Pass *render_pass
-			   , uint32 subpass
+			   , u32 subpass
 			   , GPU *gpu
 			   , VkPipeline *pipeline)
     {
@@ -947,7 +947,7 @@ namespace Vulkan_API
     }
 
     void
-    allocate_command_pool(uint32 queue_family_index
+    allocate_command_pool(u32 queue_family_index
 			  , GPU *gpu
 			  , VkCommandPool *command_pool)
     {
@@ -961,8 +961,8 @@ namespace Vulkan_API
 
     void
     init_framebuffer(Render_Pass *compatible_render_pass
-		     , uint32 width
-		     , uint32 height
+		     , u32 width
+		     , u32 height
 		     , GPU *gpu
 		     , Framebuffer *framebuffer)
     {
@@ -970,7 +970,7 @@ namespace Vulkan_API
 	
 	image_view_attachments.count = framebuffer->color_attachments.count;
 	image_view_attachments.buffer = (VkImageView *)allocate_stack(sizeof(VkImageView) * image_view_attachments.count);
-	for (uint32 i = 0
+	for (u32 i = 0
 		 ; i < image_view_attachments.count
 		 ; ++i)
 	{
@@ -999,11 +999,36 @@ namespace Vulkan_API
     }
     
     void
+    init_buffer(VkDeviceSize buffer_size
+		  , VkBufferUsageFlags usage
+		  , VkSharingMode sharing_mode
+		  , VkMemoryPropertyFlags memory_properties
+		  , GPU *gpu
+		  , Buffer *dest_buffer)
+    {
+	VkBufferCreateInfo buffer_info	= {};
+	buffer_info.sType	= VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+	buffer_info.size	= buffer_size;
+	buffer_info.usage	= usage;
+	buffer_info.sharingMode	= sharing_mode;
+	buffer_info.flags	= 0;
+
+	VK_CHECK(vkCreateBuffer(gpu->logical_device, &buffer_info, nullptr, &dest_buffer->buffer));
+
+	VkMemoryRequirements mem_requirements;
+	vkGetBufferMemoryRequirements(gpu->logical_device, dest_buffer->buffer, &mem_requirements);
+
+	Memory::allocate_gpu_memory(memory_properties, mem_requirements, gpu, &dest_buffer->memory);
+	
+	vkBindBufferMemory(gpu->logical_device, dest_buffer->buffer, dest_buffer->memory, 0);
+    }
+    
+    void
     init_state(State *state
 	       , GLFWwindow *window)
     {
 	// initialize instance
-	persist constexpr uint32 layer_count = 1;
+	persist constexpr u32 layer_count = 1;
 	const char *layer_names[layer_count] = { "VK_LAYER_LUNARG_standard_validation" };
 
 	Instance_Create_Validation_Layer_Params validation_params = {};
@@ -1011,7 +1036,7 @@ namespace Vulkan_API
 	validation_params.o_layer_count = layer_count;
 	validation_params.o_layer_names = layer_names;
 
-	uint32 extension_count;
+	u32 extension_count;
 	const char **extension_names = glfwGetRequiredInstanceExtensions(&extension_count);
 	const char **total_extension_buffer = (const char **)allocate_stack(sizeof(const char *) * (extension_count + 1)
 									    , Alignment(1)
@@ -1048,7 +1073,7 @@ namespace Vulkan_API
 					 , &state->surface));
 
 	// choose hardware and create device
-	persist constexpr uint32 gpu_extension_count = 1;
+	persist constexpr u32 gpu_extension_count = 1;
 	const char *gpu_extension_names[gpu_extension_count] = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
 	Physical_Device_Extensions_Params gpu_extensions = {};
 	gpu_extensions.r_extension_count = gpu_extension_count;

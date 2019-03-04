@@ -10,8 +10,8 @@ namespace Vulkan_API
     
     struct Queue_Families
     {
-	int32 graphics_family = -1;
-	int32 present_family = 1;
+	s32 graphics_family = -1;
+	s32 present_family = 1;
 
 	inline bool
 	complete(void)
@@ -23,9 +23,9 @@ namespace Vulkan_API
     struct Swapchain_Details
     {
 	VkSurfaceCapabilitiesKHR capabilities;
-	uint32 available_formats_count;
+	u32 available_formats_count;
 	VkSurfaceFormatKHR *available_formats;
-	uint32 available_present_modes_count;
+	u32 available_present_modes_count;
 	VkPresentModeKHR *available_present_modes;
     };
     
@@ -57,20 +57,49 @@ namespace Vulkan_API
 			    , GPU *gpu
 			    , VkDeviceMemory *dest_memory);
     }
+    
+    struct Mapped_GPU_Memory
+    {
+	u32 offset;
+	VkDeviceSize size;
+	VkDeviceMemory *memory;
+	void *data;
+
+	FORCEINLINE void
+	begin(GPU *gpu)
+	{
+	    vkMapMemory(gpu->logical_device, *memory, offset, size, 0, &data);
+	}
+
+	FORCEINLINE void
+	end(GPU *gpu)
+	{
+	    vkUnmapMemory(gpu->logical_device, *memory);
+	}
+    };
 
     struct Buffer
     {
-	VkBuffer buffer_object;
-	VkDeviceMemory buffer_memory;
-	VkDeviceSize buffer_size;
+	VkBuffer buffer;
+	VkDeviceMemory memory;
+	VkDeviceSize size;
+
+	FORCEINLINE Mapped_GPU_Memory
+	construct_map(void)
+	{
+	    return(Mapped_GPU_Memory{0, size, &memory});
+	}
     };
 
     void
-    create_buffer(VkDeviceSize buffer_size
+    init_buffer(VkDeviceSize buffer_size
 		  , VkBufferUsageFlags usage
 		  , VkSharingMode sharing_mode
+		  , VkMemoryPropertyFlags memory_properties
+		  , GPU *gpu
 		  , Buffer *dest_buffer);
 
+    
     struct Image2D
     {
 	VkImage image = VK_NULL_HANDLE;
@@ -89,8 +118,8 @@ namespace Vulkan_API
     };
     
     void
-    init_image(uint32 width
-	       , uint32 height
+    init_image(u32 width
+	       , u32 height
 	       , VkFormat format
 	       , VkImageTiling tiling
 	       , VkImageUsageFlags usage
@@ -112,14 +141,14 @@ namespace Vulkan_API
 		       , VkSamplerAddressMode v_sampler_address_mode
 		       , VkSamplerAddressMode w_sampler_address_mode
 		       , VkBool32 anisotropy_enable
-		       , uint32 max_anisotropy
+		       , u32 max_anisotropy
 		       , VkBorderColor clamp_border_color
 		       , VkBool32 compare_enable
 		       , VkCompareOp compare_op
 		       , VkSamplerMipmapMode mipmap_mode
-		       , float32 mip_lod_bias
-		       , float32 min_lod
-		       , float32 max_lod
+		       , f32 mip_lod_bias
+		       , f32 min_lod
+		       , f32 max_lod
 		       , GPU *gpu
 		       , VkSampler *dest_sampler);
 
@@ -137,7 +166,7 @@ namespace Vulkan_API
     struct Render_Pass
     {
 	VkRenderPass render_pass;
-	uint32 subpass_count;
+	u32 subpass_count;
     };
     
     void
@@ -148,7 +177,7 @@ namespace Vulkan_API
 		     , Render_Pass *dest_render_pass);
     void
     init_shader(VkShaderStageFlagBits stage_bits
-		, uint32 content_size
+		, u32 content_size
 		, byte *file_contents
 		, GPU *gpu
 		, VkShaderModule *dest_shader_module);
@@ -158,12 +187,12 @@ namespace Vulkan_API
     {
 	// buffer that stores all the attributes
 	Buffer_Handle buffer;
-	uint32 binding;
+	u32 binding;
 	VkVertexInputRate input_rate;
 
 	VkVertexInputAttributeDescription *attribute_list = nullptr;
-	uint32 attribute_count = 0;
-	uint32 stride = 0;
+	u32 attribute_count = 0;
+	u32 stride = 0;
 	
 	void
 	begin_attributes_creation(VkVertexInputAttributeDescription *attribute_list)
@@ -173,7 +202,7 @@ namespace Vulkan_API
 	}
 	
 	void
-	push_attribute(uint32 location, VkFormat format, uint32 size)
+	push_attribute(u32 location, VkFormat format, u32 size)
 	{
 	    VkVertexInputAttributeDescription *attribute = &attribute_list[attribute_count++];
 	    
@@ -196,11 +225,11 @@ namespace Vulkan_API
     struct Model
     {
 	// model bindings
-	uint32 binding_count;
+	u32 binding_count;
 	// allocated on free list allocator
 	Model_Binding *bindings;
 	// model attriutes
-	uint32 attribute_count;
+	u32 attribute_count;
 	// allocated on free list also | multiple bindings can push to this buffer
 	VkVertexInputAttributeDescription *attributes_buffer;
 
@@ -210,7 +239,7 @@ namespace Vulkan_API
 	    VkVertexInputBindingDescription *descriptions = (VkVertexInputBindingDescription *)allocate_stack(sizeof(VkVertexInputBindingDescription) * binding_count
 													      , 1
 													      , "binding_total_list_allocation");
-	    for (uint32 i = 0; i < binding_count; ++i)
+	    for (u32 i = 0; i < binding_count; ++i)
 	    {
 		descriptions[i].binding = bindings[i].binding;
 		descriptions[i].stride = bindings[i].stride;
@@ -235,12 +264,12 @@ namespace Vulkan_API
 
     struct Graphics_Pipeline
     {
-	enum Shader_Stages_Bits : int32 { VERTEX_SHADER_BIT = 1 << 0
+	enum Shader_Stages_Bits : s32 { VERTEX_SHADER_BIT = 1 << 0
 					  , GEOMETRY_SHADER_BIT = 1 << 1
 					  , TESSELATION_SHADER_BIT = 1 << 2
 					  , FRAGMENT_SHADER_BIT = 1 << 3};
 
-	int32 stages;
+	s32 stages;
 	// "[some_dir]/[name]_"
 	const char *base_dir_and_name;
 
@@ -282,16 +311,16 @@ namespace Vulkan_API
     }
 
     internal inline void
-    init_viewport(uint32 width
-		  , uint32 height
-		  , float32 min_depth
-		  , float32 max_depth
+    init_viewport(u32 width
+		  , u32 height
+		  , f32 min_depth
+		  , f32 max_depth
 		  , VkViewport *viewport)
     {
 	viewport->x = 0.0f;
 	viewport->y = 0.0f;
-	viewport->width = (float32)width;
-	viewport->height = (float32)height;
+	viewport->width = (f32)width;
+	viewport->height = (f32)height;
 	viewport->minDepth = min_depth;
 	viewport->maxDepth = max_depth;
     }
@@ -321,7 +350,7 @@ namespace Vulkan_API
     internal inline void
     init_pipeline_rasterization_info(VkPolygonMode polygon_mode
 				     , VkCullModeFlags cull_flags
-				     , float32 line_width
+				     , f32 line_width
 				     , VkPipelineRasterizationStateCreateFlags flags
 				     , VkPipelineRasterizationStateCreateInfo *info)
     {
@@ -411,8 +440,8 @@ namespace Vulkan_API
     internal inline void
     init_pipeline_depth_stencil_info(VkBool32 depth_test_enable
 				     , VkBool32 depth_write_enable
-				     , float32 min_depth_bounds
-				     , float32 max_depth_bounds
+				     , f32 min_depth_bounds
+				     , f32 max_depth_bounds
 				     , VkBool32 stencil_enable
 				     , VkPipelineDepthStencilStateCreateInfo *info)
     {
@@ -440,12 +469,12 @@ namespace Vulkan_API
 			   , VkPipelineDepthStencilStateCreateInfo *depth_stencil_info
 			   , VkPipelineLayout *layout
 			   , Render_Pass *render_pass
-			   , uint32 subpass
+			   , u32 subpass
 			   , GPU *gpu
 			   , VkPipeline *pipeline);
 
     void
-    allocate_command_pool(uint32 queue_family_index
+    allocate_command_pool(u32 queue_family_index
 			  , GPU *gpu
 			  , VkCommandPool *command_pool);
 
@@ -500,8 +529,8 @@ namespace Vulkan_API
     
     void
     init_framebuffer(Render_Pass *compatible_render_pass
-		     , uint32 width
-		     , uint32 height
+		     , u32 width
+		     , u32 height
 		     , GPU *gpu
 		     , Framebuffer *framebuffer); // need to initialize the attachment handles
     

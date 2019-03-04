@@ -20,7 +20,7 @@ Vulkan_State vk = {};
 Vulkan_API::State vulkan_state = {};
 Rendering::Rendering_Objects_Handle_Cache rendering_objects = {};
 
-internal constexpr uint32 required_device_extension_count = 1;
+internal constexpr u32 required_device_extension_count = 1;
 internal const char *required_physical_device_extensions[required_device_extension_count]
 {
     VK_KHR_SWAPCHAIN_EXTENSION_NAME
@@ -50,11 +50,11 @@ create_image_view(VkImage image
 
 internal VkFormat
 find_supported_format(const VkFormat *candidates
-		      , uint32 candidate_size
+		      , u32 candidate_size
 		      , VkImageTiling tiling
 		      , VkFormatFeatureFlags features)
 {
-    for (uint32 i = 0
+    for (u32 i = 0
 	     ; i < candidate_size
 	     ; ++i)
     {
@@ -189,7 +189,7 @@ create_shader(File_Contents *contents)
     VkShaderModuleCreateInfo shader_info	= {};
     shader_info.sType				= VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
     shader_info.codeSize			= contents->size;
-    shader_info.pCode				= reinterpret_cast<const uint32 *>(contents->content);
+    shader_info.pCode				= reinterpret_cast<const u32 *>(contents->content);
 
     VkShaderModule shader_module;
     VK_CHECK(vkCreateShaderModule(vulkan_state.gpu.logical_device, &shader_info, nullptr, &shader_module));
@@ -215,7 +215,7 @@ struct Vertex
 
     struct Vertex_Attributes
     {
-	static constexpr uint32 attribute_count = 3;
+	static constexpr u32 attribute_count = 3;
 	VkVertexInputAttributeDescription attributes[attribute_count];
     };
 
@@ -255,21 +255,21 @@ internal Vertex vertices[]
     {{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}
 };
 
-internal uint32 mesh_indices[]
+internal u32 mesh_indices[]
 {
     0, 1, 2, 2, 3, 0,
     4, 5, 6, 6, 7, 4
 };
 
-internal uint32
-find_memory_type(uint32 type_filter
+internal u32
+find_memory_type(u32 type_filter
 		 , VkMemoryPropertyFlags properties)
 {
     VkPhysicalDeviceMemoryProperties mem_properties;
     vkGetPhysicalDeviceMemoryProperties(vulkan_state.gpu.hardware
 					, &mem_properties);
 
-    for (uint32 i = 0
+    for (u32 i = 0
 	     ; i < mem_properties.memoryTypeCount
 	     ; ++i)
     {
@@ -287,8 +287,8 @@ find_memory_type(uint32 type_filter
 }
 
 internal void
-create_image(uint32 width
-	     , uint32 height
+create_image(u32 width
+	     , u32 height
 	     , VkFormat format
 	     , VkImageTiling tiling
 	     , VkImageUsageFlags usage
@@ -495,7 +495,7 @@ init_framebuffers(void)
 
     Vulkan_API::Image2D *depth_image = Vulkan_API::get_image2D(rendering_objects.depth_image);
     
-    for (uint32 i = 0
+    for (u32 i = 0
 	     ; i < vulkan_state.swapchain.images.count
 	     ; ++i)
     {
@@ -565,7 +565,7 @@ copy_buffer(VkBuffer *__restrict src_buffer
 internal void
 copy_buffer_to_image(VkBuffer buffer
 		     , VkImage image
-		     , uint32 w, uint32 h)
+		     , u32 w, u32 h)
 {
     VkCommandBuffer command_buffer = begin_single_time_command();
 
@@ -597,7 +597,7 @@ init_texture_image(void)
 {
     persist const char *jpg_file = "../vulkan/textures/texture.jpg";
 
-    int32 w, h, channels;
+    s32 w, h, channels;
     stbi_uc *pixels = stbi_load(jpg_file, &w, &h, &channels, STBI_rgb_alpha);
 
     if (!pixels)
@@ -618,7 +618,7 @@ init_texture_image(void)
 
     void *data;
     vkMapMemory(vulkan_state.gpu.logical_device, staging_buffer_memory, 0, image_size, 0, &data);
-    memcpy(data, pixels, static_cast<uint32>(image_size));
+    memcpy(data, pixels, static_cast<u32>(image_size));
     vkUnmapMemory(vulkan_state.gpu.logical_device, staging_buffer_memory);
 
     stbi_image_free(pixels);
@@ -632,14 +632,14 @@ init_texture_image(void)
 		 , &vk.texture_image
 		 , &vk.texture_image_memory);
  
-   transition_image_layout(vk.texture_image
+    transition_image_layout(vk.texture_image
 			    , VK_FORMAT_R8G8B8A8_UNORM
 			    , VK_IMAGE_LAYOUT_UNDEFINED
 			    , VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
     copy_buffer_to_image(staging_buffer
 			 , vk.texture_image
-			 , (uint32)w, (uint32)h);
+			 , (u32)w, (u32)h);
 
     transition_image_layout(vk.texture_image
 			    , VK_FORMAT_R8G8B8A8_UNORM
@@ -779,7 +779,7 @@ init_ubos(void)
 								 , Alignment(1)
 								 , "uniform_buffers_memory_list_allocation");
 
-    for (uint32 i = 0
+    for (u32 i = 0
 	     ; i < vk.uniform_buffer_count
 	     ; ++i)
     {
@@ -825,7 +825,7 @@ init_descriptor_sets(void)
 											    , "descriptor_set_layout_list_allocation");
     VkDescriptorSetLayout *main_descriptor_layout = Vulkan_API::get_descriptor_set_layout(rendering_objects.descriptor_set_layout);
     
-    for (uint32 i = 0
+    for (u32 i = 0
 	     ; i < vk.descriptor_set_count
 	     ; ++i) descriptor_set_layouts[i] = *main_descriptor_layout;
 
@@ -837,7 +837,7 @@ init_descriptor_sets(void)
 
     VK_CHECK(vkAllocateDescriptorSets(vulkan_state.gpu.logical_device, &alloc_info, vk.descriptor_sets));
     
-    for (uint32 i = 0
+    for (u32 i = 0
 	     ; i < vk.descriptor_set_count
 	     ; ++i)
     {
@@ -901,7 +901,7 @@ init_command_buffers(Vulkan_API::Swapchain *swapchain)
 
     Vulkan_API::Graphics_Pipeline *pipeline_ptr = Vulkan_API::get_graphics_pipeline(rendering_objects.graphics_pipeline);
     
-    for (uint32 i = 0
+    for (u32 i = 0
 	     ; i < vk.command_buffer_count
 	     ; ++i)
     {
@@ -963,7 +963,7 @@ init_command_buffers(Vulkan_API::Swapchain *swapchain)
 				, nullptr);
 
 	vkCmdDrawIndexed(vk.command_buffers[i]
-			 , sizeof(mesh_indices) / sizeof(uint32)
+			 , sizeof(mesh_indices) / sizeof(u32)
 			 , 1
 			 , 0
 			 , 0
@@ -974,7 +974,7 @@ init_command_buffers(Vulkan_API::Swapchain *swapchain)
     }
 }
 
-internal constexpr uint32 MAX_FRAMES_IN_FLIGHT = 2;
+internal constexpr u32 MAX_FRAMES_IN_FLIGHT = 2;
 
 internal void
 init_sync(void)
@@ -999,7 +999,7 @@ init_sync(void)
     fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
     fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
     
-    for (uint32 i = 0
+    for (u32 i = 0
 	     ; i < MAX_FRAMES_IN_FLIGHT
 	     ; ++i)
     {
@@ -1058,7 +1058,7 @@ init_vk(GLFWwindow *window)
 }
 
 internal void
-update_ubo(uint32 current_image)
+update_ubo(u32 current_image)
 {
     persist auto start_time = std::chrono::high_resolution_clock::now();
 
@@ -1085,7 +1085,7 @@ update_ubo(uint32 current_image)
     vkUnmapMemory(vulkan_state.gpu.logical_device, vk.uniform_buffers_memory[current_image]);
 }
 
-internal uint32 current_frame = 0;
+internal u32 current_frame = 0;
 
 void
 draw_frame(void)
@@ -1096,7 +1096,7 @@ draw_frame(void)
 		    , VK_TRUE
 		    , UINT_MAX);
 
-    uint32 image_index;
+    u32 image_index;
 
     VkResult result = vkAcquireNextImageKHR(vulkan_state.gpu.logical_device
 					    , vulkan_state.swapchain.swapchain
@@ -1179,7 +1179,7 @@ destroy_vk(void)
     Vulkan_API::Render_Pass *render_pass = Vulkan_API::get_render_pass(rendering_objects.test_render_pass);
     vkDestroyRenderPass(vulkan_state.gpu.logical_device, render_pass->render_pass, nullptr);
 
-    for (uint32 i = 0
+    for (u32 i = 0
 	     ; i < vulkan_state.swapchain.images.count
 	     ; ++i)
     {

@@ -12,8 +12,8 @@ namespace Rendering
 			  , Vulkan_API::GPU *gpu)
     {
 	/* init main renderpass */
-	Vulkan_API::Render_Pass_Handle test_render_pass = Vulkan_API::add_render_pass("render_pass.test_render_pass"_hash);
-	Vulkan_API::Render_Pass *test_render_pass_object = Vulkan_API::get_render_pass(test_render_pass);
+	auto test_render_pass = Vulkan_API::add_render_pass("render_pass.test_render_pass"_hash);
+	auto *test_render_pass_object = Vulkan_API::get_render_pass(test_render_pass);
 	
 	enum {COLOR_DESCRIPTION = 0, DEPTH_DESCRIPTION = 1};
 	
@@ -71,8 +71,8 @@ namespace Rendering
     internal void
     init_model_info(void)
     {
-	Vulkan_API::Model_Handle handle = Vulkan_API::add_model("vulkan_model.test_model"_hash);
-	Vulkan_API::Model *model = Vulkan_API::get_model(handle);
+	auto handle = Vulkan_API::add_model("vulkan_model.test_model"_hash);
+	auto *model = Vulkan_API::get_model(handle);
 
 	model->attribute_count = 3;
 	model->attributes_buffer = (VkVertexInputAttributeDescription *)allocate_free_list(sizeof(VkVertexInputAttributeDescription) * model->attribute_count
@@ -101,8 +101,8 @@ namespace Rendering
 			   , Vulkan_API::GPU *gpu)
     {
 	// initialize graphics pipeline object in the manager
-	Vulkan_API::Graphics_Pipeline_Handle pipeline_handle = Vulkan_API::add_graphics_pipeline("pipeline.main_pipeline"_hash);
-	Vulkan_API::Graphics_Pipeline *graphics_pipeline = Vulkan_API::get_graphics_pipeline(pipeline_handle);
+	auto pipeline_handle = Vulkan_API::add_graphics_pipeline("pipeline.main_pipeline"_hash);
+	auto *graphics_pipeline = Vulkan_API::get_graphics_pipeline(pipeline_handle);
 	graphics_pipeline->stages = Vulkan_API::Graphics_Pipeline::Shader_Stages_Bits::VERTEX_SHADER_BIT
 	                            | Vulkan_API::Graphics_Pipeline::Shader_Stages_Bits::FRAGMENT_SHADER_BIT;
 	graphics_pipeline->base_dir_and_name = "../vulkan/shaders/";
@@ -187,8 +187,8 @@ namespace Rendering
 	Vulkan_API::init_pipeline_depth_stencil_info(VK_TRUE, VK_TRUE, 0.0f, 1.0f, VK_FALSE, &depth_stencil_info);
 
 	// init pipeline object
-	Vulkan_API::Render_Pass_Handle render_pass_handle = Vulkan_API::get_render_pass_handle("render_pass.test_render_pass"_hash);
-	Vulkan_API::Render_Pass *render_pass = Vulkan_API::get_render_pass(render_pass_handle);
+	auto render_pass_handle = Vulkan_API::get_render_pass_handle("render_pass.test_render_pass"_hash);
+	auto *render_pass = Vulkan_API::get_render_pass(render_pass_handle);
 	Memory_Buffer_View<VkPipelineShaderStageCreateInfo> modules = {2, module_infos};
 	Vulkan_API::init_graphics_pipeline(&modules
 					   , &vertex_input_info
@@ -213,7 +213,8 @@ namespace Rendering
     init_descriptor_set_layout(Vulkan_API::GPU *gpu)
     {
 	// create descriptor set layout in manager
-	Vulkan_API::Descriptor_Set_Layout_Handle handle = Vulkan_API::add_descriptor_set_layout("descriptor_set_layout.test_descriptor_set_layout"_hash);
+	auto handle = Vulkan_API::add_descriptor_set_layout("descriptor_set_layout.test_descriptor_set_layout"_hash);
+	auto *layout = Vulkan_API::get_descriptor_set_layout(handle);
 	
 	VkDescriptorSetLayoutBinding ubo_binding	= {};
 	ubo_binding.binding				= 0;
@@ -236,15 +237,14 @@ namespace Rendering
 	layout_info.bindingCount			= 2;
 	layout_info.pBindings				= bindings;
 
-	VkDescriptorSetLayout *layout = Vulkan_API::get_descriptor_set_layout(handle);
 	VK_CHECK(vkCreateDescriptorSetLayout(gpu->logical_device, &layout_info, nullptr, layout));
     }
 
     internal void
     init_command_pool(Vulkan_API::GPU *gpu)
     {
-	Vulkan_API::Command_Pool_Handle graphics_command_pool_handle = Vulkan_API::add_command_pool("command_pool.graphics_command_pool"_hash);
-	VkCommandPool *graphics_command_pool = Vulkan_API::get_command_pool(graphics_command_pool_handle);
+	auto graphics_command_pool_handle = Vulkan_API::add_command_pool("command_pool.graphics_command_pool"_hash);
+	auto *graphics_command_pool = Vulkan_API::get_command_pool(graphics_command_pool_handle);
 
 	Vulkan_API::allocate_command_pool(gpu->queue_families.graphics_family
 					  , gpu
@@ -257,8 +257,8 @@ namespace Rendering
     {
 	VkFormat depth_format = gpu->supported_depth_format;
 
-	Vulkan_API::Image2D_Handle depth_image_handle = Vulkan_API::add_image2D("image2D.depth_image"_hash);
-	Vulkan_API::Image2D *depth_image = Vulkan_API::get_image2D(depth_image_handle);
+	auto depth_image_handle = Vulkan_API::add_image2D("image2D.depth_image"_hash);
+	auto *depth_image = Vulkan_API::get_image2D(depth_image_handle);
 
 	Vulkan_API::init_image(swapchain->extent.width
 			       , swapchain->extent.height
@@ -282,8 +282,8 @@ namespace Rendering
 				    , gpu
 				    , &depth_image->image_view);
 
-	Vulkan_API::Command_Pool_Handle command_pool_handle = Vulkan_API::get_command_pool_handle("command_pool.graphics_command_pool"_hash);
-	VkCommandPool *command_pool = Vulkan_API::get_command_pool(command_pool_handle);
+	auto command_pool_handle = Vulkan_API::get_command_pool_handle("command_pool.graphics_command_pool"_hash);
+	auto *command_pool = Vulkan_API::get_command_pool(command_pool_handle);
 	Vulkan_API::transition_image_layout(&depth_image->image
 					    , depth_format
 					    , VK_IMAGE_LAYOUT_UNDEFINED
@@ -301,13 +301,14 @@ namespace Rendering
 	char framebuffer_name[] = "framebuffer.swapchain_framebuffer0";
 	enum { NUMBER_STRING_INDEX = 33 };
 	enum { COLOR_ATTACHMENT = 0 };
-	persist constexpr uint32 COLOR_ATTACHMENTS_PER_FBO = 1;
 
-	Vulkan_API::Render_Pass_Handle compatible_render_pass_handle = Vulkan_API::get_render_pass_handle("render_pass.test_render_pass"_hash);
-	Vulkan_API::Render_Pass *compatible_render_pass = Vulkan_API::get_render_pass(compatible_render_pass_handle);
-	Vulkan_API::Image2D_Handle depth_image_handle = Vulkan_API::get_image2D_handle("image2D.depth_image"_hash);
+	persist constexpr u32 COLOR_ATTACHMENTS_PER_FBO = 1;
+
+	auto compatible_render_pass_handle = Vulkan_API::get_render_pass_handle("render_pass.test_render_pass"_hash);
+	auto *compatible_render_pass = Vulkan_API::get_render_pass(compatible_render_pass_handle);
+	auto depth_image_handle = Vulkan_API::get_image2D_handle("image2D.depth_image"_hash);
 	
-	for (uint32 i = 0
+	for (u32 i = 0
 		 ; i < swapchain->images.count
 		 ; ++i)
 	{
@@ -315,7 +316,7 @@ namespace Rendering
 	    framebuffer_name[NUMBER_STRING_INDEX] = '0' + i;
 	    auto hash = compile_hash(framebuffer_name, sizeof(framebuffer_name));
 	    swapchain->framebuffers.buffer[i] = Vulkan_API::add_framebuffer(Constant_String{framebuffer_name, sizeof(framebuffer_name), hash });
-	    Vulkan_API::Framebuffer *framebuffer = Vulkan_API::get_framebuffer(swapchain->framebuffers.buffer[i]);
+	    auto *framebuffer = Vulkan_API::get_framebuffer(swapchain->framebuffers.buffer[i]);
 
 	    framebuffer->color_attachments.count = COLOR_ATTACHMENTS_PER_FBO;
 	    framebuffer->color_attachments.buffer = (Vulkan_API::Image2D_Handle *)allocate_free_list(sizeof(Vulkan_API::Image2D_Handle) * COLOR_ATTACHMENTS_PER_FBO);
@@ -328,6 +329,52 @@ namespace Rendering
 					 , gpu
 					 , framebuffer);
 	}
+    }
+
+    
+
+    void
+    init_object_texture(Vulkan_API::GPU *gpu)
+    {
+	persist const char *jpg_file = "../vulkan/textures/texture.jpg";
+
+	s32 w, h, channels;
+	stbi_uc *pixels = stbi_load(jpg_file, &w, &h, &channels, STBI_rgb_alpha);
+	
+	if (!pixels)
+	{
+	    OUTPUT_DEBUG_LOG("failed to open image : %s\n", jpg_file);
+	}
+
+	VkDeviceSize image_size = w * h * 4;
+
+	Vulkan_API::Buffer staging_buffer;
+	staging_buffer.size = image_size;
+
+	Vulkan_API::init_buffer(image_size
+				, VK_BUFFER_USAGE_TRANSFER_SRC_BIT
+				, VK_SHARING_MODE_EXCLUSIVE
+				, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+				, gpu
+				, &staging_buffer);
+	
+	auto mapped_memory = staging_buffer.construct_map();
+	mapped_memory.begin(gpu);
+	memcpy(mapped_memory.data, pixels, (u32)image_size);
+	mapped_memory.end(gpu);
+
+	stbi_image_free(pixels);
+
+	auto image_handle = Vulkan_API::add_image2D("image2D.object_texture"_hash);
+	auto image_ptr = Vulkan_API::get_image2D(image_handle);
+
+	Vulkan_API::init_image(w, h
+			       , VK_FORMAT_R8G8B8A8_UNORM
+			       , VK_IMAGE_TILING_OPTIMAL
+			       , VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
+			       , VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+			       , gpu
+			       , &image_ptr->image);
     }
     
     void

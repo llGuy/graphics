@@ -43,22 +43,22 @@ extern struct Vulkan_State
     VkBuffer index_buffer;
     VkDeviceMemory index_buffer_memory;
 
-    uint32 uniform_buffer_count;
+    u32 uniform_buffer_count;
     VkBuffer *uniform_buffers;
     VkDeviceMemory *uniform_buffers_memory;
 
     VkDescriptorPool descriptor_pool;
     VkDescriptorSet *descriptor_sets;
-    uint32 descriptor_set_count;
+    u32 descriptor_set_count;
 
-    uint32 command_buffer_count;
+    u32 command_buffer_count;
     VkCommandBuffer *command_buffers;
 
-    uint32 semaphore_count;
+    u32 semaphore_count;
     VkSemaphore *image_ready_semaphores;
     VkSemaphore *render_finished_semaphores;
 
-    uint32 fence_count;
+    u32 fence_count;
     VkFence *fences;
 } vk;
 

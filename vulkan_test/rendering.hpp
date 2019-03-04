@@ -20,6 +20,7 @@ namespace Rendering
 	Vulkan_API::Graphics_Pipeline_Handle graphics_pipeline;
 	Vulkan_API::Command_Pool_Handle graphics_command_pool;
 	Vulkan_API::Image2D_Handle depth_image;
+	Vulkan_API::Image2D_Handle object_texture;
     };
     
     void
