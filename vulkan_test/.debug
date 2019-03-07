@@ -1,5 +1,5 @@
-[core.cpp:270] log: starting session
-[core.cpp:279] log: stack allocator start address : 000001F0967EF040
+[core.cpp:271] log: starting session
+[core.cpp:280] log: stack allocator start address : 000001B76DC0D040
 [core.cpp:73] log: stack allocation for "vulkan_instanc_extension_names_list_allocation"
 [core.cpp:73] log: stack allocation for "validation_layer_list_allocation"
 [vulkan.cpp:162] success : vkCreateInstance(&instance_info , nullptr , instance)
@@ -51,7 +51,7 @@
 [graphics.cpp:314] success : vkCreateImage(vulkan_state.gpu.logical_device, &image_info, nullptr, image)
 [graphics.cpp:327] success : vkAllocateMemory(vulkan_state.gpu.logical_device, &alloc_info, nullptr, image_memory)
 [graphics.cpp:46] success : vkCreateImageView(vulkan_state.gpu.logical_device, &view_info, nullptr, &image_view)
-[graphics.cpp:682] success : vkCreateSampler(vulkan_state.gpu.logical_device, &sampler_info, nullptr, &vk.texture_image_sampler)
+[graphics.cpp:681] success : vkCreateSampler(vulkan_state.gpu.logical_device, &sampler_info, nullptr, &vk.texture_image_sampler)
 [graphics.cpp:536] success : vkCreateBuffer(vulkan_state.gpu.logical_device, &buffer_info, nullptr, write_buffer)
 [graphics.cpp:546] success : vkAllocateMemory(vulkan_state.gpu.logical_device, &alloc_info, nullptr, memory)
 [graphics.cpp:536] success : vkCreateBuffer(vulkan_state.gpu.logical_device, &buffer_info, nullptr, write_buffer)
@@ -68,27 +68,27 @@
 [graphics.cpp:546] success : vkAllocateMemory(vulkan_state.gpu.logical_device, &alloc_info, nullptr, memory)
 [graphics.cpp:536] success : vkCreateBuffer(vulkan_state.gpu.logical_device, &buffer_info, nullptr, write_buffer)
 [graphics.cpp:546] success : vkAllocateMemory(vulkan_state.gpu.logical_device, &alloc_info, nullptr, memory)
-[graphics.cpp:812] success : vkCreateDescriptorPool(vulkan_state.gpu.logical_device, &pool_info, nullptr, &vk.descriptor_pool)
+[graphics.cpp:811] success : vkCreateDescriptorPool(vulkan_state.gpu.logical_device, &pool_info, nullptr, &vk.descriptor_pool)
 [core.cpp:73] log: stack allocation for "descriptor_set_list_allocation"
 [core.cpp:73] log: stack allocation for "descriptor_set_layout_list_allocation"
-[graphics.cpp:838] success : vkAllocateDescriptorSets(vulkan_state.gpu.logical_device, &alloc_info, vk.descriptor_sets)
+[graphics.cpp:837] success : vkAllocateDescriptorSets(vulkan_state.gpu.logical_device, &alloc_info, vk.descriptor_sets)
 [core.cpp:73] log: stack allocation for "command_buffer_list_allocation"
-[graphics.cpp:898] success : vkAllocateCommandBuffers(vulkan_state.gpu.logical_device , &alloc_info , vk.command_buffers)
-[graphics.cpp:916] success : vkBeginCommandBuffer(vk.command_buffers[i] , &begin_info)
-[graphics.cpp:973] success : vkEndCommandBuffer(vk.command_buffers[i])
-[graphics.cpp:916] success : vkBeginCommandBuffer(vk.command_buffers[i] , &begin_info)
-[graphics.cpp:973] success : vkEndCommandBuffer(vk.command_buffers[i])
-[graphics.cpp:916] success : vkBeginCommandBuffer(vk.command_buffers[i] , &begin_info)
-[graphics.cpp:973] success : vkEndCommandBuffer(vk.command_buffers[i])
+[graphics.cpp:897] success : vkAllocateCommandBuffers(vulkan_state.gpu.logical_device , &alloc_info , vk.command_buffers)
+[graphics.cpp:915] success : vkBeginCommandBuffer(vk.command_buffers[i] , &begin_info)
+[graphics.cpp:972] success : vkEndCommandBuffer(vk.command_buffers[i])
+[graphics.cpp:915] success : vkBeginCommandBuffer(vk.command_buffers[i] , &begin_info)
+[graphics.cpp:972] success : vkEndCommandBuffer(vk.command_buffers[i])
+[graphics.cpp:915] success : vkBeginCommandBuffer(vk.command_buffers[i] , &begin_info)
+[graphics.cpp:972] success : vkEndCommandBuffer(vk.command_buffers[i])
 [core.cpp:73] log: stack allocation for "sempahore_image_ready_list_allocation"
 [core.cpp:73] log: stack allocation for "sempahore_image_ready_list_allocation"
 [core.cpp:73] log: stack allocation for "fence_list_allocation"
-[graphics.cpp:1009] success : vkCreateFence(vulkan_state.gpu.logical_device , &fence_info , nullptr , &vk.fences[i])
-[graphics.cpp:1014] success : vkCreateSemaphore(vulkan_state.gpu.logical_device , &semaphore_info , nullptr , &vk.render_finished_semaphores[i])
-[graphics.cpp:1019] success : vkCreateSemaphore(vulkan_state.gpu.logical_device , &semaphore_info , nullptr , &vk.image_ready_semaphores[i])
-[graphics.cpp:1009] success : vkCreateFence(vulkan_state.gpu.logical_device , &fence_info , nullptr , &vk.fences[i])
-[graphics.cpp:1014] success : vkCreateSemaphore(vulkan_state.gpu.logical_device , &semaphore_info , nullptr , &vk.render_finished_semaphores[i])
-[graphics.cpp:1019] success : vkCreateSemaphore(vulkan_state.gpu.logical_device , &semaphore_info , nullptr , &vk.image_ready_semaphores[i])
-[core.cpp:302] log: stack allocator start address is : 000001F0967EFDA8
-[core.cpp:303] log: stack allocator allocated 3432 bytes
-[core.cpp:305] log: finished session
+[graphics.cpp:1008] success : vkCreateFence(vulkan_state.gpu.logical_device , &fence_info , nullptr , &vk.fences[i])
+[graphics.cpp:1013] success : vkCreateSemaphore(vulkan_state.gpu.logical_device , &semaphore_info , nullptr , &vk.render_finished_semaphores[i])
+[graphics.cpp:1018] success : vkCreateSemaphore(vulkan_state.gpu.logical_device , &semaphore_info , nullptr , &vk.image_ready_semaphores[i])
+[graphics.cpp:1008] success : vkCreateFence(vulkan_state.gpu.logical_device , &fence_info , nullptr , &vk.fences[i])
+[graphics.cpp:1013] success : vkCreateSemaphore(vulkan_state.gpu.logical_device , &semaphore_info , nullptr , &vk.render_finished_semaphores[i])
+[graphics.cpp:1018] success : vkCreateSemaphore(vulkan_state.gpu.logical_device , &semaphore_info , nullptr , &vk.image_ready_semaphores[i])
+[core.cpp:303] log: stack allocator start address is : 000001B76DC0DDA8
+[core.cpp:304] log: stack allocator allocated 3432 bytes
+[core.cpp:306] log: finished session

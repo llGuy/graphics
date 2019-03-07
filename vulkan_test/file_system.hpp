@@ -23,18 +23,23 @@ struct File_Data
     void *data;
     u32 size;
 
+    File description;
+
     // all types of extra data
     enum Extra_Data { WIDTH, HEIGHT, CHANNELS, INVALID };
     u32 extras[Extra_Data::INVALID];
 };
 
 void
-set_virtual_file_path(const char *path);
+mount_virtual_file_path(const char *real, const char *mask);
 
-enum Read_Flags {RECORD_BIT = 1 << 0};
+enum Read_Flags {RECORD = 1 << 0};
 
 File_Data
-read_from_file(const File &file, Read_Flags flags);
+read_file_data(const File &file, Read_Flags flags);
+
+void
+destroy_file_data(File_Data *file_data);
 
 template <typename T> struct File_Proc_Wrapper
 {

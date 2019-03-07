@@ -6,11 +6,11 @@
 #include <limits.h>
 #include <chrono>
 #include <glm/glm.hpp>
-#include <stb_image.h>
 #include <glm/glm.hpp>
 #include "graphics.hpp"
 #include "rendering.hpp"
 #include <GLFW/glfw3.h>
+#include "file_system.hpp"
 #include <vulkan/vulkan.h>
 #include "vulkan_managers.hpp"
 #include <glm/gtx/transform.hpp>
@@ -597,14 +597,13 @@ init_texture_image(void)
 {
     persist const char *jpg_file = "../vulkan/textures/texture.jpg";
 
-    s32 w, h, channels;
-    stbi_uc *pixels = stbi_load(jpg_file, &w, &h, &channels, STBI_rgb_alpha);
+    File file_description;
+    file_description.file_path = jpg_file;
+    file_description.format = File_Format::JPG;
+    auto image_data = read_file_data(file_description, Read_Flags::RECORD);
 
-    if (!pixels)
-    {
-	OUTPUT_DEBUG_LOG("failed to open image : %s\n", jpg_file);
-    }
-
+    u32 w = image_data.extras[File_Data::Extra_Data::WIDTH];
+    u32 h = image_data.extras[File_Data::Extra_Data::HEIGHT];
     VkDeviceSize image_size = w * h * 4;
     
     VkBuffer staging_buffer;
@@ -618,10 +617,10 @@ init_texture_image(void)
 
     void *data;
     vkMapMemory(vulkan_state.gpu.logical_device, staging_buffer_memory, 0, image_size, 0, &data);
-    memcpy(data, pixels, static_cast<u32>(image_size));
+    memcpy(data, image_data.data, static_cast<u32>(image_size));
     vkUnmapMemory(vulkan_state.gpu.logical_device, staging_buffer_memory);
 
-    stbi_image_free(pixels);
+    destroy_file_data(&image_data);
 
     create_image(w
 		 , h

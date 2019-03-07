@@ -518,6 +518,12 @@ namespace Vulkan_API
 			    , VkCommandPool *graphics_command_pool
 			    , GPU *gpu);
 
+    void
+    copy_buffer_into_image(Buffer *src_buffer
+			   , Image2D *dst_image
+			   , u32 width
+			   , u32 height);
+    
     struct Framebuffer
     {
 	VkFramebuffer framebuffer;

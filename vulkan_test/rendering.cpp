@@ -1,5 +1,6 @@
 #include <glm/glm.hpp>
 #include "rendering.hpp"
+#include "file_system.hpp"
 #include "vulkan_handles.hpp"
 #include "vulkan_managers.hpp"
 
@@ -338,14 +339,13 @@ namespace Rendering
     {
 	persist const char *jpg_file = "../vulkan/textures/texture.jpg";
 
-	s32 w, h, channels;
-	stbi_uc *pixels = stbi_load(jpg_file, &w, &h, &channels, STBI_rgb_alpha);
-	
-	if (!pixels)
-	{
-	    OUTPUT_DEBUG_LOG("failed to open image : %s\n", jpg_file);
-	}
+	File file_description;
+	file_description.file_path = jpg_file;
+	file_description.format = File_Format::JPG;
+	auto image_data = read_file_data(file_description, Read_Flags::RECORD);
 
+	u32 w = image_data.extras[File_Data::Extra_Data::WIDTH];
+	u32 h = image_data.extras[File_Data::Extra_Data::HEIGHT];
 	VkDeviceSize image_size = w * h * 4;
 
 	Vulkan_API::Buffer staging_buffer;
@@ -360,10 +360,10 @@ namespace Rendering
 	
 	auto mapped_memory = staging_buffer.construct_map();
 	mapped_memory.begin(gpu);
-	memcpy(mapped_memory.data, pixels, (u32)image_size);
+	memcpy(mapped_memory.data, image_data.data, (u32)image_size);
 	mapped_memory.end(gpu);
 
-	stbi_image_free(pixels);
+	destroy_file_data(&image_data);
 
 	auto image_handle = Vulkan_API::add_image2D("image2D.object_texture"_hash);
 	auto image_ptr = Vulkan_API::get_image2D(image_handle);
@@ -375,6 +375,15 @@ namespace Rendering
 			       , VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
 			       , gpu
 			       , &image_ptr->image);
+
+	auto command_pool_handle = Vulkan_API::get_command_pool_handle("command_pool.graphics_command_pool"_hash);
+	VkCommandPool *command_pool_ptr = Vulkan_API::get_command_pool(command_pool_handle);
+	Vulkan_API::transition_image_layout(&image_ptr->image
+					    , VK_FORMAT_R8G8B8A8_UNORM
+					    , VK_IMAGE_LAYOUT_UNDEFINED
+					    , VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
+					    , command_pool_ptr
+					    , gpu);
     }
     
     void

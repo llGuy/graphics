@@ -709,6 +709,47 @@ namespace Vulkan_API
 	free_command_buffer(Memory_Buffer_View<VkCommandBuffer>{1, &single_command}, graphics_command_pool, gpu);
     }
 
+    void
+    copy_buffer_into_image(Buffer *src_buffer
+			   , Image2D *dst_image
+			   , u32 width
+			   , u32 height
+			   , VkCommandPool *command_pool
+			   , GPU *gpu)
+    {
+	VkCommandBuffer command_buffer;
+	allocate_command_buffers(command_pool
+				 , VK_COMMAND_BUFFER_LEVEL_PRIMARY
+				 , gpu
+				 , Memory_Buffer_View<VkCommandBuffer>{1, &command_buffer});
+	begin_command_buffer(&command_buffer
+			     , VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT
+			     , nullptr);
+
+	VkBufferImageCopy region	= {};
+	region.bufferOffset		= 0;
+	region.bufferRowLength		= 0;
+	region.bufferImageHeight	= 0;
+
+	region.imageSubresource.aspectMask	= VK_IMAGE_ASPECT_COLOR_BIT;
+	region.imageSubresource.mipLevel	= 0;
+	region.imageSubresource.baseArrayLayer	= 0;
+	region.imageSubresource.layerCount	= 1;
+
+	region.imageOffset = {0, 0, 0};
+	region.imageExtent = { width, height, 1 };
+
+	vkCmdCopyBufferToImage(command_buffer
+			       , src_buffer->buffer
+			       , dst_image->image
+			       , VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
+			       , 1
+			       , &region);
+
+	end_command_buffer(&command_buffer);
+	free_command_buffer(Memory_Buffer_View<VkCommandBuffer>{1, &command_buffer}, command_pool, gpu);
+    }
+    
     internal void
     init_swapchain(GLFWwindow *window
 		   , VkSurfaceKHR *surface
