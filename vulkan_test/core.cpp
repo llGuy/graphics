@@ -3,7 +3,8 @@
 
 #include "vulkan.hpp"
 #include "core.hpp"
-#include "graphics.hpp"
+#include "rendering.hpp"
+//#include "graphics.hpp"
 
 #define DEBUG_FILE ".debug"
 
@@ -291,13 +292,13 @@ main(s32 argc
 				  , NULL
 				  , NULL);
 
-	init_vk(window);
+	Rendering::Old::init_vk(window);
 	
 	u32 current_frame = 0;
 	while(!glfwWindowShouldClose(window))
 	{
 	    glfwPollEvents();
-	    draw_frame();
+	    Rendering::Old::draw_frame();
 	}
 
 	OUTPUT_DEBUG_LOG("stack allocator start address is : %p\n", stack_allocator_global.current);
@@ -307,7 +308,7 @@ main(s32 argc
 
 	close_debug_file();
 
-	destroy_vk();
+	Rendering::Old::destroy_vk();
 
 	glfwDestroyWindow(window);
 	glfwTerminate();

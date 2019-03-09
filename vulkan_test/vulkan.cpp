@@ -19,14 +19,17 @@ namespace Vulkan_API
 						   , VkMemoryPropertyFlags properties
 						   , VkMemoryRequirements memory_requirements)
 	{
-	    VkPhysicalDeviceMemoryProperties *gpu_mem_properties = &gpu->memory_properties;
+	    //VkPhysicalDeviceMemoryProperties *gpu_mem_properties = &gpu->memory_properties;
+	    VkPhysicalDeviceMemoryProperties mem_properties;
+	    vkGetPhysicalDeviceMemoryProperties(gpu->hardware
+						, &mem_properties);
 
 	    for (u32 i = 0
-		     ; i < gpu_mem_properties->memoryTypeCount
+		     ; i < mem_properties.memoryTypeCount
 		     ; ++i)
 	    {
 		if (memory_requirements.memoryTypeBits & (1 << i)
-		    && (gpu_mem_properties->memoryTypes[i].propertyFlags & properties) == properties)
+		    && (mem_properties.memoryTypes[i].propertyFlags & properties) == properties)
 		{
 		    return(i);
 		}
@@ -487,7 +490,7 @@ namespace Vulkan_API
 	       , VkImageUsageFlags usage
 	       , VkMemoryPropertyFlags properties
 	       , GPU *gpu
-	       , VkImage *dest_image)
+	       , Image2D *dest_image)
     {
 	VkImageCreateInfo image_info = {};
 	image_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -504,7 +507,16 @@ namespace Vulkan_API
 	image_info.samples = VK_SAMPLE_COUNT_1_BIT;
 	image_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-	VK_CHECK(vkCreateImage(gpu->logical_device, &image_info, nullptr, dest_image));
+	VK_CHECK(vkCreateImage(gpu->logical_device, &image_info, nullptr, &dest_image->image));
+
+	VkMemoryRequirements mem_requirements = {};
+	vkGetImageMemoryRequirements(gpu->logical_device
+				     , dest_image->image
+				     , &mem_requirements);
+
+	Memory::allocate_gpu_memory(properties, mem_requirements, gpu, &dest_image->device_memory);
+
+	vkBindImageMemory(gpu->logical_device, dest_image->image, dest_image->device_memory, 0);
     }
     
     void
@@ -1079,11 +1091,12 @@ namespace Vulkan_API
 
 	u32 extension_count;
 	const char **extension_names = glfwGetRequiredInstanceExtensions(&extension_count);
-	const char **total_extension_buffer = (const char **)allocate_stack(sizeof(const char *) * (extension_count + 1)
+	const char **total_extension_buffer = (const char **)allocate_stack(sizeof(const char *) * (extension_count + 2)
 									    , Alignment(1)
 									    , "vulkan_instanc_extension_names_list_allocation");
 	memcpy(total_extension_buffer, extension_names, sizeof(const char *) * extension_count);
 	total_extension_buffer[extension_count++] = VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
+	total_extension_buffer[extension_count++] = "VK_EXT_debug_report";
 	
 	Instance_Create_Extension_Params extension_params = {};
 	extension_params.r_extension_count = extension_count;

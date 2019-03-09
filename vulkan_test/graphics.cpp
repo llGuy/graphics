@@ -592,7 +592,7 @@ copy_buffer_to_image(VkBuffer buffer
     end_single_time_command(command_buffer);
 }
 
-internal void
+/*internal void
 init_texture_image(void)
 {
     persist const char *jpg_file = "../vulkan/textures/texture.jpg";
@@ -679,7 +679,7 @@ init_texture_image_sampler(void)
     sampler_info.maxLod = 0.0f;
 
     VK_CHECK(vkCreateSampler(vulkan_state.gpu.logical_device, &sampler_info, nullptr, &vk.texture_image_sampler));
-}
+}*/
 
 internal void
 init_vbo(void)
@@ -835,6 +835,8 @@ init_descriptor_sets(void)
     alloc_info.pSetLayouts			= descriptor_set_layouts;
 
     VK_CHECK(vkAllocateDescriptorSets(vulkan_state.gpu.logical_device, &alloc_info, vk.descriptor_sets));
+
+    auto image_ptr = Vulkan_API::get_image2D("image2D.object_texture"_hash);
     
     for (u32 i = 0
 	     ; i < vk.descriptor_set_count
@@ -847,8 +849,8 @@ init_descriptor_sets(void)
 
 	VkDescriptorImageInfo image_info	= {};
 	image_info.imageLayout			= VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-	image_info.imageView			= vk.texture_image_view;
-	image_info.sampler			= vk.texture_image_sampler;
+	image_info.imageView			= image_ptr->image_view;
+	image_info.sampler			= image_ptr->image_sampler;
 
 	VkWriteDescriptorSet descriptor_writes[2] = {};
 	descriptor_writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -1040,9 +1042,9 @@ init_vk(GLFWwindow *window)
     //    init_framebuffers();
 
 
-    init_texture_image();
-    init_texture_image_view();
-    init_texture_image_sampler();
+    //   init_texture_image();
+    //       init_texture_image_view();
+    //        init_texture_image_sampler();
 
     init_vbo();
     init_ibo();

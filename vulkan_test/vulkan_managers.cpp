@@ -144,12 +144,22 @@ namespace Vulkan_API
 				   , &buffer_index_map
 				   , string));
     }
-    Vulkan_API::Buffer *
+    Buffer *
     get_buffer(Buffer_Handle handle)
     {
 	return(get_template(&buffer_manager
 			    , handle));
     }
+
+    Buffer *
+    get_buffer(const Constant_String &handle)
+    {
+	return(get_template(&buffer_manager
+			    , get_handle_template(&buffer_manager
+						  , &buffer_index_map
+						  , handle)));
+    }
+    
 
 
     // render pass function implementations
@@ -160,6 +170,7 @@ namespace Vulkan_API
 			    , &render_pass_index_map
 			    , string));
     }
+    
     Render_Pass_Handle
     get_render_pass_handle(const Constant_String &string)
     {
@@ -167,12 +178,22 @@ namespace Vulkan_API
 				   , &render_pass_index_map
 				   , string));
     }
-    Vulkan_API::Render_Pass *
+    
+    Render_Pass *
     get_render_pass(Render_Pass_Handle handle)
     {
 	return(get_template(&render_pass_manager
 			    , handle));
     }
+
+    Render_Pass *
+    get_render_pass(const Constant_String &handle)
+    {
+	return(get_template(&render_pass_manager
+			    , get_handle_template(&render_pass_manager
+						  , &render_pass_index_map
+						  , handle)));
+    }    
     
 
 
@@ -198,6 +219,15 @@ namespace Vulkan_API
 			    , handle));
     }
 
+    VkDescriptorSetLayout *
+    get_descriptor_set_layout(const Constant_String &handle)
+    {
+	return(get_template(&descriptor_set_layout_manager
+			    , get_handle_template(&descriptor_set_layout_manager
+						  , &descriptor_set_layout_index_map
+						  , handle)));
+    }    
+
 
     
     // model stuff
@@ -221,6 +251,15 @@ namespace Vulkan_API
 	return(get_template(&model_manager
 			    , handle));
     }
+
+    Model *
+    get_model(const Constant_String &handle)
+    {
+	return(get_template(&model_manager
+			    , get_handle_template(&model_manager
+						  , &model_index_map
+						  , handle)));
+    }    
 
 
 
@@ -248,6 +287,15 @@ namespace Vulkan_API
 			    , handle));
     }
 
+    Graphics_Pipeline *
+    get_graphics_pipeline(const Constant_String &handle)
+    {
+	return(get_template(&graphics_pipeline_manager
+			    , get_handle_template(&graphics_pipeline_manager
+						  , &graphics_pipeline_index_map
+						  , handle)));
+    }    
+    
 
 
     // command pool stuff
@@ -273,6 +321,15 @@ namespace Vulkan_API
 	return(get_template(&command_pool_manager
 			    , handle));
     }
+
+    VkCommandPool *
+    get_command_pool(const Constant_String &handle)
+    {
+	return(get_template(&command_pool_manager
+			    , get_handle_template(&command_pool_manager
+						  , &command_pool_index_map
+						  , handle)));
+    }    
 
 
 
@@ -300,6 +357,15 @@ namespace Vulkan_API
 			    , handle));
     }
 
+    Image2D *
+    get_image2D(const Constant_String &handle)
+    {
+	return(get_template(&image2D_manager
+			    , get_handle_template(&image2D_manager
+						  , &image2D_index_map
+						  , handle)));
+    }
+
 
 
     Framebuffer_Handle
@@ -323,6 +389,15 @@ namespace Vulkan_API
     {
 	return(get_template(&framebuffer_manager
 			    , handle));
+    }
+
+    Framebuffer *
+    get_framebuffer(const Constant_String &handle)
+    {
+	return(get_template(&framebuffer_manager
+			    , get_handle_template(&framebuffer_manager
+						  , &framebuffer_index_map
+						  , handle)));
     }
     
 }

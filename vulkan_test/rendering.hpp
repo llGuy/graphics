@@ -20,8 +20,22 @@ namespace Rendering
 	Vulkan_API::Graphics_Pipeline_Handle graphics_pipeline;
 	Vulkan_API::Command_Pool_Handle graphics_command_pool;
 	Vulkan_API::Image2D_Handle depth_image;
-	Vulkan_API::Image2D_Handle object_texture;
+	Vulkan_API::Image2D_Handle texture;
     };
+
+    namespace Old
+    {
+
+	void
+	init_vk(GLFWwindow *window);
+
+	void
+	draw_frame(void);
+
+	void
+	destroy_vk(void);
+	
+    }
     
     void
     init_rendering_state(Vulkan_API::State *vulkan_state

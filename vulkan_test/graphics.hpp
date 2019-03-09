@@ -32,10 +32,10 @@ extern struct Vulkan_State
     //    VkDeviceMemory depth_image_memory;
     //    VkImageView depth_image_view;
 
-    VkImage texture_image;
-    VkDeviceMemory texture_image_memory;
-    VkImageView texture_image_view;
-    VkSampler texture_image_sampler;
+    //    VkImage texture_image;
+    //    VkDeviceMemory texture_image_memory;
+    //    VkImageView texture_image_view;
+    //    VkSampler texture_image_sampler;
 
     VkBuffer vertex_buffer;
     VkDeviceMemory vertex_buffer_memory;

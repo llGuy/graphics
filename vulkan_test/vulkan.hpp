@@ -125,7 +125,7 @@ namespace Vulkan_API
 	       , VkImageUsageFlags usage
 	       , VkMemoryPropertyFlags properties
 	       , GPU *gpu
-	       , VkImage *dest_image);
+	       , Image2D *dest_image);
 
     void
     init_image_view(VkImage *image
@@ -522,7 +522,9 @@ namespace Vulkan_API
     copy_buffer_into_image(Buffer *src_buffer
 			   , Image2D *dst_image
 			   , u32 width
-			   , u32 height);
+			   , u32 height
+			   , VkCommandPool *command_pool
+			   , GPU *gpu);
     
     struct Framebuffer
     {

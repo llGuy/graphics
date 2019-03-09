@@ -431,7 +431,7 @@ template <typename T
 		     ; ++bucket_item)
 	    {
 		Item *item = &bucket->items[bucket_item];
-		if (item->hash != UNINITIALIZED_HASH)
+		if (item->hash != UNINITIALIZED_HASH && hash == item->hash)
 		{
 		    return(item->value);
 		}

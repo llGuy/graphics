@@ -16,6 +16,9 @@ namespace Vulkan_API
     Vulkan_API::Buffer *
     get_buffer(Buffer_Handle handle);
 
+    Vulkan_API::Buffer *
+    get_buffer(const Constant_String &name);
+
     
 
     Render_Pass_Handle
@@ -26,6 +29,9 @@ namespace Vulkan_API
 	
     Vulkan_API::Render_Pass *
     get_render_pass(Render_Pass_Handle handle);
+
+    Vulkan_API::Render_Pass *
+    get_render_pass(const Constant_String &name);
 
     
     
@@ -38,6 +44,9 @@ namespace Vulkan_API
     VkDescriptorSetLayout *
     get_descriptor_set_layout(Descriptor_Set_Layout_Handle handle);
 
+    VkDescriptorSetLayout *
+    get_descriptor_set_layout(const Constant_String &handle);
+
 
 
     Model_Handle
@@ -48,6 +57,9 @@ namespace Vulkan_API
     
     Model *
     get_model(Model_Handle handle);
+
+    Model *
+    get_model(const Constant_String &name);
 
 
 
@@ -60,6 +72,9 @@ namespace Vulkan_API
     Graphics_Pipeline *
     get_graphics_pipeline(Graphics_Pipeline_Handle handle);
 
+    Graphics_Pipeline *
+    get_graphics_pipeline(const Constant_String &handle);
+
 
 
     Command_Pool_Handle
@@ -70,6 +85,9 @@ namespace Vulkan_API
     
     VkCommandPool *
     get_command_pool(Command_Pool_Handle handle);
+
+    VkCommandPool *
+    get_command_pool(const Constant_String &handle);
 
 
 
@@ -82,6 +100,9 @@ namespace Vulkan_API
     Image2D *
     get_image2D(Image2D_Handle handle);
 
+    Image2D *
+    get_image2D(const Constant_String &name);
+
 
 
     Framebuffer_Handle
@@ -92,5 +113,8 @@ namespace Vulkan_API
     
     Framebuffer *
     get_framebuffer(Image2D_Handle handle);
+
+    Framebuffer *
+    get_framebuffer(const Constant_String &name);
 
 }
