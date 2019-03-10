@@ -934,7 +934,7 @@ namespace Rendering
 	    VK_CHECK(vkCreateDescriptorPool(vulkan_state.gpu.logical_device, &pool_info, nullptr, &vk.descriptor_pool));
 	}
 
-
+	// TODO(luc) port descriptor set creation to new system
 	
 	internal void
 	init_descriptor_sets(void)

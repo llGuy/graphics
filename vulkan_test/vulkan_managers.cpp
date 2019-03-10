@@ -17,6 +17,7 @@ namespace Vulkan_API
     MAKE_OBJECT_MANAGER_TMP_PARAM_GROUP(COMMAND_POOL, 5, 5, Command_Pool, u8)
     MAKE_OBJECT_MANAGER_TMP_PARAM_GROUP(IMAGE2D, 20, 6, Image2D, u8)
     MAKE_OBJECT_MANAGER_TMP_PARAM_GROUP(FRAMEBUFFER, 20, 6, Framebuffer, u8)
+    MAKE_OBJECT_MANAGER_TMP_PARAM_GROUP(DESCRIPTOR_SET, 20, 6, Descriptor_Set, u8)
 
     
     template <typename I_Type /* which type of int */
@@ -99,6 +100,9 @@ namespace Vulkan_API
     global_var Object_Manager<Framebuffer, FRAMEBUFFER_MAX_COUNT, Framebuffer_Stack_Type, FRAMEBUFFER_STACK_MAX_REMOVED> framebuffer_manager;
     global_var Hash_Table_Inline<u32 /*index of item in the manager struct*/, 20, 8, 3> framebuffer_index_map {"map.framebuffer_index_map"};
 
+    global_var Object_Manager<Descriptor_Set, DESCRIPTOR_SET_MAX_COUNT, Descriptor_Set_Stack_Type, DESCRIPTOR_SET_STACK_MAX_REMOVED> descriptor_set_manager;
+    global_var Hash_Table_Inline<u32 /*index of item in the manager struct*/, 20, 8, 3> descriptor_set_index_map {"map.descriptor_set_index_map"};
+    
 
     
     template <typename Manager_Type
@@ -397,6 +401,40 @@ namespace Vulkan_API
 	return(get_template(&framebuffer_manager
 			    , get_handle_template(&framebuffer_manager
 						  , &framebuffer_index_map
+						  , handle)));
+    }
+
+
+
+    Descriptor_Set_Handle
+    add_descriptor_set(const Constant_String &string)
+    {
+	return(add_template(&descriptor_set_manager
+			    , &descriptor_set_index_map
+			    , string));
+    }
+
+    Descriptor_Set_Handle
+    get_descriptor_set_handle(const Constant_String &string)
+    {
+	return(get_handle_template(&descriptor_set_manager
+				   , &descriptor_set_index_map
+				   , string));
+    }
+    
+    Descriptor_Set *
+    get_descriptor_set(Descriptor_Set_Handle handle)
+    {
+	return(get_template(&descriptor_set_manager
+			    , handle));
+    }
+
+    Descriptor_Set *
+    get_descriptor_Set(const Constant_String &handle)
+    {
+	return(get_template(&descriptor_set_manager
+			    , get_handle_template(&descriptor_set_manager
+						  , &descriptor_set_index_map
 						  , handle)));
     }
     

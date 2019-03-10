@@ -582,6 +582,72 @@ namespace Vulkan_API
 		     , GPU *gpu
 		     , Framebuffer *framebuffer); // need to initialize the attachment handles
     
+    struct Descriptor_Set
+    {
+	Memory_Buffer_View<Descriptor_Set_Layout_Handle> layouts;
+	VkDescriptorSet set;
+
+	void
+	init_buffer_descriptor_write(u32 binding
+				     , VkDescriptorBufferInfo *buffer_info
+				     , VkWriteDescriptorSet *descriptor_write)
+	{
+	    descriptor_write->sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	    descriptor_write->dstSet = set;
+	    descriptor_write->dstBinding = binding;
+	    descriptor_write->dstArrayElement = 0;
+	    descriptor_write->descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	    descriptor_write->descriptorCount = 1;
+	    descriptor_write->pBufferInfo = buffer_info;
+	}
+
+	void
+	init_image_descriptor_write(u32 binding
+				    , VkDescriptorImageInfo *image_info
+				    , VkWriteDescriptorSet *descriptor_write)
+	{
+	    descriptor_write->sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	    descriptor_write->dstSet = set;
+	    descriptor_write->dstBinding = binding;
+	    descriptor_write->dstArrayElement = 0;
+	    descriptor_write->descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	    descriptor_write->descriptorCount = 1;
+	    descriptor_write->pImageInfo = image_info;
+	}
+    };
+
+    void
+    allocate_descriptor_sets(Memory_Buffer_View<Descriptor_Set> &descriptor_sets
+			     , const Memory_Buffer_View<VkDescriptorSetLayout> &layouts
+			     , GPU *gpu
+			     , VkDescriptorPool *descriptor_pool);
+    
+    internal void
+    init_descriptor_set_buffer_info(Buffer *buffer
+				    , u32 offset_in_ubo
+				    , VkDescriptorBufferInfo *buffer_info)
+    {
+	buffer_info->buffer = buffer->buffer;
+	buffer_info->offset = offset_in_ubo;
+	buffer_info->range = buffer->size;
+    }
+
+    internal void
+    init_descriptor_set_image_info(Image2D *image
+				   , VkImageLayout expected_layout
+				   , VkDescriptorImageInfo *image_info)
+    {
+	image_info->imageLayout = expected_layout;
+	image_info->imageView = image->image_view;
+	image_info->sampler = image->image_sampler;
+    }
+
+    
+    
+    void
+    update_descriptor_sets(const Memory_Buffer_View<VkWriteDescriptorSet> &writes
+			   , GPU *gpu);
+    
     struct State
     {
 	VkInstance instance;

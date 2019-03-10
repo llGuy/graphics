@@ -448,10 +448,36 @@ struct Memory_Buffer_View
 {
     u32 count;
     T *buffer;
+    
+    T &
+    operator[](u32 i)
+    {
+	return buffer[i];
+    }
 };
+
+template <typename T> void
+allocate_memory_buffer(Memory_Buffer_View<T> &view, u32 count)
+{
+    view.count = count;
+    view.buffer = (T *)allocate_free_list(count * sizeof(T));
+}
 
 struct Memory_Byte_Buffer
 {
     u32 size;
     void *ptr;
 };
+
+// predicate needs as param T &
+template <typename T, typename Pred> void
+loop_through_memory(Memory_Buffer_View<T> &memory
+		    , Pred &&predicate)
+{
+    for (u32 i = 0
+	     ; i < memory.count
+	     ; ++i)
+    {
+	predicate(i);
+    }
+}

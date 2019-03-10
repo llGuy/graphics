@@ -12,6 +12,7 @@ namespace Vulkan_API
     using Image_Sampler_Handle          = u32;
     using Render_Pass_Handle		= u32;
     using Descriptor_Set_Layout_Handle	= u32;
+    using Descriptor_Pool_Handle        = u32;
     using Descriptor_Set_Handle		= u32;
     using Model_Handle			= u32;
     using Graphics_Pipeline_Handle      = u32;

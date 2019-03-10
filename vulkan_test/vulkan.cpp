@@ -1135,6 +1135,40 @@ namespace Vulkan_API
 
 	VK_CHECK(vkCreateFramebuffer(gpu->logical_device, &fbo_info, nullptr, &framebuffer->framebuffer));
     }
+
+    void
+    allocate_descriptor_sets(Memory_Buffer_View<Descriptor_Set_Handle> &descriptor_sets
+			     , const Memory_Buffer_View<VkDescriptorSetLayout> &layouts
+			     , GPU *gpu
+			     , VkDescriptorPool *descriptor_pool)
+    {
+	Memory_Buffer_View<VkDescriptorSet> descriptor_sets_buffer {};
+	allocate_memory_buffer(descriptor_sets_buffer, descriptor_sets.count);
+
+	VkDescriptorSetAllocateInfo alloc_info	= {};
+	alloc_info.sType		= VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+	alloc_info.descriptorPool	= *descriptor_pool;
+	alloc_info.descriptorSetCount	= layouts.count;
+	alloc_info.pSetLayouts		= layouts.buffer;
+
+	VK_CHECK(vkAllocateDescriptorSets(gpu->logical_device, &alloc_info, descriptor_sets_buffer.buffer));
+
+	// copy back into descriptor_sets objects
+	loop_through_memory(descriptor_sets
+			    , [&descriptor_sets_buffer, &descriptor_sets] (u32 i) -> void
+			    {Vulkan_API::get_descriptor_set(descriptor_sets[i])->set = descriptor_sets_buffer[i];});
+    }
+    
+    void
+    update_descriptor_sets(const Memory_Buffer_View<VkWriteDescriptorSet> &writes
+			   , GPU *gpu)
+    {
+	vkUpdateDescriptorSets(gpu->logical_device
+			       , writes.count
+			       , writes.buffer
+			       , 0
+			       , nullptr);
+    }
     
     void
     init_buffer(VkDeviceSize buffer_size

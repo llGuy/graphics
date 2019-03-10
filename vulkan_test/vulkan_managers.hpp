@@ -117,4 +117,18 @@ namespace Vulkan_API
     Framebuffer *
     get_framebuffer(const Constant_String &name);
 
+
+    
+    Descriptor_Set_Handle
+    add_descriptor_set(const Constant_String &string);
+
+    Descriptor_Set_Handle
+    get_descriptor_set_handle(const Constant_String &string);
+    
+    Descriptor_Set *
+    get_descriptor_set(Descriptor_Set_Handle handle);
+
+    Descriptor_Set *
+    get_descriptor_Set(const Constant_String &name);
+
 }
