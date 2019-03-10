@@ -1,4 +1,5 @@
 #include <chrono>
+#include "vulkan.hpp"
 #include <glm/glm.hpp>
 #include "rendering.hpp"
 #include "file_system.hpp"
@@ -336,9 +337,12 @@ namespace Rendering
 
     
 
-    void
+    internal void
     init_object_texture(Vulkan_API::GPU *gpu)
     {
+	auto image_handle = Vulkan_API::add_image2D("image2D.texture"_hash);
+	auto image_ptr = Vulkan_API::get_image2D(image_handle);
+	    
 	persist const char *jpg_file = "../vulkan/textures/texture.jpg";
 
 	File file_description;
@@ -348,27 +352,27 @@ namespace Rendering
 
 	u32 w = image_data.extras[File_Data::Extra_Data::WIDTH];
 	u32 h = image_data.extras[File_Data::Extra_Data::HEIGHT];
-	VkDeviceSize image_size = w * h * 4;
 
+	VkDeviceSize image_size = w * h * 4;
+    
 	Vulkan_API::Buffer staging_buffer;
 	staging_buffer.size = image_size;
-
+	    
 	Vulkan_API::init_buffer(image_size
 				, VK_BUFFER_USAGE_TRANSFER_SRC_BIT
 				, VK_SHARING_MODE_EXCLUSIVE
 				, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
 				, gpu
 				, &staging_buffer);
-	
-	auto mapped_memory = staging_buffer.construct_map();
+	    
+
+	Vulkan_API::Mapped_GPU_Memory mapped_memory = staging_buffer.construct_map();
+
 	mapped_memory.begin(gpu);
-	memcpy(mapped_memory.data, image_data.data, (u32)image_size);
+	memcpy(mapped_memory.data, image_data.data, static_cast<u32>(image_size));
 	mapped_memory.end(gpu);
 
 	destroy_file_data(&image_data);
-
-	auto image_handle = Vulkan_API::add_image2D("image2D.object_texture"_hash);
-	auto image_ptr = Vulkan_API::get_image2D(image_handle);
 
 	Vulkan_API::init_image(w, h
 			       , VK_FORMAT_R8G8B8A8_UNORM
@@ -377,16 +381,15 @@ namespace Rendering
 			       , VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
 			       , gpu
 			       , image_ptr);
-	
-	auto command_pool_handle = Vulkan_API::get_command_pool_handle("command_pool.graphics_command_pool"_hash);
-	VkCommandPool *command_pool_ptr = Vulkan_API::get_command_pool(command_pool_handle);
+
+	auto command_pool_ptr = Vulkan_API::get_command_pool("command_pool.graphics_command_pool"_hash);
 	Vulkan_API::transition_image_layout(&image_ptr->image
 					    , VK_FORMAT_R8G8B8A8_UNORM
 					    , VK_IMAGE_LAYOUT_UNDEFINED
 					    , VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
 					    , command_pool_ptr
 					    , gpu);
-
+	    
 	Vulkan_API::copy_buffer_into_image(&staging_buffer
 					   , image_ptr
 					   , w
@@ -419,29 +422,152 @@ namespace Rendering
 				       , gpu
 				       , &image_ptr->image_sampler);
     }
-
     
+    internal void
+    init_vbo(Vulkan_API::GPU *gpu)
+    {
+	struct Vertex { glm::vec3 pos, color; glm::vec2 uvs; };
+	
+	persist Vertex vertices[]
+	{
+	    {{-1.0f, -0.5f, 1.0f}, {0.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
+	    {{0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
+	    {{0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
+	    {{-0.5f, 0.5f, 1.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}},
+
+	    {{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+	    {{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
+	    {{0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+	    {{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}
+	};
+	
+	auto *object_model = Vulkan_API::get_model("vulkan_model.test_model"_hash);
+	auto *main_binding = &object_model->bindings[0];
+	    
+	auto buffer_handle = Vulkan_API::add_buffer("buffer.test_model_vbo"_hash);
+	auto *object_model_vbo = Vulkan_API::get_buffer(buffer_handle);
+
+	Memory_Byte_Buffer byte_buffer{sizeof(vertices), vertices};
+	auto command_pool = Vulkan_API::get_command_pool("command_pool.graphics_command_pool"_hash);
+	
+	Vulkan_API::invoke_staging_buffer_for_device_local_buffer(byte_buffer
+								  , command_pool
+								  , object_model_vbo
+								  , gpu);
+    }
+
+    persist u32 mesh_indices[]
+    {
+	0, 1, 2, 2, 3, 0,
+	4, 5, 6, 6, 7, 4
+    };    
+
+    internal void
+    init_ibo(Vulkan_API::GPU *gpu)
+    {
+	auto model = Vulkan_API::get_model("vulkan_model.test_model"_hash);
+	auto ibo_handle = Vulkan_API::add_buffer("buffer.test_model_ibo"_hash);
+	auto ibo = Vulkan_API::get_buffer("buffer.test_model_ibo"_hash);
+
+	model->index_data.index_buffer = ibo_handle;
+
+	Memory_Byte_Buffer byte_buffer{sizeof(mesh_indices), mesh_indices};
+	    
+	auto command_pool = Vulkan_API::get_command_pool("command_pool.graphics_command_pool"_hash);
+	    
+	Vulkan_API::invoke_staging_buffer_for_device_local_buffer(byte_buffer
+								  , command_pool
+								  , ibo
+								  , gpu);
+    }
+
+    internal void
+    update_ubo(u32 current_image
+	       , Vulkan_API::GPU *gpu
+	       , Vulkan_API::Swapchain *swapchain
+	       , Memory_Buffer_View<Vulkan_API::Buffer_Handle> &uniform_buffers)
+    {
+	struct Uniform_Buffer_Object
+	{
+	    alignas(16) glm::mat4 model_matrix;
+	    alignas(16) glm::mat4 view_matrix;
+	    alignas(16) glm::mat4 projection_matrix;
+	};
+	
+	persist auto start_time = std::chrono::high_resolution_clock::now();
+
+	auto current_time = std::chrono::high_resolution_clock::now();
+	float time = std::chrono::duration<float, std::chrono::seconds::period>(current_time - start_time).count();
+
+	Uniform_Buffer_Object ubo = {};
+
+	ubo.model_matrix = glm::rotate(time * glm::radians(90.0f)
+				       , glm::vec3(0.0f, 0.0f, 1.0f));
+	ubo.view_matrix = glm::lookAt(glm::vec3(2.0f)
+				      , glm::vec3(0.0f)
+				      , glm::vec3(0.0f, 0.0f, 1.0f));
+	ubo.projection_matrix = glm::perspective(glm::radians(60.0f)
+						 , (float)swapchain->extent.width / (float)swapchain->extent.height
+						 , 0.1f
+						 , 10.0f);
+
+	ubo.projection_matrix[1][1] *= -1;
+
+	auto current_ubo = Vulkan_API::get_buffer(uniform_buffers.buffer[current_image]);
+
+	auto map = current_ubo->construct_map();
+	map.begin(gpu);
+	map.fill(Memory_Byte_Buffer{sizeof(ubo), &ubo});
+	map.end(gpu);
+    }
+
+    	
+    internal void
+    init_ubos(Vulkan_API::GPU *gpu
+	      , Vulkan_API::Swapchain *swapchain
+	      , Memory_Buffer_View<Vulkan_API::Buffer_Handle> &ubos)
+    {
+	struct Uniform_Buffer_Object
+	{
+	    alignas(16) glm::mat4 model_matrix;
+	    alignas(16) glm::mat4 view_matrix;
+	    alignas(16) glm::mat4 projection_matrix;
+	};
+	
+	u32 uniform_buffer_count = swapchain->images.count;
+	    
+	char ubo_name[] = "buffer.ubo0";
+	u32 char_count = sizeof(ubo_name) / sizeof(char);
+
+	ubos.buffer = (Vulkan_API::Buffer_Handle *)allocate_free_list(sizeof(Vulkan_API::Buffer_Handle) * uniform_buffer_count);
+	    
+	for (u32 i = 0; i < swapchain->images.count; ++i)
+	{
+	    ubo_name[10] = '0' + i;
+	    Constant_String const_str {ubo_name, char_count, compile_hash(ubo_name, char_count)};
+	    ubos.buffer[i] = Vulkan_API::add_buffer(const_str);
+	}
+	    
+	VkDeviceSize buffer_size = sizeof(Uniform_Buffer_Object);
+
+	for (u32 i = 0
+		 ; i < uniform_buffer_count
+		 ; ++i)
+	{
+	    Vulkan_API::init_buffer(buffer_size
+				    , VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT
+				    , VK_SHARING_MODE_EXCLUSIVE
+				    , VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+				    , gpu
+				    , Vulkan_API::get_buffer(ubos.buffer[i]));
+	}
+    }	
 
     namespace Old
     {
 	
 	internal struct Vulkan_State
 	{
-	    //	    VkImage texture_image;
-	    //	    VkDeviceMemory texture_image_memory;
-	    // VkImageView texture_image_view;
-	    // VkSampler texture_image_sampler;
-	    
-	    VkBuffer vertex_buffer;
-	    VkDeviceMemory vertex_buffer_memory;
-
-	    VkBuffer index_buffer;
-	    VkDeviceMemory index_buffer_memory;
-
-	    u32 uniform_buffer_count;
-	    VkBuffer *uniform_buffers;
-	    VkDeviceMemory *uniform_buffers_memory;
-
 	    VkDescriptorPool descriptor_pool;
 	    VkDescriptorSet *descriptor_sets;
 	    u32 descriptor_set_count;
@@ -772,105 +898,6 @@ namespace Rendering
 	    }
 	    
 	}
-	
-	struct Vertex { glm::vec3 pos, color; glm::vec2 uvs; };
-
-	internal Vertex vertices[]
-	{
-	    {{-1.0f, -0.5f, 1.0f}, {0.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
-	    {{0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
-	    {{0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
-	    {{-0.5f, 0.5f, 1.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}},
-
-	    {{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-	    {{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-	    {{0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-	    {{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}
-	};
-
-	internal u32 mesh_indices[]
-	{
-	    0, 1, 2, 2, 3, 0,
-	    4, 5, 6, 6, 7, 4
-	};
-
-	
-	
-	internal void
-	init_vbo(void)
-	{
-	    VkDeviceSize buffer_size = sizeof(vertices);
-
-	    VkBuffer staging_buffer;
-	    VkDeviceMemory staging_buffer_memory;
-
-	    Implementation::create_buffer(&staging_buffer
-					  , &staging_buffer_memory
-					  , buffer_size
-					  , VK_BUFFER_USAGE_TRANSFER_SRC_BIT
-					  , VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-
-	    void *data;
-	    vkMapMemory(vulkan_state.gpu.logical_device
-			, staging_buffer_memory
-			, 0
-			, buffer_size
-			, 0
-			, &data);
-	    memcpy(data, vertices, buffer_size);
-	    vkUnmapMemory(vulkan_state.gpu.logical_device
-			  , staging_buffer_memory);
-
-	    Implementation::create_buffer(&vk.vertex_buffer
-					  , &vk.vertex_buffer_memory
-					  , buffer_size
-					  , VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT
-					  , VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
-	    Implementation::copy_buffer(&staging_buffer
-					, &vk.vertex_buffer
-					, buffer_size);
-
-	    vkDestroyBuffer(vulkan_state.gpu.logical_device, staging_buffer, nullptr);
-	    vkFreeMemory(vulkan_state.gpu.logical_device, staging_buffer_memory, nullptr);
-	}
-
-	internal void
-	init_ibo(void)
-	{
-	    VkDeviceSize buffer_size = sizeof(mesh_indices);
-
-	    VkBuffer staging_buffer;
-	    VkDeviceMemory staging_buffer_memory;
-	    Implementation::create_buffer(&staging_buffer
-					  , &staging_buffer_memory
-					  , buffer_size
-					  , VK_BUFFER_USAGE_TRANSFER_SRC_BIT
-					  , VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-
-	    void *data;
-	    vkMapMemory(vulkan_state.gpu.logical_device
-			, staging_buffer_memory
-			, 0
-			, buffer_size
-			, 0
-			, &data);
-	    memcpy(data, mesh_indices, buffer_size);
-	    vkUnmapMemory(vulkan_state.gpu.logical_device, staging_buffer_memory);
-
-	    Implementation::create_buffer(&vk.index_buffer
-					  , &vk.index_buffer_memory
-					  , buffer_size
-					  , VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT
-					  , VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
-	    Implementation::copy_buffer(&staging_buffer
-					, &vk.index_buffer
-					, buffer_size);
-
-	    vkDestroyBuffer(vulkan_state.gpu.logical_device, staging_buffer, nullptr);
-	    vkFreeMemory(vulkan_state.gpu.logical_device, staging_buffer_memory, nullptr);
-	}    
 
 
 	
@@ -882,32 +909,7 @@ namespace Rendering
 	};
 
 
-	
-	internal void
-	init_ubos(void)
-	{
-	    VkDeviceSize buffer_size = sizeof(Uniform_Buffer_Object);
 
-	    vk.uniform_buffer_count = vulkan_state.swapchain.images.count;
-
-	    vk.uniform_buffers = (VkBuffer *)allocate_stack(sizeof(VkBuffer) * vk.uniform_buffer_count
-							    , Alignment(1)
-							    , "uniform_buffers_list_allocation");
-	    vk.uniform_buffers_memory = (VkDeviceMemory *)allocate_stack(sizeof(VkDeviceMemory *) * vk.uniform_buffer_count
-									 , Alignment(1)
-									 , "uniform_buffers_memory_list_allocation");
-
-	    for (u32 i = 0
-		     ; i < vk.uniform_buffer_count
-		     ; ++i)
-	    {
-		Implementation::create_buffer(&vk.uniform_buffers[i]
-					      , &vk.uniform_buffers_memory[i]
-					      , buffer_size
-					      , VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT
-					      , VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-	    }
-	}
 
 
 	
@@ -960,13 +962,14 @@ namespace Rendering
 	    VK_CHECK(vkAllocateDescriptorSets(vulkan_state.gpu.logical_device, &alloc_info, vk.descriptor_sets));
 
 	    auto image_ptr = Vulkan_API::get_image2D("image2D.texture"_hash);
-    
+	    auto *ubos = Vulkan_API::get_buffer(rendering_objects.uniform_buffers.buffer[0]);
+
 	    for (u32 i = 0
 		     ; i < vk.descriptor_set_count
 		     ; ++i)
 	    {
 		VkDescriptorBufferInfo buffer_info = {};
-		buffer_info.buffer = vk.uniform_buffers[i];
+		buffer_info.buffer = ubos[i].buffer;
 		buffer_info.offset = 0;
 		buffer_info.range = sizeof(Uniform_Buffer_Object);
 
@@ -1026,7 +1029,11 @@ namespace Rendering
 	    Vulkan_API::Render_Pass *render_pass = Vulkan_API::get_render_pass(rendering_objects.test_render_pass);
 
 	    Vulkan_API::Graphics_Pipeline *pipeline_ptr = Vulkan_API::get_graphics_pipeline(rendering_objects.graphics_pipeline);
-    
+
+	    Vulkan_API::Model *model = Vulkan_API::get_model("vulkan_model.test_model"_hash);
+	    Vulkan_API::Buffer *vbo = Vulkan_API::get_buffer(model->bindings[0].buffer);
+	    Vulkan_API::Buffer *ibo = Vulkan_API::get_buffer(model->index_data.index_buffer);
+	    
 	    for (u32 i = 0
 		     ; i < vk.command_buffer_count
 		     ; ++i)
@@ -1066,7 +1073,7 @@ namespace Rendering
 				  , VK_PIPELINE_BIND_POINT_GRAPHICS
 				  , pipeline_ptr->pipeline);
 
-		VkBuffer vertex_buffers[] = {vk.vertex_buffer};
+		VkBuffer vertex_buffers[] = {vbo->buffer};
 		VkDeviceSize offset[] = {0};
 		vkCmdBindVertexBuffers(vk.command_buffers[i]
 				       , 0
@@ -1075,7 +1082,7 @@ namespace Rendering
 				       , offset);
 
 		vkCmdBindIndexBuffer(vk.command_buffers[i]
-				     , vk.index_buffer
+				     , ibo->buffer
 				     , 0
 				     , VK_INDEX_TYPE_UINT32);
 
@@ -1151,33 +1158,6 @@ namespace Rendering
 	}
 
 
-	internal void
-	update_ubo(u32 current_image)
-	{
-	    persist auto start_time = std::chrono::high_resolution_clock::now();
-
-	    auto current_time = std::chrono::high_resolution_clock::now();
-	    float time = std::chrono::duration<float, std::chrono::seconds::period>(current_time - start_time).count();
-
-	    Uniform_Buffer_Object ubo = {};
-
-	    ubo.model_matrix = glm::rotate(time * glm::radians(90.0f)
-					   , glm::vec3(0.0f, 0.0f, 1.0f));
-	    ubo.view_matrix = glm::lookAt(glm::vec3(2.0f)
-					  , glm::vec3(0.0f)
-					  , glm::vec3(0.0f, 0.0f, 1.0f));
-	    ubo.projection_matrix = glm::perspective(glm::radians(60.0f)
-						     , (float)vulkan_state.swapchain.extent.width / (float)vulkan_state.swapchain.extent.height
-						     , 0.1f
-						     , 10.0f);
-
-	    ubo.projection_matrix[1][1] *= -1;
-
-	    void *data;
-	    vkMapMemory(vulkan_state.gpu.logical_device, vk.uniform_buffers_memory[current_image], 0, sizeof(ubo), 0, &data);
-	    memcpy(data, &ubo, sizeof(ubo));
-	    vkUnmapMemory(vulkan_state.gpu.logical_device, vk.uniform_buffers_memory[current_image]);
-	}
 	
 	
 	internal u32 current_frame = 0;
@@ -1211,7 +1191,10 @@ namespace Rendering
 		OUTPUT_DEBUG_LOG("%s\n", "failed to acquire swapchain image");
 	    }
 
-	    update_ubo(image_index);
+	    update_ubo(image_index
+		       , &vulkan_state.gpu
+		       , &vulkan_state.swapchain
+		       , rendering_objects.uniform_buffers);
 
 	    VkSubmitInfo submit_info = {};
 	    submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -1261,117 +1244,7 @@ namespace Rendering
 	    current_frame = (current_frame + 1) % MAX_FRAMES_IN_FLIGHT;
 	}
 
-	internal void
-	init_texture_image(void)
-	{
-	    auto image_handle = Vulkan_API::add_image2D("image2D.texture"_hash);
-	    auto image_ptr = Vulkan_API::get_image2D(image_handle);
-	    
-	    persist const char *jpg_file = "../vulkan/textures/texture.jpg";
 
-	    File file_description;
-	    file_description.file_path = jpg_file;
-	    file_description.format = File_Format::JPG;
-	    auto image_data = read_file_data(file_description, Read_Flags::RECORD);
-
-	    u32 w = image_data.extras[File_Data::Extra_Data::WIDTH];
-	    u32 h = image_data.extras[File_Data::Extra_Data::HEIGHT];
-
-	    VkDeviceSize image_size = w * h * 4;
-    
-	    Vulkan_API::Buffer staging_buffer;
-	    staging_buffer.size = image_size;
-	    
-	    /*Implementation::create_buffer(&staging_buffer
-					  , &staging_buffer_memory
-					  , image_size
-					  , VK_BUFFER_USAGE_TRANSFER_SRC_BIT
-					  , VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);*/
-	    Vulkan_API::init_buffer(image_size
-				    , VK_BUFFER_USAGE_TRANSFER_SRC_BIT
-				    , VK_SHARING_MODE_EXCLUSIVE
-				    , VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
-				    , &vulkan_state.gpu
-				    , &staging_buffer);
-	    
-
-	    void *data;
-	    vkMapMemory(vulkan_state.gpu.logical_device, staging_buffer.memory, 0, image_size, 0, &data);
-	    memcpy(data, image_data.data, static_cast<u32>(image_size));
-	    vkUnmapMemory(vulkan_state.gpu.logical_device, staging_buffer.memory);
-
-	    destroy_file_data(&image_data);
-
-
-
-	    Vulkan_API::init_image(w, h
-				   , VK_FORMAT_R8G8B8A8_UNORM
-				   , VK_IMAGE_TILING_OPTIMAL
-				   , VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
-				   , VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
-				   , &vulkan_state.gpu
-				   , image_ptr);
-
-	    auto command_pool_ptr = Vulkan_API::get_command_pool("command_pool.graphics_command_pool"_hash);
-	    Vulkan_API::transition_image_layout(&image_ptr->image
-						, VK_FORMAT_R8G8B8A8_UNORM
-						, VK_IMAGE_LAYOUT_UNDEFINED
-						, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
-						, command_pool_ptr
-						, &vulkan_state.gpu);
-	    
-	    Implementation::transition_image_layout(image_ptr->image
-				    , VK_FORMAT_R8G8B8A8_UNORM
-				    , VK_IMAGE_LAYOUT_UNDEFINED
-				    , VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-
-	    Implementation::copy_buffer_to_image(staging_buffer.buffer
-				 , image_ptr->image
-				 , (u32)w, (u32)h);
-
-	    Implementation::transition_image_layout(image_ptr->image
-				    , VK_FORMAT_R8G8B8A8_UNORM
-				    , VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
-				    , VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
-	    vkDestroyBuffer(vulkan_state.gpu.logical_device, staging_buffer.buffer, nullptr);
-	    vkFreeMemory(vulkan_state.gpu.logical_device, staging_buffer.memory, nullptr);
-	}
-
-	internal void
-	init_texture_image_view(void)
-	{
-	    auto image_ptr = Vulkan_API::get_image2D("image2D.texture"_hash);
-	    image_ptr->image_view = Implementation::create_image_view(image_ptr->image
-								      , VK_FORMAT_R8G8B8A8_UNORM
-								      , VK_IMAGE_ASPECT_COLOR_BIT);
-	}
-
-	internal void
-	init_texture_image_sampler(void)
-	{
-	    auto image_ptr = Vulkan_API::get_image2D("image2D.texture"_hash);
-	    
-	    VkSamplerCreateInfo sampler_info = {};
-	    sampler_info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-	    sampler_info.magFilter = VK_FILTER_LINEAR;
-	    sampler_info.minFilter = VK_FILTER_LINEAR;
-	    sampler_info.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-	    sampler_info.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-	    sampler_info.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-	    sampler_info.anisotropyEnable = VK_TRUE;
-	    sampler_info.maxAnisotropy = 16;
-	    sampler_info.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK; // when clamping
-	    sampler_info.unnormalizedCoordinates = VK_FALSE;
-	    sampler_info.compareEnable = VK_FALSE;
-	    sampler_info.compareOp = VK_COMPARE_OP_ALWAYS;
-	    sampler_info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-	    sampler_info.mipLodBias = 0.0f;
-	    sampler_info.minLod = 0.0f;
-	    sampler_info.maxLod = 0.0f;
-
-	    VK_CHECK(vkCreateSampler(vulkan_state.gpu.logical_device, &sampler_info, nullptr, &image_ptr->image_sampler));
-	}
 	
 	void
 	init_vk(GLFWwindow *window)
@@ -1381,26 +1254,6 @@ namespace Rendering
 
 	    Rendering::init_rendering_state(&vulkan_state
 					    , &rendering_objects);
-    
-	    //    init_graphics_pipeline();
-
-    
-	    //init_command_pool();
-
-    
-	    //    init_depth_resources();
-
-    
-	    //    init_framebuffers();
-
-
-	    init_texture_image();
-	    init_texture_image_view();
-	    init_texture_image_sampler();
-
-	    init_vbo();
-	    init_ibo();
-	    init_ubos();
 
 	    init_descriptor_pool();
 	    init_descriptor_sets();
@@ -1437,13 +1290,21 @@ namespace Rendering
 	init_swapchain_framebuffers(&vulkan_state->gpu, &vulkan_state->swapchain);
 
 	init_object_texture(&vulkan_state->gpu);
+
+	init_vbo(&vulkan_state->gpu);
+
+	init_ibo(&vulkan_state->gpu);
+
+	init_ubos(&vulkan_state->gpu
+		  , &vulkan_state->swapchain
+		  , cache->uniform_buffers);
 	
 	cache->test_render_pass = Vulkan_API::get_render_pass_handle("render_pass.test_render_pass"_hash);
 	cache->descriptor_set_layout = Vulkan_API::get_descriptor_set_layout_handle("descriptor_set_layout.test_descriptor_set_layout"_hash);
 	cache->graphics_pipeline = Vulkan_API::get_graphics_pipeline_handle("pipeline.main_pipeline"_hash);
 	cache->graphics_command_pool = Vulkan_API::get_command_pool_handle("command_pool.graphics_command_pool"_hash);
 	cache->depth_image = Vulkan_API::get_image2D_handle("image2D.depth_image"_hash);
-	cache->texture = Vulkan_API::get_image2D_handle("image2D.object_texture"_hash);
+	cache->texture = Vulkan_API::get_image2D_handle("image2D.texture"_hash);
     }
 
 }

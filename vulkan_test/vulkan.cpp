@@ -626,6 +626,35 @@ namespace Vulkan_API
     {
 	return(format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT);
     }
+
+    void
+    init_single_use_command_buffer(VkCommandPool *command_pool
+				   , GPU *gpu
+				   , VkCommandBuffer *dst)
+    {
+	allocate_command_buffers(command_pool
+				 , VK_COMMAND_BUFFER_LEVEL_PRIMARY
+				 , gpu
+				 , Memory_Buffer_View<VkCommandBuffer>{1, dst});
+
+	begin_command_buffer(dst
+			     , VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT
+			     , nullptr);
+    }
+
+    void
+    destroy_single_use_command_buffer(VkCommandBuffer *command_buffer
+				      , VkCommandPool *command_pool
+				      , GPU *gpu)
+    {
+	end_command_buffer(command_buffer);
+
+	submit(Memory_Buffer_View<VkCommandBuffer>{1, command_buffer}, &gpu->graphics_queue);
+
+	vkQueueWaitIdle(gpu->graphics_queue);
+
+	free_command_buffer(Memory_Buffer_View<VkCommandBuffer>{1, command_buffer}, command_pool, gpu);
+    }
     
     void
     transition_image_layout(VkImage *image
@@ -635,13 +664,8 @@ namespace Vulkan_API
 			    , VkCommandPool *graphics_command_pool
 			    , GPU *gpu)
     {
-	VkCommandBuffer single_command;
-	allocate_command_buffers(graphics_command_pool
-				 , VK_COMMAND_BUFFER_LEVEL_PRIMARY
-				 , gpu
-				 , Memory_Buffer_View<VkCommandBuffer>{1, &single_command});
-	
-	begin_command_buffer(&single_command, VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT, nullptr);
+	VkCommandBuffer single_use;
+	init_single_use_command_buffer(graphics_command_pool, gpu, &single_use);
 	
 	VkImageMemoryBarrier barrier = {};
 	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -705,7 +729,7 @@ namespace Vulkan_API
 	    barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 	}
 
-	vkCmdPipelineBarrier(single_command
+	vkCmdPipelineBarrier(single_use
 			     , source_stage
 			     , destination_stage
 			     , 0
@@ -716,9 +740,9 @@ namespace Vulkan_API
 			     , 1
 			     , &barrier);
 
-	end_command_buffer(&single_command);
-	submit(Memory_Buffer_View<VkCommandBuffer>{1, &single_command}, &gpu->graphics_queue);
-	free_command_buffer(Memory_Buffer_View<VkCommandBuffer>{1, &single_command}, graphics_command_pool, gpu);
+	destroy_single_use_command_buffer(&single_use
+					  , graphics_command_pool
+					  , gpu);
     }
 
     void
@@ -730,13 +754,9 @@ namespace Vulkan_API
 			   , GPU *gpu)
     {
 	VkCommandBuffer command_buffer;
-	allocate_command_buffers(command_pool
-				 , VK_COMMAND_BUFFER_LEVEL_PRIMARY
-				 , gpu
-				 , Memory_Buffer_View<VkCommandBuffer>{1, &command_buffer});
-	begin_command_buffer(&command_buffer
-			     , VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT
-			     , nullptr);
+	init_single_use_command_buffer(command_pool
+				       , gpu
+				       , &command_buffer);
 
 	VkBufferImageCopy region	= {};
 	region.bufferOffset		= 0;
@@ -758,8 +778,73 @@ namespace Vulkan_API
 			       , 1
 			       , &region);
 
-	end_command_buffer(&command_buffer);
-	free_command_buffer(Memory_Buffer_View<VkCommandBuffer>{1, &command_buffer}, command_pool, gpu);
+	destroy_single_use_command_buffer(&command_buffer
+					  , command_pool
+					  , gpu);
+    }
+
+    void
+    copy_buffer(Buffer *src_buffer
+		, Buffer *dst_buffer
+		, VkCommandPool *command_pool
+		, GPU *gpu)
+    {
+	VkCommandBuffer command_buffer;
+	init_single_use_command_buffer(command_pool
+				       , gpu
+				       , &command_buffer);
+
+	VkBufferCopy region = {};
+	region.size = src_buffer->size;
+	vkCmdCopyBuffer(command_buffer
+			, src_buffer->buffer
+			, dst_buffer->buffer
+			, 1
+			, &region);
+
+	destroy_single_use_command_buffer(&command_buffer
+					  , command_pool
+					  , gpu);
+    }
+
+    void
+    invoke_staging_buffer_for_device_local_buffer(Memory_Byte_Buffer items
+						  , VkCommandPool *transfer_command_pool
+						  , Buffer *dst_buffer
+						  , GPU *gpu)
+    {
+	VkDeviceSize buffer_size = items.size;
+	
+	Vulkan_API::Buffer staging_buffer;
+	staging_buffer.size = buffer_size;
+
+	Vulkan_API::init_buffer(buffer_size
+				, VK_BUFFER_USAGE_TRANSFER_SRC_BIT
+				, VK_SHARING_MODE_EXCLUSIVE
+				, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+				, gpu
+				, &staging_buffer);
+
+	Vulkan_API::Mapped_GPU_Memory mapped_memory = staging_buffer.construct_map();
+	mapped_memory.begin(gpu);
+	mapped_memory.fill(items);
+	mapped_memory.end(gpu);
+
+	Vulkan_API::init_buffer(buffer_size
+				, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT
+				, VK_SHARING_MODE_EXCLUSIVE
+				, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+				, gpu
+				, dst_buffer);
+
+	auto command_pool = Vulkan_API::get_command_pool("command_pool.graphics_command_pool"_hash);
+	Vulkan_API::copy_buffer(&staging_buffer
+				, dst_buffer
+				, command_pool
+				, gpu);
+
+	vkDestroyBuffer(gpu->logical_device, staging_buffer.buffer, nullptr);
+	vkFreeMemory(gpu->logical_device, staging_buffer.memory, nullptr);
     }
     
     internal void
@@ -1059,6 +1144,8 @@ namespace Vulkan_API
 		  , GPU *gpu
 		  , Buffer *dest_buffer)
     {
+	dest_buffer->size = buffer_size;
+	
 	VkBufferCreateInfo buffer_info	= {};
 	buffer_info.sType	= VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
 	buffer_info.size	= buffer_size;

@@ -21,6 +21,8 @@ namespace Rendering
 	Vulkan_API::Command_Pool_Handle graphics_command_pool;
 	Vulkan_API::Image2D_Handle depth_image;
 	Vulkan_API::Image2D_Handle texture;
+
+	Memory_Buffer_View<Vulkan_API::Buffer_Handle> uniform_buffers;
     };
 
     namespace Old

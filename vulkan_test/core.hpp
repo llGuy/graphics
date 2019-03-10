@@ -449,3 +449,9 @@ struct Memory_Buffer_View
     u32 count;
     T *buffer;
 };
+
+struct Memory_Byte_Buffer
+{
+    u32 size;
+    void *ptr;
+};

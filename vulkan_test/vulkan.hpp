@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory.h>
 #include "core.hpp"
 #include <GLFW/glfw3.h>
 #include <vulkan/vulkan.h>
@@ -71,6 +72,12 @@ namespace Vulkan_API
 	    vkMapMemory(gpu->logical_device, *memory, offset, size, 0, &data);
 	}
 
+	FORCEINLINE void
+	fill(Memory_Byte_Buffer byte_buffer)
+	{
+	    memcpy(data, byte_buffer.ptr, size);
+	}
+	
 	FORCEINLINE void
 	end(GPU *gpu)
 	{
@@ -220,6 +227,12 @@ namespace Vulkan_API
 	    attribute_list = nullptr;
 	}
     };
+
+    struct Model_Index_Data
+    {
+	Buffer_Handle index_buffer;
+	u32 index_count;
+    };
     
     // describes the attributes and bindings of the model
     struct Model
@@ -233,6 +246,8 @@ namespace Vulkan_API
 	// allocated on free list also | multiple bindings can push to this buffer
 	VkVertexInputAttributeDescription *attributes_buffer;
 
+	Model_Index_Data index_data;
+	
 	VkVertexInputBindingDescription *
 	create_binding_descriptions(void)
 	{
@@ -511,6 +526,16 @@ namespace Vulkan_API
 	   , VkQueue *queue);
 
     void
+    init_single_use_command_buffer(VkCommandPool *command_pool
+				   , GPU *gpu
+				   , VkCommandBuffer *dst);
+
+    void
+    destroy_single_use_command_buffer(VkCommandBuffer *command_buffer
+				      , VkCommandPool *command_pool
+				      , GPU *gpu);
+    
+    void
     transition_image_layout(VkImage *image
 			    , VkFormat format
 			    , VkImageLayout old_layout
@@ -525,6 +550,21 @@ namespace Vulkan_API
 			   , u32 height
 			   , VkCommandPool *command_pool
 			   , GPU *gpu);
+
+    void
+    copy_buffer(Buffer *src_buffer
+		, Buffer *dst_buffer
+		, VkCommandPool *command_pool
+		, GPU *gpu);
+
+    void
+    invoke_staging_buffer_for_device_local_buffer(Memory_Byte_Buffer items
+						  , VkCommandPool *transfer_command_pool
+						  , Buffer *dst_buffer
+						  , GPU *gpu);
+
+    void
+    invoke_staging_buffer_for_device_local_image();
     
     struct Framebuffer
     {

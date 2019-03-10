@@ -13,10 +13,10 @@ namespace Vulkan_API
     Buffer_Handle
     get_buffer_handle(const Constant_String &string);
     
-    Vulkan_API::Buffer *
+    Buffer *
     get_buffer(Buffer_Handle handle);
 
-    Vulkan_API::Buffer *
+    Buffer *
     get_buffer(const Constant_String &name);
 
     

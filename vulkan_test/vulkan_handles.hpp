@@ -18,6 +18,18 @@ namespace Vulkan_API
     using Command_Pool_Handle           = u32;
     using Framebuffer_Handle            = u32;
 
+    template <typename T> struct Array_Handle
+    {
+	u32 count;
+	T first;
+    };
+
+    template <typename T> struct Objects_View
+    {
+	u32 count;
+	T *view;
+    };
+    
     enum { UNINITIALIZED_HANDLE = 0xFFFFFFFF };
 
 }
