@@ -339,6 +339,12 @@ operator""_hash(const char *string, size_t size)
     return(Constant_String{string, (u32)size, compile_hash(string, (u32)size)});
 }
 
+internal inline Constant_String
+init_const_str(const char *str, u32 count)
+{
+    return(Constant_String{str, count, compile_hash(str, count)});
+}
+
 // fast and relatively cheap hash table
 template <typename T
 	  , u32 Bucket_Count
@@ -452,7 +458,13 @@ struct Memory_Buffer_View
     T &
     operator[](u32 i)
     {
-	return buffer[i];
+	return(buffer[i]);
+    }
+
+    const T &
+    operator[](u32 i) const
+    {
+	return(buffer[i]);
     }
 };
 

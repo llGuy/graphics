@@ -569,8 +569,8 @@ namespace Rendering
 	internal struct Vulkan_State
 	{
 	    VkDescriptorPool descriptor_pool;
-	    VkDescriptorSet *descriptor_sets;
-	    u32 descriptor_set_count;
+	    //VkDescriptorSet *descriptor_sets;
+	    //u32 descriptor_set_count;
 
 	    u32 command_buffer_count;
 	    VkCommandBuffer *command_buffers;
@@ -934,79 +934,66 @@ namespace Rendering
 	    VK_CHECK(vkCreateDescriptorPool(vulkan_state.gpu.logical_device, &pool_info, nullptr, &vk.descriptor_pool));
 	}
 
-	// TODO(luc) port descriptor set creation to new system
-	
 	internal void
 	init_descriptor_sets(void)
 	{
-	    vk.descriptor_set_count = vulkan_state.swapchain.images.count;
+	    u32 set_count = vulkan_state.swapchain.images.count;
 
-	    vk.descriptor_sets = (VkDescriptorSet *)allocate_stack(vk.descriptor_set_count * sizeof(VkDescriptorSet)
-								   , Alignment(1)
-								   , "descriptor_set_list_allocation");
-	    VkDescriptorSetLayout *descriptor_set_layouts = (VkDescriptorSetLayout *)allocate_stack(vk.descriptor_set_count * sizeof(VkDescriptorSetLayout)
+	    VkDescriptorSetLayout *descriptor_set_layouts = (VkDescriptorSetLayout *)allocate_stack(set_count * sizeof(VkDescriptorSetLayout)
 												    , Alignment(1)
 												    , "descriptor_set_layout_list_allocation");
 	    VkDescriptorSetLayout *main_descriptor_layout = Vulkan_API::get_descriptor_set_layout(rendering_objects.descriptor_set_layout);
     
 	    for (u32 i = 0
-		     ; i < vk.descriptor_set_count
+		     ; i < set_count
 		     ; ++i) descriptor_set_layouts[i] = *main_descriptor_layout;
 
-	    VkDescriptorSetAllocateInfo alloc_info	= {};
-	    alloc_info.sType				= VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-	    alloc_info.descriptorPool			= vk.descriptor_pool;
-	    alloc_info.descriptorSetCount		= vk.descriptor_set_count;
-	    alloc_info.pSetLayouts			= descriptor_set_layouts;
 
-	    VK_CHECK(vkAllocateDescriptorSets(vulkan_state.gpu.logical_device, &alloc_info, vk.descriptor_sets));
+	    Memory_Buffer_View<Vulkan_API::Descriptor_Set_Handle> descriptor_sets;
+	    allocate_memory_buffer(descriptor_sets, set_count);
+	    char descriptor_set_name[] = "descriptor_set.test_descriptor_set0"; // 34
+	    u32 char_count = sizeof(descriptor_set_name);
+	    
+	    loop_through_memory(descriptor_sets, [&descriptor_sets, &descriptor_set_name, &char_count](u32 i)
+				{descriptor_set_name[34] ='0' + i;
+				    descriptor_sets[i] = Vulkan_API::add_descriptor_set(init_const_str(descriptor_set_name, char_count));});
+	    
+	    Vulkan_API::allocate_descriptor_sets(descriptor_sets
+						 , Memory_Buffer_View<VkDescriptorSetLayout>{set_count, descriptor_set_layouts}
+						 , &vulkan_state.gpu
+						 , &vk.descriptor_pool);
 
 	    auto image_ptr = Vulkan_API::get_image2D("image2D.texture"_hash);
 	    auto *ubos = Vulkan_API::get_buffer(rendering_objects.uniform_buffers.buffer[0]);
 
 	    for (u32 i = 0
-		     ; i < vk.descriptor_set_count
+		     ; i < set_count
 		     ; ++i)
 	    {
+		Vulkan_API::Descriptor_Set *set = Vulkan_API::get_descriptor_set(descriptor_sets[i]);
+		
 		VkDescriptorBufferInfo buffer_info = {};
-		buffer_info.buffer = ubos[i].buffer;
-		buffer_info.offset = 0;
-		buffer_info.range = sizeof(Uniform_Buffer_Object);
+		Vulkan_API::init_descriptor_set_buffer_info(&ubos[i], 0, &buffer_info);
 
 		VkDescriptorImageInfo image_info	= {};
-		image_info.imageLayout			= VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		image_info.imageView			= image_ptr->image_view;
-		image_info.sampler			= image_ptr->image_sampler;
+		Vulkan_API::init_descriptor_set_image_info(image_ptr, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, &image_info);
 
 		VkWriteDescriptorSet descriptor_writes[2] = {};
-		descriptor_writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		descriptor_writes[0].dstSet = vk.descriptor_sets[i];
-		descriptor_writes[0].dstBinding = 0;
-		descriptor_writes[0].dstArrayElement = 0;
-		descriptor_writes[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		descriptor_writes[0].descriptorCount = 1;
-		descriptor_writes[0].pBufferInfo = &buffer_info;
 
-		descriptor_writes[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		descriptor_writes[1].dstSet = vk.descriptor_sets[i];
-		descriptor_writes[1].dstBinding = 1;
-		descriptor_writes[1].dstArrayElement = 0;
-		descriptor_writes[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		descriptor_writes[1].descriptorCount = 1;
-		descriptor_writes[1].pImageInfo = &image_info;
+		Vulkan_API::init_buffer_descriptor_set_write(set, 0, 0, 1, &buffer_info, &descriptor_writes[0]);
+		Vulkan_API::init_image_descriptor_set_write(set, 1, 0, 1, &image_info, &descriptor_writes[1]);
 
-		vkUpdateDescriptorSets(vulkan_state.gpu.logical_device
-				       , 2
-				       , descriptor_writes
-				       , 0
-				       , nullptr);
+		Vulkan_API::update_descriptor_sets(Memory_Buffer_View<VkWriteDescriptorSet>{2, descriptor_writes}, &vulkan_state.gpu);
 	    }
+
+	    rendering_objects.descriptor_sets = descriptor_sets;
 	}
 
 
 	
 	internal void
-	init_command_buffers(Vulkan_API::Swapchain *swapchain)
+	init_command_buffers(Vulkan_API::Swapchain *swapchain
+			     , const Memory_Buffer_View<Vulkan_API::Descriptor_Set_Handle> &descriptor_sets)
 	{
 	    VkCommandPool *command_pool = Vulkan_API::get_command_pool(rendering_objects.graphics_command_pool);
     
@@ -1086,12 +1073,13 @@ namespace Rendering
 				     , 0
 				     , VK_INDEX_TYPE_UINT32);
 
+		auto *descriptor_set = Vulkan_API::get_descriptor_set(descriptor_sets[i]);
 		vkCmdBindDescriptorSets(vk.command_buffers[i]
 					, VK_PIPELINE_BIND_POINT_GRAPHICS
 					, pipeline_ptr->layout
 					, 0
 					, 1
-					, &vk.descriptor_sets[i]
+					, &descriptor_set->set
 					, 0
 					, nullptr);
 
@@ -1259,12 +1247,17 @@ namespace Rendering
 	    init_descriptor_sets();
 
 
-	    init_command_buffers(&vulkan_state.swapchain);
+	    init_command_buffers(&vulkan_state.swapchain
+				 , rendering_objects.descriptor_sets);
 	    init_sync();
 	}
 
 	void
-	destroy_vk(void) {}
+	destroy_vk(void)
+	{
+	    vkDestroyDevice(vulkan_state.gpu.logical_device, nullptr);
+	    vkDestroyInstance(vulkan_state.instance, nullptr);
+	}
 	
     }
     

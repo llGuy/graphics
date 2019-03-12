@@ -23,6 +23,7 @@ namespace Rendering
 	Vulkan_API::Image2D_Handle texture;
 
 	Memory_Buffer_View<Vulkan_API::Buffer_Handle> uniform_buffers;
+	Memory_Buffer_View<Vulkan_API::Descriptor_Set_Handle> descriptor_sets;
     };
 
     namespace Old

@@ -617,7 +617,7 @@ namespace Vulkan_API
     };
 
     void
-    allocate_descriptor_sets(Memory_Buffer_View<Descriptor_Set> &descriptor_sets
+    allocate_descriptor_sets(Memory_Buffer_View<Descriptor_Set_Handle> &descriptor_sets
 			     , const Memory_Buffer_View<VkDescriptorSetLayout> &layouts
 			     , GPU *gpu
 			     , VkDescriptorPool *descriptor_pool);
@@ -632,6 +632,40 @@ namespace Vulkan_API
 	buffer_info->range = buffer->size;
     }
 
+    internal void
+    init_buffer_descriptor_set_write(Descriptor_Set *set
+				     , u32 binding
+				     , u32 dst_array_element
+				     , u32 count
+				     , VkDescriptorBufferInfo *infos
+				     , VkWriteDescriptorSet *write)
+    {
+	write->sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	write->dstSet = set->set;
+	write->dstBinding = binding;
+	write->dstArrayElement = dst_array_element;
+	write->descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	write->descriptorCount = count;
+	write->pBufferInfo = infos;
+    }
+
+    internal void
+    init_image_descriptor_set_write(Descriptor_Set *set
+				    , u32 binding
+				    , u32 dst_array_element
+				    , u32 count
+				    , VkDescriptorImageInfo *infos
+				    , VkWriteDescriptorSet *write)
+    {
+	write->sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	write->dstSet = set->set;
+	write->dstBinding = binding;
+	write->dstArrayElement = dst_array_element;
+	write->descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	write->descriptorCount = count;
+	write->pImageInfo = infos;
+    }
+    
     internal void
     init_descriptor_set_image_info(Image2D *image
 				   , VkImageLayout expected_layout
