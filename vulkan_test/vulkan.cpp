@@ -1158,6 +1158,22 @@ namespace Vulkan_API
 			    , [&descriptor_sets_buffer, &descriptor_sets] (u32 i) -> void
 			    {Vulkan_API::get_descriptor_set(descriptor_sets[i])->set = descriptor_sets_buffer[i];});
     }
+
+    void
+    init_descriptor_pool(const Memory_Buffer_View<VkDescriptorPoolSize> &sizes
+			 , u32 max_sets
+			 , GPU *gpu
+			 , Descriptor_Pool *pool)
+    {
+	VkDescriptorPoolCreateInfo pool_info = {};
+	pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+	pool_info.poolSizeCount = sizes.count;
+	pool_info.pPoolSizes = sizes.buffer;
+
+	pool_info.maxSets = max_sets;
+
+	VK_CHECK(vkCreateDescriptorPool(gpu->logical_device, &pool_info, nullptr, &pool->pool));
+    }
     
     void
     update_descriptor_sets(const Memory_Buffer_View<VkWriteDescriptorSet> &writes

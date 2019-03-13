@@ -676,6 +676,25 @@ namespace Vulkan_API
 	image_info->sampler = image->image_sampler;
     }
 
+    internal void
+    init_descriptor_pool_size(VkDescriptorType type
+			      , u32 count
+			      , VkDescriptorPoolSize *size)
+    {
+	size->type = type;
+	size->descriptorCount = count;
+    }
+
+    struct Descriptor_Pool
+    {
+	VkDescriptorPool pool;
+    };
+    
+    void
+    init_descriptor_pool(const Memory_Buffer_View<VkDescriptorPoolSize> &sizes
+			 , u32 max_sets
+			 , GPU *gpu
+			 , Descriptor_Pool *pool);
     
     
     void

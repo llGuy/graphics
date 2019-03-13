@@ -131,4 +131,65 @@ namespace Vulkan_API
     Descriptor_Set *
     get_descriptor_Set(const Constant_String &name);
 
+
+
+
+    
+
+
+    void
+    init_manager(void);
+    
+
+    void
+    decrease_shared_count(const Constant_String &id);
+
+    void
+    increase_shared_count(const Constant_String &id);    
+
+    struct Registered_Object_Base
+    {
+	// if p == nullptr, the object was deleted
+	void *p;
+	Constant_String id;
+
+	Registered_Object_Base(void) = default;
+	
+	Registered_Object_Base(void *p, const Constant_String &id)
+	    : p(p), id(id) {increase_shared_count(id);}
+
+	~Registered_Object_Base(void) {if (p) {decrease_shared_count(id);}}
+    };
+    
+    Registered_Object_Base
+    register_object(const Constant_String &id
+		    , u32 bytes_size);
+
+    Registered_Object_Base
+    get_object(const Constant_String &id);
+
+    void
+    remove_object(const Constant_String &id);
+    
+    template <typename T> struct Registered_Object : Registered_Object_Base
+    {
+	using My_Type = Registered_Object<T>;
+	
+	T *p;
+	Constant_String id;
+
+	FORCEINLINE void
+	destroy(void) {p = nullptr; decrease_shared_count(id);};
+	
+	Registered_Object(void) = default;
+	Registered_Object(void *p, const Constant_String &id) = delete;
+	Registered_Object(const My_Type &in) : p((T *)in.p), id(in.id) {increase_shared_count(id);};
+	Registered_Object(const Registered_Object_Base &in) : p((T *)in.p), id(in.id) {increase_shared_count(id);}
+	Registered_Object(Registered_Object_Base &&in) : p((T *)in.p), id(in.id) {in.p = nullptr;}
+	My_Type &operator=(const My_Type &c) {this->p = c.p; this->id = c.id; increase_shared_count(id);}
+	My_Type &operator=(My_Type &&m) {this->p = m.p; this->id = m.id; m.p = nullptr;}
+
+	~Registered_Object(void) {if (p) {decrease_shared_count(id);}}
+    };
+
 }

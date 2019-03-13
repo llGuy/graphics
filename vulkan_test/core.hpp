@@ -423,7 +423,7 @@ template <typename T
 	}
     }
 
-    T 
+    T *
     get(u32 hash)
     {
 	u32 start_index = hash % Bucket_Count;
@@ -439,13 +439,13 @@ template <typename T
 		Item *item = &bucket->items[bucket_item];
 		if (item->hash != UNINITIALIZED_HASH && hash == item->hash)
 		{
-		    return(item->value);
+		    return(&item->value);
 		}
 	    }
 	}
 	OUTPUT_DEBUG_LOG("%s -> %s\n", map_debug_name, "failed to find value requested from hash");
 	assert(false);
-	return(T());
+	return(nullptr);
     }
 };
 

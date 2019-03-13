@@ -6,6 +6,9 @@
 #include "rendering.hpp"
 //#include "graphics.hpp"
 
+#include "vulkan.hpp"
+#include "vulkan_managers.hpp"
+
 #define DEBUG_FILE ".debug"
 
 #define STACK_ALLOCATOR_GLOBAL_SIZE 0xffff
@@ -269,6 +272,15 @@ main(s32 argc
     {
 	open_debug_file();
 
+
+
+	Vulkan_API::init_manager();
+	Vulkan_API::Registered_Object<Vulkan_API::Graphics_Pipeline> p = Vulkan_API::register_object("pipeline.pbr_pipeline"_hash
+												     , sizeof(Vulkan_API::Graphics_Pipeline));
+	
+	
+
+	
 	OUTPUT_DEBUG_LOG("%s\n", "starting session");
 	
 	stack_allocator_global.start = stack_allocator_global.current = malloc(megabytes(8));
