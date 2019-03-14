@@ -2,6 +2,7 @@
 
 #include "core.hpp"
 #include "vulkan.hpp"
+#include "vulkan_managers.hpp"
 
 /* all rendering objects (render passes, buffers, images, etc...) are accessed
    through 32 bit handles (with object respective names) however, if the handle is 
@@ -15,15 +16,15 @@ namespace Rendering
 
     struct Rendering_Objects_Handle_Cache
     {
-	Vulkan_API::Render_Pass_Handle test_render_pass;
-	Vulkan_API::Descriptor_Set_Layout_Handle descriptor_set_layout;
-	Vulkan_API::Graphics_Pipeline_Handle graphics_pipeline;
-	Vulkan_API::Command_Pool_Handle graphics_command_pool;
-	Vulkan_API::Image2D_Handle depth_image;
-	Vulkan_API::Image2D_Handle texture;
+	Vulkan_API::Registered_Render_Pass test_render_pass;
+	Vulkan_API::Registered_Descriptor_Set_Layout descriptor_set_layout;
+	Vulkan_API::Registered_Graphics_Pipeline graphics_pipeline;
+	Vulkan_API::Registered_Command_Pool graphics_command_pool;
+	Vulkan_API::Registered_Image2D depth_image;
+	Vulkan_API::Registered_Image2D texture;
 
-	Memory_Buffer_View<Vulkan_API::Buffer_Handle> uniform_buffers;
-	Memory_Buffer_View<Vulkan_API::Descriptor_Set_Handle> descriptor_sets;
+	Vulkan_API::Registered_Buffer uniform_buffers;
+	Vulkan_API::Registered_Descriptor_Set descriptor_sets;
     };
 
     namespace Old

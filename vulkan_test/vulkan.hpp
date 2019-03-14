@@ -4,7 +4,7 @@
 #include "core.hpp"
 #include <GLFW/glfw3.h>
 #include <vulkan/vulkan.h>
-#include "vulkan_handles.hpp"
+#include "vulkan_managers.hpp"
 
 namespace Vulkan_API
 {
@@ -166,8 +166,8 @@ namespace Vulkan_API
 	VkSwapchainKHR swapchain;
 	VkExtent2D extent;
 	
-	Memory_Buffer_View<Image2D_Handle> images;
-	Memory_Buffer_View<Framebuffer_Handle> framebuffers;
+	Registered_Image2D images;
+	Registered_Framebuffer framebuffers;
     };
     
     struct Render_Pass
@@ -193,7 +193,7 @@ namespace Vulkan_API
     struct Model_Binding
     {
 	// buffer that stores all the attributes
-	Buffer_Handle buffer;
+	Registered_Buffer buffer;
 	u32 binding;
 	VkVertexInputRate input_rate;
 
@@ -230,7 +230,7 @@ namespace Vulkan_API
 
     struct Model_Index_Data
     {
-	Buffer_Handle index_buffer;
+	Registered_Buffer index_buffer;
 	u32 index_count;
     };
     
@@ -288,7 +288,7 @@ namespace Vulkan_API
 	// "[some_dir]/[name]_"
 	const char *base_dir_and_name;
 
-	Vulkan_API::Descriptor_Set_Layout_Handle descriptor_set_layout;
+	Registered_Descriptor_Set_Layout descriptor_set_layout;
 	
 	VkPipelineLayout layout;
 
@@ -571,8 +571,8 @@ namespace Vulkan_API
 	VkFramebuffer framebuffer;
 
 	// for color attachments only
-	Memory_Buffer_View<Image2D_Handle> color_attachments;
-	Image2D_Handle depth_attachment = UNINITIALIZED_HANDLE;
+	Registered_Image2D color_attachments;
+	Registered_Image2D depth_attachment;
     };
     
     void
@@ -584,7 +584,7 @@ namespace Vulkan_API
     
     struct Descriptor_Set
     {
-	Memory_Buffer_View<Descriptor_Set_Layout_Handle> layouts;
+	Registered_Descriptor_Set_Layout layouts;
 	VkDescriptorSet set;
 
 	void
@@ -617,7 +617,7 @@ namespace Vulkan_API
     };
 
     void
-    allocate_descriptor_sets(Memory_Buffer_View<Descriptor_Set_Handle> &descriptor_sets
+    allocate_descriptor_sets(Memory_Buffer_View<Descriptor_Set *> &descriptor_sets
 			     , const Memory_Buffer_View<VkDescriptorSetLayout> &layouts
 			     , GPU *gpu
 			     , VkDescriptorPool *descriptor_pool);

@@ -14,7 +14,7 @@
 #include <vulkan/vulkan.h>
 #include "vulkan_managers.hpp"
 #include <glm/gtx/transform.hpp>
-
+/*
 // TODO(luc) : remove these globals in the future when ported to the new system
 Vulkan_State vk = {};
 Vulkan_API::State vulkan_state = {};
@@ -482,7 +482,7 @@ init_depth_resources(void)
 			    , depth_format
 			    , VK_IMAGE_LAYOUT_UNDEFINED
 			    , VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
-}*/
+}
 
 internal void
 init_framebuffers(void)
@@ -516,7 +516,7 @@ init_framebuffers(void)
 	fbo_info.layers				= 1;
 
 	VK_CHECK(vkCreateFramebuffer(vulkan_state.gpu.logical_device, &fbo_info, nullptr, &vulkan_state.swapchain.fbos[i]));
-    }*/
+    }
 }
 
 internal void
@@ -679,7 +679,7 @@ init_texture_image_sampler(void)
     sampler_info.maxLod = 0.0f;
 
     VK_CHECK(vkCreateSampler(vulkan_state.gpu.logical_device, &sampler_info, nullptr, &vk.texture_image_sampler));
-}*/
+}
 
 internal void
 init_vbo(void)
@@ -1193,3 +1193,4 @@ destroy_vk(void)
     vkDestroySurfaceKHR(vulkan_state.instance, vulkan_state.surface, nullptr);
     vkDestroyInstance(vulkan_state.instance, nullptr);
 }
+*/

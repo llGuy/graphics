@@ -448,6 +448,7 @@ namespace Vulkan_API
     {
 	u32 active_count = 0;
 	void *p; // pointer to the actual object
+	u32 size;
     };
 
     global_var Free_List_Allocator object_allocator;
@@ -471,10 +472,10 @@ namespace Vulkan_API
 				     , ""
 				     , &object_allocator);
 
-	Object_Register_Info register_info {0, p};
+	Object_Register_Info register_info {0, p, bytes_size};
 	objects_list.insert(id.hash, register_info, "");
 
-	return(Registered_Object_Base(p, id));
+	return(Registered_Object_Base(p, id, bytes_size));
     }
 
     Registered_Object_Base
@@ -482,7 +483,7 @@ namespace Vulkan_API
     {
 	Object_Register_Info *info = objects_list.get(id.hash);
 
-	return(Registered_Object_Base(info->p, id));
+	return(Registered_Object_Base(info->p, id, info->size));
     }
 
     void

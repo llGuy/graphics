@@ -6,7 +6,7 @@ namespace Vulkan_API
 {
 
     /* all vulkan object handle types : handle types are just indices into an array */
-    using Buffer_Handle			= u32;
+    /*using Buffer_Handle			= u32;
     using Pipeline_Handle		= u32;
     using Image2D_Handle                = u32;
     using Image_Sampler_Handle          = u32;
@@ -31,6 +31,6 @@ namespace Vulkan_API
 	T *view;
     };
     
-    enum { UNINITIALIZED_HANDLE = 0xFFFFFFFF };
+    enum { UNINITIALIZED_HANDLE = 0xFFFFFFFF };*/
 
 }

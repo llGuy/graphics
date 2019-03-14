@@ -3,7 +3,6 @@
 #include <glm/glm.hpp>
 #include "rendering.hpp"
 #include "file_system.hpp"
-#include "vulkan_handles.hpp"
 #include "vulkan_managers.hpp"
 #include <glm/gtx/transform.hpp>
 
@@ -16,8 +15,8 @@ namespace Rendering
 			  , Vulkan_API::GPU *gpu)
     {
 	/* init main renderpass */
-	auto test_render_pass = Vulkan_API::add_render_pass("render_pass.test_render_pass"_hash);
-	auto *test_render_pass_object = Vulkan_API::get_render_pass(test_render_pass);
+	Vulkan_API::Registered_Render_Pass test_render_pass = Vulkan_API::register_object("render_pass.test_render_pass"_hash
+											  , sizeof(Vulkan_API::Render_Pass));
 	
 	enum {COLOR_DESCRIPTION = 0, DEPTH_DESCRIPTION = 1};
 	
@@ -69,29 +68,29 @@ namespace Rendering
 				     , &subpasses_array
 				     , &dependencies_array
 				     , gpu
-				     , test_render_pass_object);
+				     , test_render_pass.p);
     }
 
     internal void
     init_model_info(void)
     {
-	auto handle = Vulkan_API::add_model("vulkan_model.test_model"_hash);
-	auto *model = Vulkan_API::get_model(handle);
+	Vulkan_API::Registered_Model model = Vulkan_API::register_object("vulkan_model.test_model"_hash
+									 , sizeof(Vulkan_API::Model));
 
-	model->attribute_count = 3;
-	model->attributes_buffer = (VkVertexInputAttributeDescription *)allocate_free_list(sizeof(VkVertexInputAttributeDescription) * model->attribute_count
-											   , Alignment(1)
-											   , "test_model_attribute_list_allocation");
-	model->binding_count = 1;
-	model->bindings = (Vulkan_API::Model_Binding *)allocate_free_list(sizeof(Vulkan_API::Model_Binding) * model->binding_count
-									  , Alignment(1)
-									  , "test_model_binding_list_allocation");
+	model.p->attribute_count = 3;
+	model.p->attributes_buffer = (VkVertexInputAttributeDescription *)allocate_free_list(sizeof(VkVertexInputAttributeDescription) * model.p->attribute_count
+											     , Alignment(1)
+											     , "test_model_attribute_list_allocation");
+	model.p->binding_count = 1;
+	model.p->bindings = (Vulkan_API::Model_Binding *)allocate_free_list(sizeof(Vulkan_API::Model_Binding) * model.p->binding_count
+									    , Alignment(1)
+									    , "test_model_binding_list_allocation");
 
 	struct Vertex { glm::vec3 pos; glm::vec3 color; glm::vec2 uvs; };
 	
 	// only one binding
-	Vulkan_API::Model_Binding *binding = model->bindings;
-	binding->begin_attributes_creation(model->attributes_buffer);
+	Vulkan_API::Model_Binding *binding = model.p->bindings;
+	binding->begin_attributes_creation(model.p->attributes_buffer);
 
 	binding->push_attribute(0, VK_FORMAT_R32G32B32_SFLOAT, sizeof(Vertex::pos));
 	binding->push_attribute(1, VK_FORMAT_R32G32B32_SFLOAT, sizeof(Vertex::color));
@@ -105,12 +104,12 @@ namespace Rendering
 			   , Vulkan_API::GPU *gpu)
     {
 	// initialize graphics pipeline object in the manager
-	auto pipeline_handle = Vulkan_API::add_graphics_pipeline("pipeline.main_pipeline"_hash);
-	auto *graphics_pipeline = Vulkan_API::get_graphics_pipeline(pipeline_handle);
-	graphics_pipeline->stages = Vulkan_API::Graphics_Pipeline::Shader_Stages_Bits::VERTEX_SHADER_BIT
+	Vulkan_API::Registered_Graphics_Pipeline graphics_pipeline = Vulkan_API::register_object("pipeline.main_pipeline"_hash
+											       , sizeof(Vulkan_API::Graphics_Pipeline));
+	graphics_pipeline.p->stages = Vulkan_API::Graphics_Pipeline::Shader_Stages_Bits::VERTEX_SHADER_BIT
 	    | Vulkan_API::Graphics_Pipeline::Shader_Stages_Bits::FRAGMENT_SHADER_BIT;
-	graphics_pipeline->base_dir_and_name = "../vulkan/shaders/";
-	graphics_pipeline->descriptor_set_layout = Vulkan_API::get_descriptor_set_layout_handle("descriptor_set_layout.test_descriptor_set_layout"_hash);
+	graphics_pipeline.p->base_dir_and_name = "../vulkan/shaders/";
+	graphics_pipeline.p->descriptor_set_layout = Vulkan_API::get_object("descriptor_set_layout.test_descriptor_set_layout"_hash);
 	
 	// create shaders
 	File_Contents vsh_bytecode = read_file("../vulkan/shaders/vert.spv");
@@ -127,10 +126,9 @@ namespace Rendering
 	Vulkan_API::init_shader_pipeline_info(&fsh_module, VK_SHADER_STAGE_FRAGMENT_BIT, &module_infos[1]);
 
 	// init vertex input stuff
-	Vulkan_API::Model_Handle model_handle = Vulkan_API::get_model_handle("vulkan_model.test_model"_hash);
-	Vulkan_API::Model *model = Vulkan_API::get_model(model_handle);
+	Vulkan_API::Registered_Model model = Vulkan_API::get_object("vulkan_model.test_model"_hash);
 	VkPipelineVertexInputStateCreateInfo vertex_input_info = {};
-	Vulkan_API::init_pipeline_vertex_input_info(model, &vertex_input_info);
+	Vulkan_API::init_pipeline_vertex_input_info(model.p, &vertex_input_info);
 
 	// init assembly info
 	VkPipelineInputAssemblyStateCreateInfo assembly_info = {};
@@ -181,10 +179,10 @@ namespace Rendering
 	Vulkan_API::init_pipeline_dynamic_states_info(&dynamic_states_ptr, &dynamic_info);
 
 	// init pipeline layout
-	VkDescriptorSetLayout *descriptor_set_layout = Vulkan_API::get_descriptor_set_layout(graphics_pipeline->descriptor_set_layout);
-	Memory_Buffer_View<VkDescriptorSetLayout> layouts = {1, descriptor_set_layout};
+	Vulkan_API::Registered_Descriptor_Set_Layout &descriptor_set_layout = graphics_pipeline.p->descriptor_set_layout;
+	Memory_Buffer_View<VkDescriptorSetLayout> layouts = {1, descriptor_set_layout.p};
 	Memory_Buffer_View<VkPushConstantRange> ranges = {0, nullptr};
-	Vulkan_API::init_pipeline_layout(&layouts, &ranges, gpu, &graphics_pipeline->layout);
+	Vulkan_API::init_pipeline_layout(&layouts, &ranges, gpu, &graphics_pipeline.p->layout);
 
 	// init depth stencil info
 	VkPipelineDepthStencilStateCreateInfo depth_stencil_info = {};

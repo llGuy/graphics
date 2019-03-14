@@ -837,10 +837,10 @@ namespace Vulkan_API
 				, gpu
 				, dst_buffer);
 
-	auto command_pool = Vulkan_API::get_command_pool("command_pool.graphics_command_pool"_hash);
+	Registered_Command_Pool command_pool = get_object("command_pool.graphics_command_pool"_hash);
 	Vulkan_API::copy_buffer(&staging_buffer
 				, dst_buffer
-				, command_pool
+				, command_pool.p
 				, gpu);
 
 	vkDestroyBuffer(gpu->logical_device, staging_buffer.buffer, nullptr);
@@ -903,21 +903,8 @@ namespace Vulkan_API
 						    , Alignment(1)
 						    , "swapchain_images_list_allocation");
 	vkGetSwapchainImagesKHR(gpu->logical_device, swapchain->swapchain, &image_count, images_array);
-	swapchain->images.count = image_count;
-	swapchain->images.buffer = (Image2D_Handle *)allocate_free_list(sizeof(Image2D_Handle) * swapchain->images.count
-									, 1
-									, "allocation.swapchain_image_handles_allocation");
-
-	char image2D_hash_name[] = "image2D.swapchain_image0";
-	enum { NUMBER_STRING_INDEX = 23 };
-	for (u32 i = 0
-		 ; i < image_count
-		 ; ++i)
-	{
-	    image2D_hash_name[NUMBER_STRING_INDEX] = '0' + i;
-	    auto hash = compile_hash(image2D_hash_name, sizeof(image2D_hash_name));
-	    swapchain->images.buffer[i] = add_image2D(Constant_String{image2D_hash_name, sizeof(image2D_hash_name), hash});
-	}
+	swapchain->images = register_object("image2D.swapchain_images"_hash
+					    , sizeof(Image2D) * image_count);
 	
 	swapchain->extent = surface_extent;
 	swapchain->format = surface_format.format;
@@ -927,7 +914,7 @@ namespace Vulkan_API
 		 ; i < image_count
 		 ; ++i)
 	{
-	    Image2D *image = get_image2D(swapchain->images.buffer[i]);
+	    Image2D *image = &swapchain->images.p[i];
 	    image->image = images_array[i];
 	    init_image_view(&image->image
 			    , swapchain->format
@@ -1106,19 +1093,20 @@ namespace Vulkan_API
     {
 	Memory_Buffer_View<VkImageView> image_view_attachments;
 	
-	image_view_attachments.count = framebuffer->color_attachments.count;
+	image_view_attachments.count = framebuffer->color_attachments.size;
 	image_view_attachments.buffer = (VkImageView *)allocate_stack(sizeof(VkImageView) * image_view_attachments.count);
+	
 	for (u32 i = 0
 		 ; i < image_view_attachments.count
 		 ; ++i)
 	{
-	    VkImageView *image = &get_image2D(framebuffer->color_attachments.buffer[i])->image_view;
+	    VkImageView *image = &framebuffer->color_attachments.p[i].image_view;
 	    image_view_attachments.buffer[i] = *image;
 	}
 
-	if (framebuffer->depth_attachment != UNINITIALIZED_HANDLE)
+	if (framebuffer->depth_attachment.p != nullptr)
 	{
-	    VkImageView *depth_image = &get_image2D(framebuffer->depth_attachment)->image_view;
+	    VkImageView *depth_image = &framebuffer->depth_attachment.p->image_view;
 	    extend_stack_top(sizeof(VkImageView));
 	    image_view_attachments.buffer[image_view_attachments.count++] = *depth_image;
 	}
@@ -1137,7 +1125,7 @@ namespace Vulkan_API
     }
 
     void
-    allocate_descriptor_sets(Memory_Buffer_View<Descriptor_Set_Handle> &descriptor_sets
+    allocate_descriptor_sets(Memory_Buffer_View<Descriptor_Set *> &descriptor_sets
 			     , const Memory_Buffer_View<VkDescriptorSetLayout> &layouts
 			     , GPU *gpu
 			     , VkDescriptorPool *descriptor_pool)
@@ -1156,7 +1144,7 @@ namespace Vulkan_API
 	// copy back into descriptor_sets objects
 	loop_through_memory(descriptor_sets
 			    , [&descriptor_sets_buffer, &descriptor_sets] (u32 i) -> void
-			    {Vulkan_API::get_descriptor_set(descriptor_sets[i])->set = descriptor_sets_buffer[i];});
+			    {descriptor_sets[i]->set = descriptor_sets_buffer[i];});
     }
 
     void
@@ -1217,6 +1205,8 @@ namespace Vulkan_API
     init_state(State *state
 	       , GLFWwindow *window)
     {
+	init_manager();
+	
 	// initialize instance
 	persist constexpr u32 layer_count = 1;
 	const char *layer_names[layer_count] = { "VK_LAYER_LUNARG_standard_validation" };
