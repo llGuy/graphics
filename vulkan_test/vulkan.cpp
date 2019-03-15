@@ -1093,14 +1093,14 @@ namespace Vulkan_API
     {
 	Memory_Buffer_View<VkImageView> image_view_attachments;
 	
-	image_view_attachments.count = framebuffer->color_attachments.size;
+	image_view_attachments.count = framebuffer->color_attachments.count;
 	image_view_attachments.buffer = (VkImageView *)allocate_stack(sizeof(VkImageView) * image_view_attachments.count);
 	
 	for (u32 i = 0
 		 ; i < image_view_attachments.count
 		 ; ++i)
 	{
-	    VkImageView *image = &framebuffer->color_attachments.p[i].image_view;
+	    VkImageView *image = &framebuffer->color_attachments.buffer[i].p->image_view;
 	    image_view_attachments.buffer[i] = *image;
 	}
 
@@ -1125,7 +1125,7 @@ namespace Vulkan_API
     }
 
     void
-    allocate_descriptor_sets(Memory_Buffer_View<Descriptor_Set *> &descriptor_sets
+    allocate_descriptor_sets(Memory_Buffer_View<Registered_Descriptor_Set> &descriptor_sets
 			     , const Memory_Buffer_View<VkDescriptorSetLayout> &layouts
 			     , GPU *gpu
 			     , VkDescriptorPool *descriptor_pool)
@@ -1144,7 +1144,7 @@ namespace Vulkan_API
 	// copy back into descriptor_sets objects
 	loop_through_memory(descriptor_sets
 			    , [&descriptor_sets_buffer, &descriptor_sets] (u32 i) -> void
-			    {descriptor_sets[i]->set = descriptor_sets_buffer[i];});
+			    {descriptor_sets[i].p->set = descriptor_sets_buffer[i];});
     }
 
     void

@@ -4,7 +4,7 @@
 #include "vulkan.hpp"
 #include "core.hpp"
 #include "rendering.hpp"
-//#include "graphics.hpp"
+#include <stdlib.h>
 
 #include "vulkan.hpp"
 #include "vulkan_managers.hpp"
@@ -271,15 +271,6 @@ main(s32 argc
     try
     {
 	open_debug_file();
-
-
-
-	Vulkan_API::init_manager();
-	Vulkan_API::Registered_Object<Vulkan_API::Graphics_Pipeline> p = Vulkan_API::register_object("pipeline.pbr_pipeline"_hash
-												     , sizeof(Vulkan_API::Graphics_Pipeline));
-	
-	
-
 	
 	OUTPUT_DEBUG_LOG("%s\n", "starting session");
 	

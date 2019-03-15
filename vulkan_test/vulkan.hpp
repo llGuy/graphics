@@ -571,7 +571,7 @@ namespace Vulkan_API
 	VkFramebuffer framebuffer;
 
 	// for color attachments only
-	Registered_Image2D color_attachments;
+	Memory_Buffer_View<Registered_Image2D> color_attachments;
 	Registered_Image2D depth_attachment;
     };
     
@@ -617,7 +617,7 @@ namespace Vulkan_API
     };
 
     void
-    allocate_descriptor_sets(Memory_Buffer_View<Descriptor_Set *> &descriptor_sets
+    allocate_descriptor_sets(Memory_Buffer_View<Registered_Descriptor_Set> &descriptor_sets
 			     , const Memory_Buffer_View<VkDescriptorSetLayout> &layouts
 			     , GPU *gpu
 			     , VkDescriptorPool *descriptor_pool);
