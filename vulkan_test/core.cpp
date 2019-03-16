@@ -14,7 +14,7 @@
 #define STACK_ALLOCATOR_GLOBAL_SIZE 0xffff
 Stack_Allocator stack_allocator_global;
 Debug_Output output_file;
-GLFWwindow *window;
+Window window;
 Free_List_Allocator free_list_allocator_global;
 
 internal bool running;
@@ -288,8 +288,12 @@ main(s32 argc
 	}
 
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-	window = glfwCreateWindow(1280
-				  , 720
+
+	window.w = 1280;
+	window.h = 720;
+	
+	window.window = glfwCreateWindow(window.w
+				  , window.h
 				  , "Vulkan App"
 				  , NULL
 				  , NULL);
@@ -297,11 +301,11 @@ main(s32 argc
 	Vulkan_API::State vk = {};
 	Rendering::Rendering_State rnd = {};
 
-	Vulkan_API::init_state(&vk, window);
+	Vulkan_API::init_state(&vk, window.window);
 	Rendering::init_rendering_state(&vk, &rnd);
 	
 	u32 current_frame = 0;
-	while(!glfwWindowShouldClose(window))
+	while(!glfwWindowShouldClose(window.window))
 	{
 	    glfwPollEvents();
 	    Rendering::render_frame(&rnd, &vk);
@@ -316,7 +320,7 @@ main(s32 argc
 
 	// destroy rnd and vk
 	
-	glfwDestroyWindow(window);
+	glfwDestroyWindow(window.window);
 	glfwTerminate();
     }
     catch(...)

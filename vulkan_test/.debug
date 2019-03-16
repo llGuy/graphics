@@ -1,5 +1,5 @@
-[core.cpp:276] log: starting session
-[core.cpp:285] log: stack allocator start address : 000002206744C040
+[core.cpp:274] log: starting session
+[core.cpp:283] log: stack allocator start address : 0000025DA1501040
 [core.cpp:77] log: stack allocation for "vulkan_instanc_extension_names_list_allocation"
 [core.cpp:77] log: stack allocation for "validation_layer_list_allocation"
 [vulkan.cpp:165] success : vkCreateInstance(&instance_info , nullptr , instance)
@@ -84,6 +84,6 @@
 [c:\users\lucro\desktop\graphics\vulkan_test\vulkan.hpp:857] success : vkCreateFence(gpu->logical_device , &fence_info , nullptr , fence)
 [c:\users\lucro\desktop\graphics\vulkan_test\vulkan.hpp:842] success : vkCreateSemaphore(gpu->logical_device , &semaphore_info , nullptr , semaphore)
 [c:\users\lucro\desktop\graphics\vulkan_test\vulkan.hpp:842] success : vkCreateSemaphore(gpu->logical_device , &semaphore_info , nullptr , semaphore)
-[core.cpp:312] log: stack allocator start address is : 000002206744CC6C
-[core.cpp:313] log: stack allocator allocated 3116 bytes
-[core.cpp:315] log: finished session
+[core.cpp:314] log: stack allocator start address is : 0000025DA1501C6C
+[core.cpp:315] log: stack allocator allocated 3116 bytes
+[core.cpp:317] log: finished session

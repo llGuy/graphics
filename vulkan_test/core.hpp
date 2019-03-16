@@ -66,6 +66,12 @@ void
 output_debug(const char *format
 	     , ...);
 
+struct Window
+{
+    s32 w, h;
+    struct GLFWwindow *window;
+};
+
 using Alignment = u8;
 
 struct Stack_Allocation_Header
@@ -203,81 +209,6 @@ inline constexpr u64
 megabytes(u32 mb)
 {
     return(kilobytes(mb * 1024));
-}
-
-// math TODO()
-struct alignas(16) V2f_32
-{
-    static constexpr u32 dimension = 2;
-    
-    union
-    {
-	struct { f32 x, y; };
-	f32 v[2];
-    };
-
-    inline f32 &
-    operator[](u32 i)
-    {
-	return v[i];
-    }
-};
-
-struct alignas(16) V3f_32
-{
-    static constexpr u32 dimension = 3;
-
-    union
-    {
-	struct { f32 x, y, z; };
-	f32 v[3];
-    };
-
-    inline f32 &
-    operator[](u32 i)
-    {
-	return v[i];
-    }
-};
-
-struct alignas(16) V4f_32
-{
-    static constexpr u32 dimension = 4;
-
-    union
-    {
-	struct { f32 x, y, z, w; };
-	f32 v[4];
-    };
-
-    inline f32 &
-    operator[](u32 i)
-    {
-	return v[i];
-    }
-};
-
-inline void
-add(f32 *dest
-    , f32 *__restrict a
-    , f32 *__restrict b
-    , u32 dim)
-{
-    for (u32 i = 0
-	     ; i < dim
-	     ; ++i)
-
-    {
-	
-    }
-}
-
-inline void
-add_simd(f32 *__restrict a
-    , f32 *__restrict b
-    , u8 dim)
-{
-    
 }
 
 #ifndef __GNUC__
