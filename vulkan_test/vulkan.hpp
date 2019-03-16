@@ -98,6 +98,37 @@ namespace Vulkan_API
 	}
     };
 
+    struct Model_Index_Data
+    {
+	Registered_Buffer index_buffer;
+	u32 index_count;
+	u32 index_offset;
+	VkIndexType index_type;
+    };
+    
+    internal FORCEINLINE void
+    command_buffer_bind_ibo(const Model_Index_Data &index_data
+			    , VkCommandBuffer *command_buffer)
+    {
+	vkCmdBindIndexBuffer(*command_buffer
+			     , index_data.index_buffer.p->buffer
+			     , index_data.index_offset
+			     , index_data.index_type);
+    }
+    
+    internal FORCEINLINE void
+    command_buffer_bind_vbos(const Memory_Buffer_View<VkBuffer> &buffers
+			     , const Memory_Buffer_View<VkDeviceSize> &offsets
+			     , u32 first_binding, u32 binding_count
+			     , VkCommandBuffer *command_buffer)
+    {
+	vkCmdBindVertexBuffers(*command_buffer
+			       , first_binding
+			       , binding_count
+			       , buffers.buffer
+			       , offsets.buffer);
+    }
+
     void
     init_buffer(VkDeviceSize buffer_size
 		  , VkBufferUsageFlags usage
@@ -175,6 +206,45 @@ namespace Vulkan_API
 	VkRenderPass render_pass;
 	u32 subpass_count;
     };
+
+    internal FORCEINLINE VkClearValue
+    init_clear_color_color(f32 r, f32 g, f32 b, f32 a)
+    {
+	VkClearValue value {};
+	value.color = {r, g, b, a};
+	return(value);
+    }
+
+    internal FORCEINLINE VkClearValue
+    init_clear_color_depth(f32 d, u32 s)
+    {
+	VkClearValue value {};
+	value.depthStencil = {d, s};
+	return(value);
+    }
+
+    internal FORCEINLINE VkRect2D
+    init_render_area(const VkOffset2D &offset, const VkExtent2D &extent)
+    {
+	VkRect2D render_area {};
+	render_area.offset = offset;
+	render_area.extent = extent;
+	return(render_area);
+    }
+    
+    void
+    command_buffer_begin_render_pass(Render_Pass *render_pass
+				     , Framebuffer *fbo
+				     , VkRect2D render_area
+				     , const Memory_Buffer_View<VkClearValue> &clear_colors
+				     , VkSubpassContents subpass_contents
+				     , VkCommandBuffer *command_buffer);
+
+    internal FORCEINLINE void
+    command_buffer_end_render_pass(VkCommandBuffer *command_buffer)
+    {
+	vkCmdEndRenderPass(*command_buffer);
+    }
     
     void
     init_render_pass(Memory_Buffer_View<VkAttachmentDescription> *attachment_descriptions
@@ -227,12 +297,6 @@ namespace Vulkan_API
 	    attribute_list = nullptr;
 	}
     };
-
-    struct Model_Index_Data
-    {
-	Registered_Buffer index_buffer;
-	u32 index_count;
-    };
     
     // describes the attributes and bindings of the model
     struct Model
@@ -275,7 +339,42 @@ namespace Vulkan_API
 	    info->vertexAttributeDescriptionCount = attribute_count;
 	    info->pVertexAttributeDescriptions = attributes_buffer;
 	}
+
+	Memory_Buffer_View<VkBuffer>
+	create_vbo_list(void)
+	{
+	    Memory_Buffer_View<VkBuffer> view {};
+	    allocate_memory_buffer(view, binding_count);
+	    
+	    for (u32 i = 0; i < binding_count; ++i)
+	    {
+		view[i] = bindings[i].buffer.p->buffer;
+	    }
+
+	    return(view);
+	}
     };
+
+    struct Draw_Indexed_Data
+    {
+	u32 index_count;
+	u32 instance_count;
+	u32 first_index;
+	u32 vertex_offset;
+	u32 first_instance;
+    };
+    
+    internal FORCEINLINE void
+    command_buffer_draw_indexed(VkCommandBuffer *command_buffer
+				, const Draw_Indexed_Data &data)
+    {
+	vkCmdDrawIndexed(*command_buffer
+			 , data.index_count
+			 , data.instance_count
+			 , data.first_index
+			 , (s32)data.vertex_offset
+			 , data.first_instance);
+    }
 
     struct Graphics_Pipeline
     {
@@ -295,8 +394,17 @@ namespace Vulkan_API
 	VkPipeline pipeline;
     };
 
+    internal FORCEINLINE void
+    command_buffer_bind_pipeline(Graphics_Pipeline *pipeline
+				 , VkCommandBuffer *command_buffer)
+    {
+	vkCmdBindPipeline(*command_buffer
+			  , VK_PIPELINE_BIND_POINT_GRAPHICS
+			  , pipeline->pipeline);
+    }
+
     // creating pipelines takes a LOT of params
-    internal inline void
+    internal FORCEINLINE void
     init_shader_pipeline_info(VkShaderModule *module
 			      , VkShaderStageFlagBits stage_bits
 			      , VkPipelineShaderStageCreateInfo *dest_info)
@@ -307,14 +415,14 @@ namespace Vulkan_API
 	dest_info->pName = "main";	
     }
     
-    internal inline void
+    internal FORCEINLINE void
     init_pipeline_vertex_input_info(Model *model /* model contains input information required */
 				    , VkPipelineVertexInputStateCreateInfo *info)
     {
 	model->create_vertex_input_state_info(info);
     }
     
-    internal inline void
+    internal FORCEINLINE void
     init_pipeline_input_assembly_info(VkPipelineInputAssemblyStateCreateFlags flags
 				      , VkPrimitiveTopology topology
 				      , VkBool32 primitive_restart
@@ -325,7 +433,7 @@ namespace Vulkan_API
 	info->primitiveRestartEnable = primitive_restart;
     }
 
-    internal inline void
+    internal FORCEINLINE void
     init_viewport(u32 width
 		  , u32 height
 		  , f32 min_depth
@@ -340,7 +448,7 @@ namespace Vulkan_API
 	viewport->maxDepth = max_depth;
     }
 
-    internal inline void
+    internal FORCEINLINE void
     init_rect_2D(VkOffset2D offset
 		 , VkExtent2D extent
 		 , VkRect2D *rect)
@@ -349,7 +457,7 @@ namespace Vulkan_API
 	rect->extent = extent;
     }
     
-    internal inline void
+    internal FORCEINLINE void
     init_pipeline_viewport_info(Memory_Buffer_View<VkViewport> *viewports
 				, Memory_Buffer_View<VkRect2D> *scissors
 				, VkPipelineViewportStateCreateInfo *info)
@@ -362,7 +470,7 @@ namespace Vulkan_API
     }
 				
     
-    internal inline void
+    internal FORCEINLINE void
     init_pipeline_rasterization_info(VkPolygonMode polygon_mode
 				     , VkCullModeFlags cull_flags
 				     , f32 line_width
@@ -383,7 +491,7 @@ namespace Vulkan_API
 	info->flags = flags;
     }
     
-    internal inline void
+    internal FORCEINLINE void
     init_pipeline_multisampling_info(VkSampleCountFlagBits rasterization_samples
 				     , VkPipelineMultisampleStateCreateFlags flags
 				     , VkPipelineMultisampleStateCreateInfo *info)
@@ -398,7 +506,7 @@ namespace Vulkan_API
 	info->flags = flags;
     }
 
-    internal inline void
+    internal FORCEINLINE void
     init_blend_state_attachment(VkColorComponentFlags color_write_flags
 				, VkBool32 enable_blend
 				, VkBlendFactor src_color
@@ -420,7 +528,7 @@ namespace Vulkan_API
 	attachment->alphaBlendOp = alpha_op;
     }
     
-    internal inline void
+    internal FORCEINLINE void
     init_pipeline_blending_info(VkBool32 enable_logic_op
 				, VkLogicOp logic_op
 				, Memory_Buffer_View<VkPipelineColorBlendAttachmentState> *states
@@ -437,7 +545,7 @@ namespace Vulkan_API
 	info->blendConstants[3] = 0.0f;
     }
 
-    internal inline void
+    internal FORCEINLINE void
     init_pipeline_dynamic_states_info(Memory_Buffer_View<VkDynamicState> *dynamic_states
 				      , VkPipelineDynamicStateCreateInfo *info)
     {
@@ -452,7 +560,7 @@ namespace Vulkan_API
 			 , GPU *gpu
 			 , VkPipelineLayout *pipeline_layout);
 
-    internal inline void
+    internal FORCEINLINE void
     init_pipeline_depth_stencil_info(VkBool32 depth_test_enable
 				     , VkBool32 depth_write_enable
 				     , f32 min_depth_bounds
@@ -499,7 +607,7 @@ namespace Vulkan_API
 			     , GPU *gpu
 			     , const Memory_Buffer_View<VkCommandBuffer> &command_buffers);
 
-    inline void
+    internal FORCEINLINE void
     free_command_buffer(const Memory_Buffer_View<VkCommandBuffer> &command_buffers
 			, VkCommandPool *pool
 			, GPU *gpu)
@@ -515,7 +623,7 @@ namespace Vulkan_API
 			 , VkCommandBufferUsageFlags usage_flags
 			 , VkCommandBufferInheritanceInfo *inheritance);
 
-    inline void
+    internal FORCEINLINE void
     end_command_buffer(VkCommandBuffer *command_buffer)
     {
 	vkEndCommandBuffer(*command_buffer);
@@ -616,6 +724,21 @@ namespace Vulkan_API
 	}
     };
 
+    internal FORCEINLINE void
+    command_buffer_bind_descriptor_sets(Graphics_Pipeline *pipeline
+					, const Memory_Buffer_View<VkDescriptorSet> &sets
+					, VkCommandBuffer *command_buffer)
+    {
+	vkCmdBindDescriptorSets(*command_buffer
+				, VK_PIPELINE_BIND_POINT_GRAPHICS
+				, pipeline->layout
+				, 0
+				, sets.count
+				, sets.buffer
+				, 0
+				, nullptr);
+    }
+    
     void
     allocate_descriptor_sets(Memory_Buffer_View<Registered_Descriptor_Set> &descriptor_sets
 			     , const Memory_Buffer_View<VkDescriptorSetLayout> &layouts
@@ -700,6 +823,34 @@ namespace Vulkan_API
     void
     update_descriptor_sets(const Memory_Buffer_View<VkWriteDescriptorSet> &writes
 			   , GPU *gpu);
+
+    internal FORCEINLINE void
+    init_semaphore(GPU *gpu
+		   , VkSemaphore *semaphore)
+    {
+	VkSemaphoreCreateInfo semaphore_info = {};
+	semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+	
+	VK_CHECK(vkCreateSemaphore(gpu->logical_device
+				   , &semaphore_info
+				   , nullptr
+				   , semaphore));
+    }
+
+    internal FORCEINLINE void
+    init_fence(GPU *gpu
+	       , VkFenceCreateFlags flags
+	       , VkFence *fence)
+    {
+	VkFenceCreateInfo fence_info = {};
+	fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+	fence_info.flags = flags;
+
+	VK_CHECK(vkCreateFence(gpu->logical_device
+			       , &fence_info
+			       , nullptr
+			       , fence));
+    }
     
     struct State
     {

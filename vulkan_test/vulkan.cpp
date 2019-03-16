@@ -1200,6 +1200,30 @@ namespace Vulkan_API
 	
 	vkBindBufferMemory(gpu->logical_device, dest_buffer->buffer, dest_buffer->memory, 0);
     }
+
+    void
+    command_buffer_begin_render_pass(Render_Pass *render_pass
+				     , Framebuffer *fbo
+				     , VkRect2D render_area
+				     , const Memory_Buffer_View<VkClearValue> &clear_colors
+				     , VkSubpassContents subpass_contents
+				     , VkCommandBuffer *command_buffer)
+    {
+	VkRenderPassBeginInfo render_pass_info = {};
+	render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+	render_pass_info.pNext = nullptr;
+	render_pass_info.renderPass = render_pass->render_pass;
+
+	render_pass_info.framebuffer = fbo->framebuffer;
+	render_pass_info.renderArea = render_area;
+
+	render_pass_info.clearValueCount = clear_colors.count;
+	render_pass_info.pClearValues = clear_colors.buffer;
+
+	vkCmdBeginRenderPass(*command_buffer
+			     , &render_pass_info
+			     , subpass_contents);
+    }
     
     void
     init_state(State *state

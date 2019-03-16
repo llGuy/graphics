@@ -25,6 +25,10 @@ namespace Rendering
 
 	Vulkan_API::Registered_Buffer uniform_buffers;
 	Vulkan_API::Registered_Descriptor_Set descriptor_sets;
+
+	Vulkan_API::Registered_Command_Buffer command_buffers;
+
+	// create semaphores and fences!!!
     };
 
     namespace Old

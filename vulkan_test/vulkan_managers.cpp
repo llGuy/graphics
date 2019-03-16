@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <memory.h>
+#include "core.hpp"
 #include "vulkan_managers.hpp"
 
 namespace Vulkan_API
@@ -46,6 +47,11 @@ namespace Vulkan_API
     {
 	Object_Register_Info *info = objects_list.get(id.hash);
 
+	if (!info)
+	{
+	    OUTPUT_DEBUG_LOG("unable to find element %s\n", id.str);
+	}
+	
 	return(Registered_Object_Base(info->p, id, info->size));
     }
 

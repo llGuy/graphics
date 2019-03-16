@@ -465,6 +465,9 @@ namespace Rendering
 									, sizeof(Vulkan_API::Buffer));
 
 	model.p->index_data.index_buffer = ibo;
+	model.p->index_data.index_type = VK_INDEX_TYPE_UINT32;
+	model.p->index_data.index_offset = 0;
+	model.p->index_data.index_count = sizeof(mesh_indices) / sizeof(mesh_indices[0]);
 
 	Memory_Byte_Buffer byte_buffer{sizeof(mesh_indices), mesh_indices};
 	    
@@ -550,535 +553,175 @@ namespace Rendering
 				    , gpu
 				    , &ubos.p[i]);
 	}
-    }	
+    }
+
+    struct Uniform_Buffer_Object
+    {
+	alignas(16) glm::mat4 model_matrix;
+	alignas(16) glm::mat4 view_matrix;
+	alignas(16) glm::mat4 projection_matrix;
+    };
+
+
+
+
+
+	
+    internal void
+    init_descriptor_pool(Vulkan_API::Swapchain *swapchain
+			 , Vulkan_API::GPU *gpu)
+    {
+	Vulkan_API::Registered_Descriptor_Pool descriptor_pool = Vulkan_API::register_object("descriptor_pool.test_descriptor_pool"_hash
+											     , sizeof(Vulkan_API::Descriptor_Pool));
+	    
+	VkDescriptorPoolSize pool_sizes[2] = {};
+
+	Vulkan_API::init_descriptor_pool_size(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, swapchain->images.size, &pool_sizes[0]);
+	Vulkan_API::init_descriptor_pool_size(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, swapchain->images.size, &pool_sizes[1]);
+    
+	Vulkan_API::init_descriptor_pool(Memory_Buffer_View<VkDescriptorPoolSize>{2, pool_sizes}, swapchain->images.size, gpu, descriptor_pool.p);
+    }
+
+    internal void
+    init_descriptor_sets(Vulkan_API::Swapchain *swapchain
+			 , Vulkan_API::GPU *gpu)
+    {
+	u32 set_count = swapchain->images.size;
+
+	VkDescriptorSetLayout *descriptor_set_layouts = (VkDescriptorSetLayout *)allocate_stack(set_count * sizeof(VkDescriptorSetLayout)
+												, Alignment(1)
+												, "descriptor_set_layout_list_allocation");
+	Vulkan_API::Registered_Descriptor_Set_Layout main_descriptor_layout = Vulkan_API::get_object("descriptor_set_layout.test_descriptor_set_layout"_hash);
+    
+	for (u32 i = 0
+		 ; i < set_count
+		 ; ++i) descriptor_set_layouts[i] = *main_descriptor_layout.p;
+
+
+	Vulkan_API::Registered_Descriptor_Set descriptor_sets = Vulkan_API::register_object("descriptor_set.test_descriptor_sets"_hash
+											    , sizeof(Vulkan_API::Descriptor_Set) * set_count);
+	auto descriptor_sets_separate = descriptor_sets.separate();
+
+	Vulkan_API::Registered_Descriptor_Pool descriptor_pool = Vulkan_API::get_object("descriptor_pool.test_descriptor_pool"_hash);
+	    
+	Vulkan_API::allocate_descriptor_sets(descriptor_sets_separate
+					     , Memory_Buffer_View<VkDescriptorSetLayout>{set_count, descriptor_set_layouts}
+					     , gpu
+					     , &descriptor_pool.p->pool);
+
+	Vulkan_API::Registered_Image2D image_ptr = Vulkan_API::get_object("image2D.texture"_hash);
+	Vulkan_API::Registered_Buffer ubos = Vulkan_API::get_object("buffer.ubos"_hash);
+
+	for (u32 i = 0
+		 ; i < set_count
+		 ; ++i)
+	{
+	    Vulkan_API::Descriptor_Set *set = &descriptor_sets.p[i];
+		
+	    VkDescriptorBufferInfo buffer_info = {};
+	    Vulkan_API::init_descriptor_set_buffer_info(&ubos.p[i], 0, &buffer_info);
+
+	    VkDescriptorImageInfo image_info	= {};
+	    Vulkan_API::init_descriptor_set_image_info(image_ptr.p, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, &image_info);
+
+	    VkWriteDescriptorSet descriptor_writes[2] = {};
+
+	    Vulkan_API::init_buffer_descriptor_set_write(set, 0, 0, 1, &buffer_info, &descriptor_writes[0]);
+	    Vulkan_API::init_image_descriptor_set_write(set, 1, 0, 1, &image_info, &descriptor_writes[1]);
+
+	    Vulkan_API::update_descriptor_sets(Memory_Buffer_View<VkWriteDescriptorSet>{2, descriptor_writes}, gpu);
+	}
+    }
+
+
+	
+    internal void
+    init_command_buffers(Vulkan_API::Swapchain *swapchain
+			 , Vulkan_API::GPU *gpu
+			 , const Vulkan_API::Registered_Descriptor_Set &descriptor_sets)
+    {
+	Vulkan_API::Registered_Command_Pool command_pool = Vulkan_API::get_object("command_pool.graphics_command_pool"_hash);
+
+	Vulkan_API::Registered_Command_Buffer command_buffers = Vulkan_API::register_object("command_buffer.main_command_buffers"_hash
+											    , sizeof(VkCommandBuffer) * swapchain->images.size);
+	    
+	Vulkan_API::allocate_command_buffers(command_pool.p
+					     , VK_COMMAND_BUFFER_LEVEL_PRIMARY
+					     , gpu
+					     , Memory_Buffer_View<VkCommandBuffer>{command_buffers.size, command_buffers.p});
+
+	Vulkan_API::Registered_Render_Pass render_pass = Vulkan_API::get_object("render_pass.test_render_pass"_hash);
+
+	Vulkan_API::Registered_Graphics_Pipeline pipeline_ptr = Vulkan_API::get_object("pipeline.main_pipeline"_hash);
+
+	Vulkan_API::Registered_Model model = Vulkan_API::get_object("vulkan_model.test_model"_hash);
+	Vulkan_API::Registered_Buffer &vbo = model.p->bindings[0].buffer;
+	Vulkan_API::Registered_Buffer &ibo = model.p->index_data.index_buffer;
+
+	auto buffer_list = model.p->create_vbo_list();
+	    
+	for (u32 i = 0
+		 ; i < command_buffers.size
+		 ; ++i)
+	{
+	    Vulkan_API::begin_command_buffer(&command_buffers.p[i], VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT, nullptr);
+
+	    Vulkan_API::Registered_Framebuffer fbo = swapchain->framebuffers.extract(i);
+
+	    VkClearValue clears[2] {Vulkan_API::init_clear_color_color(0, 0, 0, 0), Vulkan_API::init_clear_color_depth(1.0f, 0)};
+		
+	    Vulkan_API::command_buffer_begin_render_pass(render_pass.p
+							 , fbo.p
+							 , Vulkan_API::init_render_area({0, 0}, swapchain->extent)
+							 , Memory_Buffer_View<VkClearValue>{2, clears}
+							 , VK_SUBPASS_CONTENTS_INLINE
+							 , &command_buffers.p[i]);
+
+	    Vulkan_API::command_buffer_bind_pipeline(pipeline_ptr.p, &command_buffers.p[i]);
+
+	    VkDeviceSize offset[] = {0};
+	    Vulkan_API::command_buffer_bind_vbos(buffer_list
+						 , Memory_Buffer_View<VkDeviceSize>{buffer_list.count, offset}
+						 , 0, 1
+						 , &command_buffers.p[i]);
+
+	    Vulkan_API::command_buffer_bind_ibo(model.p->index_data
+						, &command_buffers.p[i]);
+
+	    Vulkan_API::Descriptor_Set *descriptor_set = &descriptor_sets.p[i];
+	    Vulkan_API::command_buffer_bind_descriptor_sets(pipeline_ptr.p
+							    , Memory_Buffer_View<VkDescriptorSet>{1, &descriptor_set->set}
+							    , &command_buffers.p[i]);
+
+	    Vulkan_API::Draw_Indexed_Data index_data;
+	    index_data.index_count = model.p->index_data.index_count;
+	    index_data.instance_count = 1;
+	    index_data.first_index = 0;
+	    index_data.vertex_offset = 0;
+	    index_data.first_instance = 0;
+	    Vulkan_API::command_buffer_draw_indexed(&command_buffers.p[i]
+						    , index_data);
+
+	    Vulkan_API::command_buffer_end_render_pass(&command_buffers.p[i]);
+	    Vulkan_API::end_command_buffer(&command_buffers.p[i]);
+	}
+    }
 
     namespace Old
     {
 	
 	internal struct Vulkan_State
 	{
-	    VkDescriptorPool descriptor_pool;
-	    //VkDescriptorSet *descriptor_sets;
-	    //u32 descriptor_set_count;
+	    //	    u32 semaphore_count;
+	    //	    VkSemaphore *image_ready_semaphores;
+	    //	    VkSemaphore *render_finished_semaphores;
 
-	    u32 command_buffer_count;
-	    VkCommandBuffer *command_buffers;
-
-	    u32 semaphore_count;
-	    VkSemaphore *image_ready_semaphores;
-	    VkSemaphore *render_finished_semaphores;
-
-	    u32 fence_count;
-	    VkFence *fences;
+	    //	    u32 fence_count;
+	    //	    VkFence *fences;
 	} vk;
 	
 	internal Vulkan_API::State vulkan_state = {};
 	internal Rendering::Rendering_Objects_Handle_Cache rendering_objects = {};
-
-
-
-	// functions
-
-	namespace Implementation
-	{
-
-	    internal u32
-	    find_memory_type(u32 type_filter
-			     , VkMemoryPropertyFlags properties)
-	    {
-		VkPhysicalDeviceMemoryProperties mem_properties;
-		vkGetPhysicalDeviceMemoryProperties(vulkan_state.gpu.hardware
-						    , &mem_properties);
-
-		for (u32 i = 0
-			 ; i < mem_properties.memoryTypeCount
-			 ; ++i)
-		{
-		    if (type_filter & (1 << i)
-			&& (mem_properties.memoryTypes[i].propertyFlags & properties) == properties)
-		    {
-			return(i);
-		    }
-		}
-
-		OUTPUT_DEBUG_LOG("%s\n", "failed to find memory type");
-		assert(false);
-
-		return(0);
-	    }
-
-	    internal VkImageView
-	    create_image_view(VkImage image
-			      , VkFormat format
-			      , VkImageAspectFlags aspect_flags)
-	    {
-		VkImageViewCreateInfo view_info		= {};
-		view_info.sType				= VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-		view_info.image				= image;
-		view_info.viewType				= VK_IMAGE_VIEW_TYPE_2D;
-		view_info.format				= format;
-		view_info.subresourceRange.aspectMask	= aspect_flags;
-		view_info.subresourceRange.baseMipLevel	= 0;
-		view_info.subresourceRange.levelCount	= 1;
-		view_info.subresourceRange.baseArrayLayer	= 0;
-		view_info.subresourceRange.layerCount	= 1;
-
-		VkImageView image_view;
-		VK_CHECK(vkCreateImageView(vulkan_state.gpu.logical_device, &view_info, nullptr, &image_view));
-
-		return(image_view);
-	    }
-	    
-
-	    internal void
-	    create_image(u32 width
-			 , u32 height
-			 , VkFormat format
-			 , VkImageTiling tiling
-			 , VkImageUsageFlags usage
-			 , VkMemoryPropertyFlags properties
-			 , VkImage *image
-			 , VkDeviceMemory *image_memory)
-	    {
-		VkImageCreateInfo image_info = {};
-		image_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-		image_info.imageType = VK_IMAGE_TYPE_2D;
-		image_info.extent.width = width;
-		image_info.extent.height = height;
-		image_info.extent.depth = 1;
-		image_info.mipLevels = 1;
-		image_info.arrayLayers = 1;
-		image_info.format = format;
-		image_info.tiling = tiling;
-		image_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		image_info.usage = usage;
-		image_info.samples = VK_SAMPLE_COUNT_1_BIT;
-		image_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-		VK_CHECK(vkCreateImage(vulkan_state.gpu.logical_device, &image_info, nullptr, image));
-
-		VkMemoryRequirements mem_requirements = {};
-		vkGetImageMemoryRequirements(vulkan_state.gpu.logical_device
-					     , *image
-					     , &mem_requirements);
-
-		VkMemoryAllocateInfo alloc_info = {};
-		alloc_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-		alloc_info.allocationSize = mem_requirements.size;
-		alloc_info.memoryTypeIndex = find_memory_type(mem_requirements.memoryTypeBits
-							      , properties);
-
-		VK_CHECK(vkAllocateMemory(vulkan_state.gpu.logical_device, &alloc_info, nullptr, image_memory));
-
-		vkBindImageMemory(vulkan_state.gpu.logical_device, *image, *image_memory, 0);
-	    }
-	    
-	    
-	    internal void
-	    create_buffer(VkBuffer *write_buffer
-			  , VkDeviceMemory *memory
-			  , VkDeviceSize size
-			  , VkBufferUsageFlags usage
-			  , VkMemoryPropertyFlags properties)
-	    {
-		VkBufferCreateInfo buffer_info	= {};
-		buffer_info.sType			= VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-		buffer_info.size			= size;
-		buffer_info.usage			= usage;
-		buffer_info.sharingMode		= VK_SHARING_MODE_EXCLUSIVE;
-		buffer_info.flags			= 0;
-
-		VK_CHECK(vkCreateBuffer(vulkan_state.gpu.logical_device, &buffer_info, nullptr, write_buffer));
-
-		VkMemoryRequirements mem_requirements;
-		vkGetBufferMemoryRequirements(vulkan_state.gpu.logical_device, *write_buffer, &mem_requirements);
-
-		VkMemoryAllocateInfo alloc_info = {};
-		alloc_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-		alloc_info.allocationSize = mem_requirements.size;
-		alloc_info.memoryTypeIndex = Implementation::find_memory_type(mem_requirements.memoryTypeBits, properties);
-
-		VK_CHECK(vkAllocateMemory(vulkan_state.gpu.logical_device, &alloc_info, nullptr, memory));
-
-		vkBindBufferMemory(vulkan_state.gpu.logical_device, *write_buffer, *memory, 0);
-	    }
-
-
-	    
-	    internal VkCommandBuffer
-	    begin_single_time_command(void)
-	    {
-		Vulkan_API::Registered_Command_Pool command_pool = Vulkan_API::get_object("command_pool.graphics_command_pool"_hash);
-    
-		VkCommandBufferAllocateInfo alloc_info = {};
-		alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-		alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-		alloc_info.commandPool = *command_pool.p;
-		alloc_info.commandBufferCount = 1;
-
-		VkCommandBuffer command_buffer;
-		vkAllocateCommandBuffers(vulkan_state.gpu.logical_device, &alloc_info, &command_buffer);
-
-		VkCommandBufferBeginInfo begin_info = {};
-		begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-
-		vkBeginCommandBuffer(command_buffer
-				     , &begin_info);
-
-		return(command_buffer);
-	    }
-
-
-	    
-	    internal void
-	    end_single_time_command(VkCommandBuffer command_buffer)
-	    {
-		Vulkan_API::Registered_Command_Pool command_pool = Vulkan_API::get_object("command_pool.graphics_command_pool"_hash);
-    
-		vkEndCommandBuffer(command_buffer);
-
-		VkSubmitInfo submit_info = {};
-		submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-		submit_info.commandBufferCount = 1;
-		submit_info.pCommandBuffers = &command_buffer;
-
-		vkQueueSubmit(vulkan_state.gpu.graphics_queue, 1, &submit_info, VK_NULL_HANDLE);
-		vkQueueWaitIdle(vulkan_state.gpu.graphics_queue);
-
-		vkFreeCommandBuffers(vulkan_state.gpu.logical_device, *command_pool.p, 1, &command_buffer);
-	    }
-
-
-	    
-	    internal void
-	    copy_buffer(VkBuffer *__restrict src_buffer
-			, VkBuffer *__restrict dst_buffer
-			, VkDeviceSize size)
-	    {
-		VkCommandBuffer command_buffer = begin_single_time_command();
-
-		VkBufferCopy copy_region = {};
-		copy_region.size = size;
-		vkCmdCopyBuffer(command_buffer, *src_buffer, *dst_buffer, 1, &copy_region);
-
-		end_single_time_command(command_buffer);
-	    }
-
-	    internal bool
-	    has_stencil_component(VkFormat format)
-	    {
-		return(format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT);
-	    }
-
-	    internal void
-	    transition_image_layout(VkImage image
-				    , VkFormat format
-				    , VkImageLayout old_layout
-				    , VkImageLayout new_layout)
-	    {
-		VkCommandBuffer command_buffer = begin_single_time_command();
-
-		VkImageMemoryBarrier barrier = {};
-		barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-		barrier.oldLayout = old_layout;
-		barrier.newLayout = new_layout;
-
-		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-   
-		barrier.image				= image;
-		barrier.subresourceRange.aspectMask		= VK_IMAGE_ASPECT_COLOR_BIT;
-		barrier.subresourceRange.baseMipLevel	= 0;
-		barrier.subresourceRange.levelCount		= 1;
-		barrier.subresourceRange.baseArrayLayer	= 0;
-		barrier.subresourceRange.layerCount		= 1;
-
-		VkPipelineStageFlags source_stage;
-		VkPipelineStageFlags destination_stage;
-
-		if (old_layout == VK_IMAGE_LAYOUT_UNDEFINED && new_layout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
-		{
-		    barrier.srcAccessMask = 0;
-		    barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-
-		    source_stage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-		    destination_stage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-		}
-		else if (old_layout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && new_layout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
-		{
-		    barrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-		    barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-
-		    source_stage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-		    destination_stage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-		}
-		else if (old_layout == VK_IMAGE_LAYOUT_UNDEFINED && new_layout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
-		{
-		    barrier.srcAccessMask = 0;
-		    barrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT
-			| VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-
-		    source_stage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-		    destination_stage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-		}
-		else
-		{
-		    OUTPUT_DEBUG_LOG("%s\n", "unsupported layout transition");
-		    assert(false);
-		}
-
-		if (new_layout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
-		{
-		    barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-		    if (has_stencil_component(format))
-		    {
-			barrier.subresourceRange.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
-		    }
-		}
-		else
-		{
-		    barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		}
-
-		vkCmdPipelineBarrier(command_buffer
-				     , source_stage
-				     , destination_stage
-				     , 0
-				     , 0
-				     , nullptr
-				     , 0
-				     , nullptr
-				     , 1
-				     , &barrier);
-
-		end_single_time_command(command_buffer);
-	    }
-
-	    
-	    internal void
-	    copy_buffer_to_image(VkBuffer buffer
-				 , VkImage image
-				 , u32 w, u32 h)
-	    {
-		VkCommandBuffer command_buffer = begin_single_time_command();
-
-		VkBufferImageCopy region	= {};
-		region.bufferOffset		= 0;
-		region.bufferRowLength	= 0;
-		region.bufferImageHeight	= 0;
-
-		region.imageSubresource.aspectMask		= VK_IMAGE_ASPECT_COLOR_BIT;
-		region.imageSubresource.mipLevel		= 0;
-		region.imageSubresource.baseArrayLayer	= 0;
-		region.imageSubresource.layerCount		= 1;
-
-		region.imageOffset = {0, 0, 0};
-		region.imageExtent = { w, h, 1 };
-
-		vkCmdCopyBufferToImage(command_buffer
-				       , buffer
-				       , image
-				       , VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
-				       , 1
-				       , &region);
-
-		end_single_time_command(command_buffer);
-	    }
-	    
-	}
-
-
-	
-	struct Uniform_Buffer_Object
-	{
-	    alignas(16) glm::mat4 model_matrix;
-	    alignas(16) glm::mat4 view_matrix;
-	    alignas(16) glm::mat4 projection_matrix;
-	};
-
-
-
-
-
-	
-	internal void
-	init_descriptor_pool(void)
-	{
-	    VkDescriptorPoolSize pool_sizes[2] = {};
-
-	    pool_sizes[0].type			= VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	    pool_sizes[0].descriptorCount	= vulkan_state.swapchain.images.size;
-    
-	    pool_sizes[1].type			= VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	    pool_sizes[1].descriptorCount	= vulkan_state.swapchain.images.size;
-
-	    VkDescriptorPoolCreateInfo pool_info = {};
-	    pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-	    pool_info.poolSizeCount = 2;
-	    pool_info.pPoolSizes = pool_sizes;
-
-	    pool_info.maxSets = vulkan_state.swapchain.images.size;
-
-	    VK_CHECK(vkCreateDescriptorPool(vulkan_state.gpu.logical_device, &pool_info, nullptr, &vk.descriptor_pool));
-	}
-
-	internal void
-	init_descriptor_sets(void)
-	{
-	    u32 set_count = vulkan_state.swapchain.images.size;
-
-	    VkDescriptorSetLayout *descriptor_set_layouts = (VkDescriptorSetLayout *)allocate_stack(set_count * sizeof(VkDescriptorSetLayout)
-												    , Alignment(1)
-												    , "descriptor_set_layout_list_allocation");
-	    Vulkan_API::Registered_Descriptor_Set_Layout main_descriptor_layout = Vulkan_API::get_object("descriptor_set_layout.test_descriptor_set_layout"_hash);
-    
-	    for (u32 i = 0
-		     ; i < set_count
-		     ; ++i) descriptor_set_layouts[i] = *main_descriptor_layout.p;
-
-
-	    Vulkan_API::Registered_Descriptor_Set descriptor_sets = Vulkan_API::register_object("descriptor_set.test_descriptor_sets"_hash
-												, sizeof(Vulkan_API::Descriptor_Set) * set_count);
-	    auto descriptor_sets_separate = descriptor_sets.separate();
-	    
-	    Vulkan_API::allocate_descriptor_sets(descriptor_sets_separate
-						 , Memory_Buffer_View<VkDescriptorSetLayout>{set_count, descriptor_set_layouts}
-						 , &vulkan_state.gpu
-						 , &vk.descriptor_pool);
-
-	    Vulkan_API::Registered_Image2D image_ptr = Vulkan_API::get_object("image2D.texture"_hash);
-	    Vulkan_API::Registered_Buffer ubos = Vulkan_API::get_object("buffer.ubos"_hash);
-
-	    for (u32 i = 0
-		     ; i < set_count
-		     ; ++i)
-	    {
-		Vulkan_API::Descriptor_Set *set = &descriptor_sets.p[i];
-		
-		VkDescriptorBufferInfo buffer_info = {};
-		Vulkan_API::init_descriptor_set_buffer_info(&ubos.p[i], 0, &buffer_info);
-
-		VkDescriptorImageInfo image_info	= {};
-		Vulkan_API::init_descriptor_set_image_info(image_ptr.p, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, &image_info);
-
-		VkWriteDescriptorSet descriptor_writes[2] = {};
-
-		Vulkan_API::init_buffer_descriptor_set_write(set, 0, 0, 1, &buffer_info, &descriptor_writes[0]);
-		Vulkan_API::init_image_descriptor_set_write(set, 1, 0, 1, &image_info, &descriptor_writes[1]);
-
-		Vulkan_API::update_descriptor_sets(Memory_Buffer_View<VkWriteDescriptorSet>{2, descriptor_writes}, &vulkan_state.gpu);
-	    }
-
-	    rendering_objects.descriptor_sets = descriptor_sets;
-	}
-
-
-	
-	internal void
-	init_command_buffers(Vulkan_API::Swapchain *swapchain
-			     , const Vulkan_API::Registered_Descriptor_Set &descriptor_sets)
-	{
-	    Vulkan_API::Registered_Command_Pool command_pool = Vulkan_API::get_object("command_pool.graphics_command_pool"_hash);
-    
-	    vk.command_buffer_count = vulkan_state.swapchain.images.size;
-
-	    vk.command_buffers = (VkCommandBuffer *)allocate_stack(sizeof(VkCommandBuffer) * vk.command_buffer_count
-								   , Alignment(1)
-								   , "command_buffer_list_allocation");
-
-	    VkCommandBufferAllocateInfo alloc_info = {};
-	    alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-	    alloc_info.commandPool = *command_pool.p;
-	    alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	    alloc_info.commandBufferCount = vk.command_buffer_count;
-
-	    VK_CHECK(vkAllocateCommandBuffers(vulkan_state.gpu.logical_device
-					      , &alloc_info
-					      , vk.command_buffers));
-
-	    Vulkan_API::Registered_Render_Pass render_pass = Vulkan_API::get_object("render_pass.test_render_pass"_hash);
-
-	    Vulkan_API::Registered_Graphics_Pipeline pipeline_ptr = Vulkan_API::get_object("pipeline.main_pipeline"_hash);
-
-	    Vulkan_API::Registered_Model model = Vulkan_API::get_object("vulkan_model.test_model"_hash);
-	    Vulkan_API::Registered_Buffer &vbo = model.p->bindings[0].buffer;
-	    Vulkan_API::Registered_Buffer &ibo = model.p->index_data.index_buffer;
-	    
-	    for (u32 i = 0
-		     ; i < vk.command_buffer_count
-		     ; ++i)
-	    {
-		VkCommandBufferBeginInfo begin_info = {};
-		begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		begin_info.pNext = nullptr;
-		// means that a command buffer can be resubmitted to a queue
-		begin_info.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
-		begin_info.pInheritanceInfo = nullptr;
-
-		VK_CHECK(vkBeginCommandBuffer(vk.command_buffers[i]
-					      , &begin_info));
-
-		VkRenderPassBeginInfo render_pass_info = {};
-		render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-		render_pass_info.pNext = nullptr;
-		render_pass_info.renderPass = render_pass.p->render_pass;
-
-		Vulkan_API::Registered_Framebuffer fbo = swapchain->framebuffers.extract(i);
-	
-		render_pass_info.framebuffer = fbo.p->framebuffer;
-		render_pass_info.renderArea.offset = {0, 0};
-		render_pass_info.renderArea.extent = vulkan_state.swapchain.extent;
-
-		VkClearValue clear_colors[2];
-		clear_colors[0].color = {0.0f, 0.0f, 0.0f, 1.0f};
-		clear_colors[1].depthStencil = {1.0f, 0};
-		render_pass_info.clearValueCount = 2;
-		render_pass_info.pClearValues = clear_colors;
-
-		vkCmdBeginRenderPass(vk.command_buffers[i]
-				     , &render_pass_info
-				     , VK_SUBPASS_CONTENTS_INLINE);
-
-		vkCmdBindPipeline(vk.command_buffers[i]
-				  , VK_PIPELINE_BIND_POINT_GRAPHICS
-				  , pipeline_ptr.p->pipeline);
-
-		VkBuffer vertex_buffers[] = {vbo.p->buffer};
-		VkDeviceSize offset[] = {0};
-		vkCmdBindVertexBuffers(vk.command_buffers[i]
-				       , 0
-				       , 1
-				       , vertex_buffers
-				       , offset);
-
-		vkCmdBindIndexBuffer(vk.command_buffers[i]
-				     , ibo.p->buffer
-				     , 0
-				     , VK_INDEX_TYPE_UINT32);
-
-		Vulkan_API::Descriptor_Set *descriptor_set = &descriptor_sets.p[i];
-		vkCmdBindDescriptorSets(vk.command_buffers[i]
-					, VK_PIPELINE_BIND_POINT_GRAPHICS
-					, pipeline_ptr.p->layout
-					, 0
-					, 1
-					, &descriptor_set->set
-					, 0
-					, nullptr);
-
-		vkCmdDrawIndexed(vk.command_buffers[i]
-				 , sizeof(mesh_indices) / sizeof(u32)
-				 , 1
-				 , 0
-				 , 0
-				 , 0);
-
-		vkCmdEndRenderPass(vk.command_buffers[i]);
-		VK_CHECK(vkEndCommandBuffer(vk.command_buffers[i]));
-	    }
-	}
-
 
 	
 	internal constexpr u32 MAX_FRAMES_IN_FLIGHT = 2;
@@ -1088,44 +731,17 @@ namespace Rendering
 	internal void
 	init_sync(void)
 	{
-	    vk.semaphore_count = MAX_FRAMES_IN_FLIGHT;
-	    vk.image_ready_semaphores = (VkSemaphore *)allocate_stack(sizeof(VkSemaphore) * vk.semaphore_count
-								      , Alignment(1)
-								      , "sempahore_image_ready_list_allocation");
+	    Vulkan_API::Registered_Fence fences = Vulkan_API::register_object("fence.main_fences"_hash, sizeof(VkFence) * MAX_FRAMES_IN_FLIGHT);
+	    Vulkan_API::Registered_Fence image_ready_semaphores = Vulkan_API::register_object("semaphore.image_ready"_hash, sizeof(VkSemaphore) * MAX_FRAMES_IN_FLIGHT);
+	    Vulkan_API::Registered_Fence render_finished_semaphores = Vulkan_API::register_object("semaphore.render_finished"_hash, sizeof(VkSemaphore) * MAX_FRAMES_IN_FLIGHT);
 
-	    vk.render_finished_semaphores = (VkSemaphore *)allocate_stack(sizeof(VkSemaphore) * vk.semaphore_count
-									  , Alignment(1)
-									  , "sempahore_image_ready_list_allocation");
-
-	    vk.fences = (VkFence *)allocate_stack(sizeof(VkFence) * vk.semaphore_count
-						  , Alignment(1)
-						  , "fence_list_allocation");
-
-	    VkSemaphoreCreateInfo semaphore_info = {};
-	    semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-
-	    VkFenceCreateInfo fence_info = {};
-	    fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-	    fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-    
 	    for (u32 i = 0
 		     ; i < MAX_FRAMES_IN_FLIGHT
 		     ; ++i)
 	    {
-		VK_CHECK(vkCreateFence(vulkan_state.gpu.logical_device
-				       , &fence_info
-				       , nullptr
-				       , &vk.fences[i]));
-
-		VK_CHECK(vkCreateSemaphore(vulkan_state.gpu.logical_device
-					   , &semaphore_info
-					   , nullptr
-					   , &vk.render_finished_semaphores[i]));
-
-		VK_CHECK(vkCreateSemaphore(vulkan_state.gpu.logical_device
-					   , &semaphore_info
-					   , nullptr
-					   , &vk.image_ready_semaphores[i]));
+		Vulkan_API::init_fence(&vulkan_state.gpu, VK_FENCE_CREATE_SIGNALED_BIT, &fences.p[i]);
+		Vulkan_API::init_semaphore(&vulkan_state.gpu, &render_finished_semaphores.p[i]);
+		Vulkan_API::init_semaphore(&vulkan_state.gpu, &image_ready_semaphores.p[i]);
 	    }
 	}
 
@@ -1138,9 +754,14 @@ namespace Rendering
 	void
 	draw_frame(void)
 	{
+	    Vulkan_API::Registered_Command_Buffer &command_buffers = rendering_objects.command_buffers;
+	    Vulkan_API::Registered_Fence &fences = rendering_objects.fences;
+	    Vulkan_API::Registered_Fence &image_ready_semaphores = rendering_objects.image_ready_semaphores;
+	    Vulkan_API::Registered_Fence &render_finished_semaphores = rendering_objects.render_finished_semaphores;
+	    
 	    vkWaitForFences(vulkan_state.gpu.logical_device
 			    , 1
-			    , &vk.fences[current_frame]
+			    , &fences.p[current_frame]
 			    , VK_TRUE
 			    , UINT_MAX);
 
@@ -1149,8 +770,8 @@ namespace Rendering
 	    VkResult result = vkAcquireNextImageKHR(vulkan_state.gpu.logical_device
 						    , vulkan_state.swapchain.swapchain
 						    , UINT_MAX
-						    , vk.image_ready_semaphores[current_frame]
-						    , vk.fences[current_frame]
+						    , image_ready_semaphores.p[current_frame]
+						    , fences.p[current_frame]
 						    , &image_index);
     
 	    if (result == VK_ERROR_OUT_OF_DATE_KHR)
@@ -1171,25 +792,25 @@ namespace Rendering
 	    VkSubmitInfo submit_info = {};
 	    submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-	    VkSemaphore wait_semaphores[] = {vk.image_ready_semaphores[current_frame]};
+	    VkSemaphore wait_semaphores[] = {image_ready_semaphores.p[current_frame]};
 	    VkPipelineStageFlags wait_stages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
 	    submit_info.waitSemaphoreCount = 1;
 	    submit_info.pWaitSemaphores = wait_semaphores;
 	    submit_info.pWaitDstStageMask = wait_stages;
 
 	    submit_info.commandBufferCount = 1;
-	    submit_info.pCommandBuffers = &vk.command_buffers[image_index];
+	    submit_info.pCommandBuffers = &command_buffers.p[image_index];
 
-	    VkSemaphore signal_semaphores[] = {vk.render_finished_semaphores[current_frame]};
+	    VkSemaphore signal_semaphores[] = {render_finished_semaphores.p[current_frame]};
 	    submit_info.signalSemaphoreCount = 1;
 	    submit_info.pSignalSemaphores = signal_semaphores;
 
-	    vkResetFences(vulkan_state.gpu.logical_device, 1, &vk.fences[current_frame]);
+	    vkResetFences(vulkan_state.gpu.logical_device, 1, &fences.p[current_frame]);
 
 	    vkQueueSubmit(vulkan_state.gpu.graphics_queue
 			  , 1
 			  , &submit_info
-			  , vk.fences[current_frame]);
+			  , fences.p[current_frame]);
 
 	    VkPresentInfoKHR present_info = {};
 	    present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -1227,13 +848,9 @@ namespace Rendering
 	    Rendering::init_rendering_state(&vulkan_state
 					    , &rendering_objects);
 
-	    init_descriptor_pool();
-	    init_descriptor_sets();
-
-
-	    init_command_buffers(&vulkan_state.swapchain
-				 , rendering_objects.descriptor_sets);
 	    init_sync();
+
+	    rendering_objects.command_buffers = Vulkan_API::get_object("command_buffer.main_command_buffers"_hash);
 	}
 
 	void
@@ -1275,6 +892,16 @@ namespace Rendering
 	init_ubos(&vulkan_state->gpu
 		  , &vulkan_state->swapchain
 		  , cache->uniform_buffers);
+
+	init_descriptor_pool(&vulkan_state->swapchain
+			     , &vulkan_state->gpu);
+
+	init_descriptor_sets(&vulkan_state->swapchain
+			     , &vulkan_state->gpu);
+
+	init_command_buffers(&vulkan_state->swapchain
+			     , &vulkan_state->gpu
+			     , Vulkan_API::get_object("descriptor_set.test_descriptor_sets"_hash));
 	
 	cache->test_render_pass = Vulkan_API::get_object("render_pass.test_render_pass"_hash);
 	cache->descriptor_set_layout = Vulkan_API::get_object("descriptor_set_layout.test_descriptor_set_layout"_hash);

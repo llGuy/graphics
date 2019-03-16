@@ -1,12 +1,12 @@
-[core.cpp:284] log: starting session
-[core.cpp:293] log: stack allocator start address : 000002C684153040
+[core.cpp:275] log: starting session
+[core.cpp:284] log: stack allocator start address : 00000225D0578040
 [core.cpp:77] log: stack allocation for "vulkan_instanc_extension_names_list_allocation"
 [core.cpp:77] log: stack allocation for "validation_layer_list_allocation"
 [vulkan.cpp:165] success : vkCreateInstance(&instance_info , nullptr , instance)
 [core.cpp:114] log: poping allocation "validation_layer_list_allocation" -> new head is "vulkan_instanc_extension_names_list_allocation"
 [core.cpp:105] log: cleared stack : last allocation was "vulkan_instanc_extension_names_list_allocation"
 [vulkan.cpp:199] success : vk_create_debug_utils_messenger(*instance, &debug_info, nullptr, messenger)
-[vulkan.cpp:1254] success : glfwCreateWindowSurface(state->instance , window , nullptr , &state->surface)
+[vulkan.cpp:1278] success : glfwCreateWindowSurface(state->instance , window , nullptr , &state->surface)
 [core.cpp:77] log: stack allocation for "physical_device_list_allocation"
 [vulkan.cpp:327] log: available physical hardware devices count : 2
 [core.cpp:77] log: stack allocation for "queue_family_list_allocation"
@@ -72,26 +72,21 @@
 [vulkan.cpp:59] success : vkAllocateMemory(gpu->logical_device , &alloc_info , nullptr , dest_memory)
 [vulkan.cpp:1194] success : vkCreateBuffer(gpu->logical_device, &buffer_info, nullptr, &dest_buffer->buffer)
 [vulkan.cpp:59] success : vkAllocateMemory(gpu->logical_device , &alloc_info , nullptr , dest_memory)
-[rendering.cpp:923] success : vkCreateDescriptorPool(vulkan_state.gpu.logical_device, &pool_info, nullptr, &vk.descriptor_pool)
+[vulkan.cpp:1163] success : vkCreateDescriptorPool(gpu->logical_device, &pool_info, nullptr, &pool->pool)
 [core.cpp:77] log: stack allocation for "descriptor_set_layout_list_allocation"
 [vulkan.cpp:1142] success : vkAllocateDescriptorSets(gpu->logical_device, &alloc_info, descriptor_sets_buffer.buffer)
-[core.cpp:77] log: stack allocation for "command_buffer_list_allocation"
-[rendering.cpp:998] success : vkAllocateCommandBuffers(vulkan_state.gpu.logical_device , &alloc_info , vk.command_buffers)
-[rendering.cpp:1020] success : vkBeginCommandBuffer(vk.command_buffers[i] , &begin_info)
-[rendering.cpp:1078] success : vkEndCommandBuffer(vk.command_buffers[i])
-[rendering.cpp:1020] success : vkBeginCommandBuffer(vk.command_buffers[i] , &begin_info)
-[rendering.cpp:1078] success : vkEndCommandBuffer(vk.command_buffers[i])
-[rendering.cpp:1020] success : vkBeginCommandBuffer(vk.command_buffers[i] , &begin_info)
-[rendering.cpp:1078] success : vkEndCommandBuffer(vk.command_buffers[i])
+[vulkan.cpp:592] success : vkBeginCommandBuffer(*command_buffer , &begin_info)
+[vulkan.cpp:592] success : vkBeginCommandBuffer(*command_buffer , &begin_info)
+[vulkan.cpp:592] success : vkBeginCommandBuffer(*command_buffer , &begin_info)
 [core.cpp:77] log: stack allocation for "sempahore_image_ready_list_allocation"
 [core.cpp:77] log: stack allocation for "sempahore_image_ready_list_allocation"
 [core.cpp:77] log: stack allocation for "fence_list_allocation"
-[rendering.cpp:1118] success : vkCreateFence(vulkan_state.gpu.logical_device , &fence_info , nullptr , &vk.fences[i])
-[rendering.cpp:1123] success : vkCreateSemaphore(vulkan_state.gpu.logical_device , &semaphore_info , nullptr , &vk.render_finished_semaphores[i])
-[rendering.cpp:1128] success : vkCreateSemaphore(vulkan_state.gpu.logical_device , &semaphore_info , nullptr , &vk.image_ready_semaphores[i])
-[rendering.cpp:1118] success : vkCreateFence(vulkan_state.gpu.logical_device , &fence_info , nullptr , &vk.fences[i])
-[rendering.cpp:1123] success : vkCreateSemaphore(vulkan_state.gpu.logical_device , &semaphore_info , nullptr , &vk.render_finished_semaphores[i])
-[rendering.cpp:1128] success : vkCreateSemaphore(vulkan_state.gpu.logical_device , &semaphore_info , nullptr , &vk.image_ready_semaphores[i])
-[core.cpp:316] log: stack allocator start address is : 000002C684153D1C
-[core.cpp:317] log: stack allocator allocated 3292 bytes
-[core.cpp:319] log: finished session
+[c:\users\lucro\desktop\graphics\vulkan_test\vulkan.hpp:852] success : vkCreateFence(gpu->logical_device , &fence_info , nullptr , fence)
+[c:\users\lucro\desktop\graphics\vulkan_test\vulkan.hpp:837] success : vkCreateSemaphore(gpu->logical_device , &semaphore_info , nullptr , semaphore)
+[c:\users\lucro\desktop\graphics\vulkan_test\vulkan.hpp:837] success : vkCreateSemaphore(gpu->logical_device , &semaphore_info , nullptr , semaphore)
+[c:\users\lucro\desktop\graphics\vulkan_test\vulkan.hpp:852] success : vkCreateFence(gpu->logical_device , &fence_info , nullptr , fence)
+[c:\users\lucro\desktop\graphics\vulkan_test\vulkan.hpp:837] success : vkCreateSemaphore(gpu->logical_device , &semaphore_info , nullptr , semaphore)
+[c:\users\lucro\desktop\graphics\vulkan_test\vulkan.hpp:837] success : vkCreateSemaphore(gpu->logical_device , &semaphore_info , nullptr , semaphore)
+[core.cpp:307] log: stack allocator start address is : 00000225D0578CEC
+[core.cpp:308] log: stack allocator allocated 3244 bytes
+[core.cpp:310] log: finished session

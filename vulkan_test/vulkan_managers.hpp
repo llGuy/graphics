@@ -86,10 +86,14 @@ namespace Vulkan_API
     using Registered_Render_Pass		= Registered_Object<struct Render_Pass>;
     using Registered_Buffer			= Registered_Object<struct Buffer>;
     using Registered_Descriptor_Set_Layout	= Registered_Object<VkDescriptorSetLayout>;
+    using Registered_Descriptor_Pool		= Registered_Object<struct Descriptor_Pool>;
     using Registered_Descriptor_Set		= Registered_Object<struct Descriptor_Set>;
     using Registered_Model			= Registered_Object<struct Model>;
     using Registered_Command_Pool		= Registered_Object<VkCommandPool>;
+    using Registered_Command_Buffer             = Registered_Object<VkCommandBuffer>;
     using Registered_Framebuffer		= Registered_Object<struct Framebuffer>;
-    using Registered_Image2D			= Registered_Object<struct Image2D>; 
+    using Registered_Image2D			= Registered_Object<struct Image2D>;
+    using Registered_Semaphore                  = Registered_Object<VkSemaphore>;
+    using Registered_Fence                      = Registered_Object<VkFence>;
 
 }
