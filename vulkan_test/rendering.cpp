@@ -706,167 +706,93 @@ namespace Rendering
 	    Vulkan_API::end_command_buffer(&command_buffers.p[i]);
 	}
     }
-
-    namespace Old
+	
+    internal constexpr u32 MAX_FRAMES_IN_FLIGHT = 2;
+	
+    internal void
+    init_sync(Vulkan_API::GPU *gpu)
     {
-	
-	internal struct Vulkan_State
+	Vulkan_API::Registered_Fence fences = Vulkan_API::register_object("fence.main_fences"_hash, sizeof(VkFence) * MAX_FRAMES_IN_FLIGHT);
+	Vulkan_API::Registered_Semaphore image_ready_semaphores = Vulkan_API::register_object("semaphore.image_ready"_hash, sizeof(VkSemaphore) * MAX_FRAMES_IN_FLIGHT);
+	Vulkan_API::Registered_Semaphore render_finished_semaphores = Vulkan_API::register_object("semaphore.render_finished"_hash, sizeof(VkSemaphore) * MAX_FRAMES_IN_FLIGHT);
+
+	for (u32 i = 0
+		 ; i < MAX_FRAMES_IN_FLIGHT
+		 ; ++i)
 	{
-	    //	    u32 semaphore_count;
-	    //	    VkSemaphore *image_ready_semaphores;
-	    //	    VkSemaphore *render_finished_semaphores;
-
-	    //	    u32 fence_count;
-	    //	    VkFence *fences;
-	} vk;
-	
-	internal Vulkan_API::State vulkan_state = {};
-	internal Rendering::Rendering_Objects_Handle_Cache rendering_objects = {};
-
-	
-	internal constexpr u32 MAX_FRAMES_IN_FLIGHT = 2;
-
-
-	
-	internal void
-	init_sync(void)
-	{
-	    Vulkan_API::Registered_Fence fences = Vulkan_API::register_object("fence.main_fences"_hash, sizeof(VkFence) * MAX_FRAMES_IN_FLIGHT);
-	    Vulkan_API::Registered_Fence image_ready_semaphores = Vulkan_API::register_object("semaphore.image_ready"_hash, sizeof(VkSemaphore) * MAX_FRAMES_IN_FLIGHT);
-	    Vulkan_API::Registered_Fence render_finished_semaphores = Vulkan_API::register_object("semaphore.render_finished"_hash, sizeof(VkSemaphore) * MAX_FRAMES_IN_FLIGHT);
-
-	    for (u32 i = 0
-		     ; i < MAX_FRAMES_IN_FLIGHT
-		     ; ++i)
-	    {
-		Vulkan_API::init_fence(&vulkan_state.gpu, VK_FENCE_CREATE_SIGNALED_BIT, &fences.p[i]);
-		Vulkan_API::init_semaphore(&vulkan_state.gpu, &render_finished_semaphores.p[i]);
-		Vulkan_API::init_semaphore(&vulkan_state.gpu, &image_ready_semaphores.p[i]);
-	    }
+	    Vulkan_API::init_fence(gpu, VK_FENCE_CREATE_SIGNALED_BIT, &fences.p[i]);
+	    Vulkan_API::init_semaphore(gpu, &render_finished_semaphores.p[i]);
+	    Vulkan_API::init_semaphore(gpu, &image_ready_semaphores.p[i]);
 	}
-
-
-	
-	
-	internal u32 current_frame = 0;
-	
-	
-	void
-	draw_frame(void)
-	{
-	    Vulkan_API::Registered_Command_Buffer &command_buffers = rendering_objects.command_buffers;
-	    Vulkan_API::Registered_Fence &fences = rendering_objects.fences;
-	    Vulkan_API::Registered_Fence &image_ready_semaphores = rendering_objects.image_ready_semaphores;
-	    Vulkan_API::Registered_Fence &render_finished_semaphores = rendering_objects.render_finished_semaphores;
-	    
-	    vkWaitForFences(vulkan_state.gpu.logical_device
-			    , 1
-			    , &fences.p[current_frame]
-			    , VK_TRUE
-			    , UINT_MAX);
-
-	    u32 image_index;
-
-	    VkResult result = vkAcquireNextImageKHR(vulkan_state.gpu.logical_device
-						    , vulkan_state.swapchain.swapchain
-						    , UINT_MAX
-						    , image_ready_semaphores.p[current_frame]
-						    , fences.p[current_frame]
-						    , &image_index);
-    
-	    if (result == VK_ERROR_OUT_OF_DATE_KHR)
-	    {
-		// recreate swapchain
-		return;
-	    }
-	    else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
-	    {
-		OUTPUT_DEBUG_LOG("%s\n", "failed to acquire swapchain image");
-	    }
-
-	    update_ubo(image_index
-		       , &vulkan_state.gpu
-		       , &vulkan_state.swapchain
-		       , rendering_objects.uniform_buffers);
-
-	    VkSubmitInfo submit_info = {};
-	    submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-
-	    VkSemaphore wait_semaphores[] = {image_ready_semaphores.p[current_frame]};
-	    VkPipelineStageFlags wait_stages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-	    submit_info.waitSemaphoreCount = 1;
-	    submit_info.pWaitSemaphores = wait_semaphores;
-	    submit_info.pWaitDstStageMask = wait_stages;
-
-	    submit_info.commandBufferCount = 1;
-	    submit_info.pCommandBuffers = &command_buffers.p[image_index];
-
-	    VkSemaphore signal_semaphores[] = {render_finished_semaphores.p[current_frame]};
-	    submit_info.signalSemaphoreCount = 1;
-	    submit_info.pSignalSemaphores = signal_semaphores;
-
-	    vkResetFences(vulkan_state.gpu.logical_device, 1, &fences.p[current_frame]);
-
-	    vkQueueSubmit(vulkan_state.gpu.graphics_queue
-			  , 1
-			  , &submit_info
-			  , fences.p[current_frame]);
-
-	    VkPresentInfoKHR present_info = {};
-	    present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-	    present_info.waitSemaphoreCount = 1;
-	    present_info.pWaitSemaphores = signal_semaphores;
-
-	    VkSwapchainKHR swapchains[] = {vulkan_state.swapchain.swapchain};
-	    present_info.swapchainCount = 1;
-	    present_info.pSwapchains = swapchains;
-	    present_info.pImageIndices = &image_index;
-
-	    result = vkQueuePresentKHR(vulkan_state.gpu.present_queue
-				       , &present_info);
-
-	    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)
-	    {
-		// recreate swapchain
-	    }
-	    else if (result != VK_SUCCESS)
-	    {
-		OUTPUT_DEBUG_LOG("%s\n", "failed to present swapchain image");
-	    }
-
-	    current_frame = (current_frame + 1) % MAX_FRAMES_IN_FLIGHT;
-	}
-
-
-	
-	void
-	init_vk(GLFWwindow *window)
-	{
-	    Vulkan_API::init_state(&vulkan_state
-				   , window);
-
-	    Rendering::init_rendering_state(&vulkan_state
-					    , &rendering_objects);
-
-	    init_sync();
-
-	    rendering_objects.command_buffers = Vulkan_API::get_object("command_buffer.main_command_buffers"_hash);
-	}
-
-	void
-	destroy_vk(void)
-	{
-	    vkDestroyDevice(vulkan_state.gpu.logical_device, nullptr);
-	    vkDestroyInstance(vulkan_state.instance, nullptr);
-	}
-	
     }
+	
+    global_var u32 current_frame = 0;
+	
+    void
+    render_frame(Rendering_State *rendering_objects
+	       , Vulkan_API::State *vulkan_state)
+    {
+	Vulkan_API::Registered_Command_Buffer &command_buffers = rendering_objects->command_buffers;
+	Vulkan_API::Registered_Fence &fences = rendering_objects->fences;
+	Vulkan_API::Registered_Semaphore &image_ready_semaphores = rendering_objects->image_ready_semaphores;
+	Vulkan_API::Registered_Semaphore &render_finished_semaphores = rendering_objects->render_finished_semaphores;
+
+	Vulkan_API::wait_fences(&vulkan_state->gpu, Memory_Buffer_View<VkFence>{1, &fences.p[current_frame]});
+
+	auto next_image_data = Vulkan_API::acquire_next_image(&vulkan_state->swapchain
+							      , &vulkan_state->gpu
+							      , &image_ready_semaphores.p[current_frame]
+							      , &fences.p[current_frame]);
     
-    
+	if (next_image_data.result == VK_ERROR_OUT_OF_DATE_KHR)
+	{
+	    // recreate swapchain
+	    return;
+	}
+	else if (next_image_data.result != VK_SUCCESS && next_image_data.result != VK_SUBOPTIMAL_KHR)
+	{
+	    OUTPUT_DEBUG_LOG("%s\n", "failed to acquire swapchain image");
+	}
+
+	update_ubo(next_image_data.image_index
+		   , &vulkan_state->gpu
+		   , &vulkan_state->swapchain
+		   , rendering_objects->uniform_buffers);
+
+	// KEEP EYE ON PERFORMANCE HERE!!
+	Vulkan_API::reset_fences(&vulkan_state->gpu, Memory_Buffer_View<VkFence>{1, &fences.p[current_frame]});
+
+	VkPipelineStageFlags wait_stages = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;;
+	    
+	Vulkan_API::submit(Memory_Buffer_View<VkCommandBuffer>{1, &command_buffers.p[next_image_data.image_index]}
+                               , Memory_Buffer_View<VkSemaphore>{1, &image_ready_semaphores.p[current_frame]}
+                               , Memory_Buffer_View<VkSemaphore>{1, &render_finished_semaphores.p[current_frame]}
+                               , Memory_Buffer_View<VkPipelineStageFlags>{1, &wait_stages}
+                               , &fences.p[current_frame]
+                               , &vulkan_state->gpu.graphics_queue);
+	    
+	VkSemaphore signal_semaphores[] = {render_finished_semaphores.p[current_frame]};
+
+	Vulkan_API::present(Memory_Buffer_View<VkSemaphore>{1, &render_finished_semaphores.p[current_frame]}
+                                , Memory_Buffer_View<VkSwapchainKHR>{1, &vulkan_state->swapchain.swapchain}
+                                , &next_image_data.image_index
+                                , &vulkan_state->gpu.present_queue);
+	
+	if (next_image_data.result == VK_ERROR_OUT_OF_DATE_KHR || next_image_data.result == VK_SUBOPTIMAL_KHR)
+	{
+	    // recreate swapchain
+	}
+	else if (next_image_data.result != VK_SUCCESS)
+	{
+	    OUTPUT_DEBUG_LOG("%s\n", "failed to present swapchain image");
+	}
+
+	current_frame = (current_frame + 1) % MAX_FRAMES_IN_FLIGHT;
+    }
     
     void
     init_rendering_state(Vulkan_API::State *vulkan_state
-			 , Rendering_Objects_Handle_Cache *cache)
+			 , Rendering_State *cache)
     {
 	init_test_render_pass(&vulkan_state->swapchain
 			      , &vulkan_state->gpu);
@@ -902,6 +828,8 @@ namespace Rendering
 	init_command_buffers(&vulkan_state->swapchain
 			     , &vulkan_state->gpu
 			     , Vulkan_API::get_object("descriptor_set.test_descriptor_sets"_hash));
+
+	init_sync(&vulkan_state->gpu);
 	
 	cache->test_render_pass = Vulkan_API::get_object("render_pass.test_render_pass"_hash);
 	cache->descriptor_set_layout = Vulkan_API::get_object("descriptor_set_layout.test_descriptor_set_layout"_hash);
@@ -909,6 +837,11 @@ namespace Rendering
 	cache->graphics_command_pool = Vulkan_API::get_object("command_pool.graphics_command_pool"_hash);
 	cache->depth_image = Vulkan_API::get_object("image2D.depth_image"_hash);
 	cache->texture = Vulkan_API::get_object("image2D.texture"_hash);
+	cache->command_buffers = Vulkan_API::get_object("command_buffer.main_command_buffers"_hash);
+
+	cache->fences = Vulkan_API::get_object("fence.main_fences"_hash);
+	cache->image_ready_semaphores = Vulkan_API::get_object("semaphore.image_ready"_hash);
+	cache->render_finished_semaphores = Vulkan_API::get_object("semaphore.render_finished"_hash);
     }
 
 }

@@ -611,6 +611,10 @@ namespace Vulkan_API
     
     void
     submit(const Memory_Buffer_View<VkCommandBuffer> &command_buffers
+	   , const Memory_Buffer_View<VkSemaphore> &wait_semaphores
+	   , const Memory_Buffer_View<VkSemaphore> &signal_semaphores
+	   , const Memory_Buffer_View<VkPipelineStageFlags> &wait_stages
+	   , VkFence *fence
 	   , VkQueue *queue)
     {
 	VkSubmitInfo submit_info = {};
@@ -618,7 +622,14 @@ namespace Vulkan_API
 	submit_info.commandBufferCount = command_buffers.count;
 	submit_info.pCommandBuffers = command_buffers.buffer;
 
-	vkQueueSubmit(*queue, 1, &submit_info, VK_NULL_HANDLE);
+	submit_info.waitSemaphoreCount = wait_semaphores.count;
+	submit_info.pWaitSemaphores = wait_semaphores.buffer;
+	submit_info.pWaitDstStageMask = wait_stages.buffer;
+
+	submit_info.signalSemaphoreCount = signal_semaphores.count;
+	submit_info.pSignalSemaphores = signal_semaphores.buffer;
+
+	vkQueueSubmit(*queue, 1, &submit_info, *fence);
     }
 
     internal bool
@@ -649,7 +660,13 @@ namespace Vulkan_API
     {
 	end_command_buffer(command_buffer);
 
-	submit(Memory_Buffer_View<VkCommandBuffer>{1, command_buffer}, &gpu->graphics_queue);
+	VkFence null_fence = VK_NULL_HANDLE;
+	submit(Memory_Buffer_View<VkCommandBuffer>{1, command_buffer}
+               , null_buffer<VkSemaphore>()
+               , null_buffer<VkSemaphore>()
+               , null_buffer<VkPipelineStageFlags>()
+               , &null_fence
+               , &gpu->graphics_queue);
 
 	vkQueueWaitIdle(gpu->graphics_queue);
 
@@ -1223,6 +1240,25 @@ namespace Vulkan_API
 	vkCmdBeginRenderPass(*command_buffer
 			     , &render_pass_info
 			     , subpass_contents);
+    }
+
+    VkResult
+    present(const Memory_Buffer_View<VkSemaphore> &signal_semaphores
+	    , const Memory_Buffer_View<VkSwapchainKHR> &swapchains
+	    , u32 *image_index
+	    , VkQueue *present_queue)
+    {
+	VkPresentInfoKHR present_info = {};
+	present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+	present_info.waitSemaphoreCount = signal_semaphores.count;
+	present_info.pWaitSemaphores = signal_semaphores.buffer;
+
+	present_info.swapchainCount = swapchains.count;
+	present_info.pSwapchains = swapchains.buffer;
+	present_info.pImageIndices = image_index;
+
+	return(vkQueuePresentKHR(*present_queue
+				 , &present_info));
     }
     
     void

@@ -263,7 +263,6 @@ deallocate_free_list(void *pointer
     }
 }
 
-
 s32
 main(s32 argc
      , char * argv[])
@@ -295,13 +294,17 @@ main(s32 argc
 				  , NULL
 				  , NULL);
 
-	Rendering::Old::init_vk(window);
+	Vulkan_API::State vk = {};
+	Rendering::Rendering_State rnd = {};
+
+	Vulkan_API::init_state(&vk, window);
+	Rendering::init_rendering_state(&vk, &rnd);
 	
 	u32 current_frame = 0;
 	while(!glfwWindowShouldClose(window))
 	{
 	    glfwPollEvents();
-	    Rendering::Old::draw_frame();
+	    Rendering::render_frame(&rnd, &vk);
 	}
 
 	OUTPUT_DEBUG_LOG("stack allocator start address is : %p\n", stack_allocator_global.current);
@@ -311,8 +314,8 @@ main(s32 argc
 
 	close_debug_file();
 
-	Rendering::Old::destroy_vk();
-
+	// destroy rnd and vk
+	
 	glfwDestroyWindow(window);
 	glfwTerminate();
     }

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <limits.h>
 #include <memory.h>
 #include "core.hpp"
 #include <GLFW/glfw3.h>
@@ -631,6 +632,10 @@ namespace Vulkan_API
 
     void
     submit(const Memory_Buffer_View<VkCommandBuffer> &command_buffers
+	   , const Memory_Buffer_View<VkSemaphore> &wait_semaphores
+	   , const Memory_Buffer_View<VkSemaphore> &signal_semaphores
+	   , const Memory_Buffer_View<VkPipelineStageFlags> &wait_stages
+	   , VkFence *fence
 	   , VkQueue *queue);
 
     void
@@ -850,6 +855,47 @@ namespace Vulkan_API
 			       , &fence_info
 			       , nullptr
 			       , fence));
+    }
+
+    internal FORCEINLINE void
+    wait_fences(GPU *gpu
+	       , const Memory_Buffer_View<VkFence> &fences)
+    {
+	vkWaitForFences(gpu->logical_device
+			, fences.count
+			, fences.buffer
+			, VK_TRUE
+			, UINT_MAX);
+    }
+
+    struct Next_Image_Return {VkResult result; u32 image_index;};
+    internal FORCEINLINE Next_Image_Return
+    acquire_next_image(Swapchain *swapchain
+		       , GPU *gpu
+		       , VkSemaphore *semaphore
+		       , VkFence *fence)
+    {
+	u32 image_index = 0;
+	VkResult result = vkAcquireNextImageKHR(gpu->logical_device
+						, swapchain->swapchain
+						, UINT_MAX
+						, *semaphore
+						, *fence
+						, &image_index);
+	return(Next_Image_Return{result, image_index});
+    }
+
+    VkResult
+    present(const Memory_Buffer_View<VkSemaphore> &signal_semaphores
+	    , const Memory_Buffer_View<VkSwapchainKHR> &swapchains
+	    , u32 *image_index
+	    , VkQueue *present_queue);
+
+    internal FORCEINLINE void
+    reset_fences(GPU *gpu
+		 , const Memory_Buffer_View<VkFence> &fences)
+    {
+	vkResetFences(gpu->logical_device, fences.count, fences.buffer);
     }
     
     struct State

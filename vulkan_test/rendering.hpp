@@ -14,7 +14,7 @@
 namespace Rendering
 {        
 
-    struct Rendering_Objects_Handle_Cache
+    struct Rendering_State
     {
 	Vulkan_API::Registered_Render_Pass test_render_pass;
 	Vulkan_API::Registered_Descriptor_Set_Layout descriptor_set_layout;
@@ -28,25 +28,17 @@ namespace Rendering
 
 	Vulkan_API::Registered_Command_Buffer command_buffers;
 
-	// create semaphores and fences!!!
+	Vulkan_API::Registered_Semaphore image_ready_semaphores;
+	Vulkan_API::Registered_Semaphore render_finished_semaphores;
+	Vulkan_API::Registered_Fence fences;
     };
 
-    namespace Old
-    {
-
-	void
-	init_vk(GLFWwindow *window);
-
-	void
-	draw_frame(void);
-
-	void
-	destroy_vk(void);
-	
-    }
+    void
+    render_frame(Rendering_State *rnd
+	       , Vulkan_API::State *vk);
     
     void
     init_rendering_state(Vulkan_API::State *vulkan_state
-			 , Rendering_Objects_Handle_Cache *cache);
+			 , Rendering_State *cache);
 
 }
