@@ -2,7 +2,6 @@
 
 #include "core.hpp"
 #include "vulkan.hpp"
-#include "vulkan_managers.hpp"
 
 /* all rendering objects (render passes, buffers, images, etc...) are accessed
    through 32 bit handles (with object respective names) however, if the handle is 
@@ -12,8 +11,8 @@
    in the future, all objects will simply be accessed through these strings) */
 
 namespace Rendering
-{        
-
+{
+    
     struct Rendering_State
     {
 	Vulkan_API::Registered_Render_Pass test_render_pass;
@@ -37,4 +36,5 @@ namespace Rendering
     init_rendering_state(Vulkan_API::State *vulkan_state
 			 , Rendering_State *cache);
 
+    
 }

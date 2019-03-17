@@ -1,0 +1,10 @@
+MAC standard: (img_pref)
+  graphics_pipeline = graphics_pipeline.standard
+  image2D = [image2D.$(img_pref)albedo,image2D.$(img_pref)normal]
+  end
+
+PREF: material_type.
+
+test:
+  #standard
+  end

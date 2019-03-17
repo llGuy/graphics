@@ -8,7 +8,6 @@
 #include <stdlib.h>
 
 #include "vulkan.hpp"
-#include "vulkan_managers.hpp"
 
 #define DEBUG_FILE ".debug"
 

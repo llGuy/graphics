@@ -3,7 +3,6 @@
 #include <glm/glm.hpp>
 #include "rendering.hpp"
 #include "file_system.hpp"
-#include "vulkan_managers.hpp"
 #include <glm/gtx/transform.hpp>
 
 namespace Rendering
@@ -843,5 +842,109 @@ namespace Rendering
 	cache->image_ready_semaphores = Vulkan_API::get_object("semaphore.image_ready"_hash);
 	cache->render_finished_semaphores = Vulkan_API::get_object("semaphore.render_finished"_hash);
     }
+
+
+
+
+
+
+
+    struct Renderer_Init_Data
+    {
+	s32 mtrl_count;
+	Constant_String ppln_id;
+	Memory_Buffer_View<Constant_String> registered_imgs;
+    };
+
+    // almost acts like the actual render component object itself
+    struct Material
+    {
+	// possibly uniform data or data to be submitted to a instance buffer of something
+	void *data = nullptr;
+	u32 data_size = 0;
+    };
+
+    struct Renderer // renders a material type
+    {
+	// shader, pipieline states...
+	Vulkan_API::Registered_Graphics_Pipeline ppln;
+	
+	// material textures
+	Memory_Buffer_View<Vulkan_API::Registered_Image2D> imgs;
+	Memory_Buffer_View<Material> mtrls;
+	u32 mtrl_count;
+
+	enum Render_Method { INLINE, INSTANCED } mthd;
+
+	void
+	init(Renderer_Init_Data *data)
+	{
+	    mtrl_count = 0;
+	    allocate_memory_buffer(mtrls, data->mtrl_count);
+
+	    allocate_memory_buffer(imgs, data->registered_imgs.count);
+	    for (u32 i = 0; i < imgs.count; ++i)
+	    {
+		imgs[i] = Vulkan_API::get_object(data->registered_imgs[i]);
+	    }
+
+	    ppln = Vulkan_API::get_object(data->ppln_id);
+	}
+	
+	void
+	update(void)
+	{
+	    switch(mthd)
+	    {
+	    case Render_Method::INLINE:
+		{
+		    
+		}break;
+	    case Render_Method::INSTANCED:
+		{
+		    
+		}break;
+	    };
+	}
+
+	s32
+	request(void)
+	{
+	    return(++mtrl_count);
+	}
+    };
+
+    struct Material_Request { s32 renderer_id, material_id; };
+    
+    struct Render_Component_System
+    {
+	// 1 renderer per material type
+	Memory_Buffer_View<Renderer> rndrs;
+	Hash_Table_Inline<s32, 30, 4, 3> rndr_id_map;
+
+	void
+	add_renderer(const Renderer_Init_Data &init_data)
+	{
+	    
+	}
+	
+	void
+	update(void)
+	{
+	    for (u32 i = 0; i < rndrs.count; ++i)
+	    {
+		rndrs.buffer[i].update();
+	    }
+	}
+
+	Material_Request
+	request(const Constant_String &rndr_name)
+	{
+	    s32 *rndr_id = rndr_id_map.get(rndr_name.hash);
+	    s32 mtrl_id = rndrs[*rndr_id].request();
+
+	    return(Material_Request{*rndr_id, mtrl_id});
+	}
+    };
 
 }
