@@ -1,38 +1,38 @@
-[core.cpp:274] log: starting session
-[core.cpp:283] log: stack allocator start address : 0000025DA1501040
-[core.cpp:77] log: stack allocation for "vulkan_instanc_extension_names_list_allocation"
-[core.cpp:77] log: stack allocation for "validation_layer_list_allocation"
+[core.cpp:323] log: starting session
+[core.cpp:332] log: stack allocator start address : 000001DD48981040
+[core.cpp:78] log: stack allocation for "vulkan_instanc_extension_names_list_allocation"
+[core.cpp:78] log: stack allocation for "validation_layer_list_allocation"
 [vulkan.cpp:165] success : vkCreateInstance(&instance_info , nullptr , instance)
-[core.cpp:114] log: poping allocation "validation_layer_list_allocation" -> new head is "vulkan_instanc_extension_names_list_allocation"
-[core.cpp:105] log: cleared stack : last allocation was "vulkan_instanc_extension_names_list_allocation"
+[core.cpp:115] log: poping allocation "validation_layer_list_allocation" -> new head is "vulkan_instanc_extension_names_list_allocation"
+[core.cpp:106] log: cleared stack : last allocation was "vulkan_instanc_extension_names_list_allocation"
 [vulkan.cpp:199] success : vk_create_debug_utils_messenger(*instance, &debug_info, nullptr, messenger)
 [vulkan.cpp:1314] success : glfwCreateWindowSurface(state->instance , window , nullptr , &state->surface)
-[core.cpp:77] log: stack allocation for "physical_device_list_allocation"
+[core.cpp:78] log: stack allocation for "physical_device_list_allocation"
 [vulkan.cpp:327] log: available physical hardware devices count : 2
-[core.cpp:77] log: stack allocation for "queue_family_list_allocation"
-[core.cpp:114] log: poping allocation "queue_family_list_allocation" -> new head is "physical_device_list_allocation"
-[core.cpp:77] log: stack allocation for "gpu_extension_properties_list_allocation"
-[core.cpp:114] log: poping allocation "gpu_extension_properties_list_allocation" -> new head is "physical_device_list_allocation"
-[core.cpp:77] log: stack allocation for "surface_format_list_allocation"
-[core.cpp:77] log: stack allocation for "surface_present_mode_list_allocation"
+[core.cpp:78] log: stack allocation for "queue_family_list_allocation"
+[core.cpp:115] log: poping allocation "queue_family_list_allocation" -> new head is "physical_device_list_allocation"
+[core.cpp:78] log: stack allocation for "gpu_extension_properties_list_allocation"
+[core.cpp:115] log: poping allocation "gpu_extension_properties_list_allocation" -> new head is "physical_device_list_allocation"
+[core.cpp:78] log: stack allocation for "surface_format_list_allocation"
+[core.cpp:78] log: stack allocation for "surface_present_mode_list_allocation"
 [vulkan.cpp:347] log: found gpu compatible with application
-[core.cpp:77] log: stack allocation for "unique_queue_family_indices_allocation"
-[core.cpp:77] log: stack allocation for "unique_queue_list_allocation"
+[core.cpp:78] log: stack allocation for "unique_queue_family_indices_allocation"
+[core.cpp:78] log: stack allocation for "unique_queue_list_allocation"
 [vulkan.cpp:411] success : vkCreateDevice(gpu->hardware , &device_info , nullptr , &gpu->logical_device)
-[core.cpp:114] log: poping allocation "unique_queue_list_allocation" -> new head is "unique_queue_family_indices_allocation"
-[core.cpp:114] log: poping allocation "unique_queue_family_indices_allocation" -> new head is "surface_present_mode_list_allocation"
+[core.cpp:115] log: poping allocation "unique_queue_list_allocation" -> new head is "unique_queue_family_indices_allocation"
+[core.cpp:115] log: poping allocation "unique_queue_family_indices_allocation" -> new head is "surface_present_mode_list_allocation"
 [vulkan.cpp:916] success : vkCreateSwapchainKHR(gpu->logical_device, &swapchain_info, nullptr, &swapchain->swapchain)
-[core.cpp:77] log: stack allocation for "swapchain_images_list_allocation"
+[core.cpp:78] log: stack allocation for "swapchain_images_list_allocation"
 [vulkan.cpp:540] success : vkCreateImageView(gpu->logical_device, &view_info, nullptr, dest_image_view)
 [vulkan.cpp:540] success : vkCreateImageView(gpu->logical_device, &view_info, nullptr, dest_image_view)
 [vulkan.cpp:540] success : vkCreateImageView(gpu->logical_device, &view_info, nullptr, dest_image_view)
 [vulkan.cpp:960] success : vkCreateRenderPass(gpu->logical_device, &render_pass_info, nullptr, &dest_render_pass->render_pass)
 [rendering.cpp:241] success : vkCreateDescriptorSetLayout(gpu->logical_device, &layout_info, nullptr, layout.p)
-[core.cpp:77] log: stack allocation for "../vulkan/shaders/vert.spv"
-[core.cpp:77] log: stack allocation for "../vulkan/shaders/frag.spv"
+[core.cpp:78] log: stack allocation for "../vulkan/shaders/vert.spv"
+[core.cpp:78] log: stack allocation for "../vulkan/shaders/frag.spv"
 [vulkan.cpp:1025] success : vkCreateShaderModule(gpu->logical_device , &shader_info , nullptr , dest_shader_module)
 [vulkan.cpp:1025] success : vkCreateShaderModule(gpu->logical_device , &shader_info , nullptr , dest_shader_module)
-[core.cpp:77] log: stack allocation for "binding_total_list_allocation"
+[core.cpp:78] log: stack allocation for "binding_total_list_allocation"
 [vulkan.cpp:1044] success : vkCreatePipelineLayout(gpu->logical_device , &layout_info , nullptr , pipeline_layout)
 [vulkan.cpp:1088] success : vkCreateGraphicsPipelines(gpu->logical_device , VK_NULL_HANDLE , 1 , &pipeline_info , nullptr , pipeline) != VK_SUCCESS
 [vulkan.cpp:1101] success : vkCreateCommandPool(gpu->logical_device, &pool_info, nullptr, command_pool)
@@ -41,11 +41,11 @@
 [vulkan.cpp:59] success : vkAllocateMemory(gpu->logical_device , &alloc_info , nullptr , dest_memory)
 [vulkan.cpp:540] success : vkCreateImageView(gpu->logical_device, &view_info, nullptr, dest_image_view)
 [vulkan.cpp:592] success : vkBeginCommandBuffer(*command_buffer , &begin_info)
-[core.cpp:77] log: stack allocation for ""
+[core.cpp:78] log: stack allocation for ""
 [vulkan.cpp:1141] success : vkCreateFramebuffer(gpu->logical_device, &fbo_info, nullptr, &framebuffer->framebuffer)
-[core.cpp:77] log: stack allocation for ""
+[core.cpp:78] log: stack allocation for ""
 [vulkan.cpp:1141] success : vkCreateFramebuffer(gpu->logical_device, &fbo_info, nullptr, &framebuffer->framebuffer)
-[core.cpp:77] log: stack allocation for ""
+[core.cpp:78] log: stack allocation for ""
 [vulkan.cpp:1141] success : vkCreateFramebuffer(gpu->logical_device, &fbo_info, nullptr, &framebuffer->framebuffer)
 [vulkan.cpp:1211] success : vkCreateBuffer(gpu->logical_device, &buffer_info, nullptr, &dest_buffer->buffer)
 [vulkan.cpp:59] success : vkAllocateMemory(gpu->logical_device , &alloc_info , nullptr , dest_memory)
@@ -73,7 +73,7 @@
 [vulkan.cpp:1211] success : vkCreateBuffer(gpu->logical_device, &buffer_info, nullptr, &dest_buffer->buffer)
 [vulkan.cpp:59] success : vkAllocateMemory(gpu->logical_device , &alloc_info , nullptr , dest_memory)
 [vulkan.cpp:1180] success : vkCreateDescriptorPool(gpu->logical_device, &pool_info, nullptr, &pool->pool)
-[core.cpp:77] log: stack allocation for "descriptor_set_layout_list_allocation"
+[core.cpp:78] log: stack allocation for "descriptor_set_layout_list_allocation"
 [vulkan.cpp:1159] success : vkAllocateDescriptorSets(gpu->logical_device, &alloc_info, descriptor_sets_buffer.buffer)
 [vulkan.cpp:592] success : vkBeginCommandBuffer(*command_buffer , &begin_info)
 [vulkan.cpp:592] success : vkBeginCommandBuffer(*command_buffer , &begin_info)
@@ -84,6 +84,6 @@
 [c:\users\lucro\desktop\graphics\vulkan_test\vulkan.hpp:857] success : vkCreateFence(gpu->logical_device , &fence_info , nullptr , fence)
 [c:\users\lucro\desktop\graphics\vulkan_test\vulkan.hpp:842] success : vkCreateSemaphore(gpu->logical_device , &semaphore_info , nullptr , semaphore)
 [c:\users\lucro\desktop\graphics\vulkan_test\vulkan.hpp:842] success : vkCreateSemaphore(gpu->logical_device , &semaphore_info , nullptr , semaphore)
-[core.cpp:314] log: stack allocator start address is : 0000025DA1501C6C
-[core.cpp:315] log: stack allocator allocated 3116 bytes
-[core.cpp:317] log: finished session
+[core.cpp:381] log: stack allocator start address is : 000001DD48981C6C
+[core.cpp:382] log: stack allocator allocated 3116 bytes
+[core.cpp:384] log: finished session

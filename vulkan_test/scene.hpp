@@ -2,6 +2,7 @@
 
 #include "core.hpp"
 #include <glm/glm.hpp>
+#include "rendering.hpp"
 
 struct Camera
 {
@@ -18,7 +19,7 @@ struct Camera
     glm::mat4 v_m;
 
     void
-    set_default(f32 w, f32 h);
+    set_default(f32 w, f32 h, f32 m_x, f32 m_y);
     
     void
     compute_projection(void);
@@ -34,45 +35,16 @@ struct Scene
 
 void
 init_scene(Scene *scene
-	   , Window *window);
+	   , Window_Data *window);
 
 void
-update_scene(Scene *scene);
-
-// for the moment : only handles GLFW key codes
-enum Input_Type {MOUSE_BUTTON, MOUSE_MOVEMENT, WINDOW_RESIZE, KEYBOARD /* ... */};
-
-struct Input_Data
-{
-    union
-    {
-	struct
-	{
-	    s32 k_value;
-	    s32 k_scancode;
-	    s32 k_action;
-	    s32 k_mods;
-	};
-	struct
-	{
-	    s32 mb_button;
-	    s32 mb_action;
-	    s32 mb_mods;
-	};
-	struct
-	{
-	    f32 mm_x;
-	    f32 mm_y;
-	};
-	struct
-	{
-	    s32 r_w;
-	    s32 r_h;
-	};
-    };
-};
+update_scene(Scene *scene
+	     , Window_Data *window
+	     , Rendering::Rendering_State *rnd
+	     , Vulkan_API::State *vk
+	     , f32 dt);
 
 void
-handle_input(Input_Type type
-	     , class GLFWwindow *window
-	     , const Input_Data &input_data);
+handle_input(Scene *scene
+	     ,Window_Data *win
+	     , f32 dt);

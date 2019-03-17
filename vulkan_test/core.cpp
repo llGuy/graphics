@@ -3,6 +3,7 @@
 
 #include "vulkan.hpp"
 #include "core.hpp"
+#include "scene.hpp"
 #include "rendering.hpp"
 #include <stdlib.h>
 
@@ -14,7 +15,7 @@
 #define STACK_ALLOCATOR_GLOBAL_SIZE 0xffff
 Stack_Allocator stack_allocator_global;
 Debug_Output output_file;
-Window window;
+Window_Data window;
 Free_List_Allocator free_list_allocator_global;
 
 internal bool running;
@@ -263,6 +264,54 @@ deallocate_free_list(void *pointer
     }
 }
 
+
+// window procs:
+#define MAX_KEYS 350
+#define MAX_MB 5
+
+internal void
+glfw_window_resize_proc(GLFWwindow *win, s32 w, s32 h)
+{
+    Window_Data *w_data = (Window_Data *)glfwGetWindowUserPointer(win);
+    w_data->w = w;
+    w_data->h = h;
+    w_data->window_resized = true;
+}
+
+internal void
+glfw_keyboard_input_proc(GLFWwindow *win, s32 key, s32 scancode, s32 action, s32 mods)
+{
+    if (key < MAX_KEYS)
+    {
+	Window_Data *w_data = (Window_Data *)glfwGetWindowUserPointer(win);
+	if (action == GLFW_PRESS) w_data->key_map[key] = true;
+	else if (action == GLFW_RELEASE) w_data->key_map[key] = false;
+    }
+}
+
+internal void
+glfw_mouse_position_proc(GLFWwindow *win, f64 x, f64 y)
+{
+    Window_Data *w_data = (Window_Data *)glfwGetWindowUserPointer(win);
+    w_data->m_x = x;
+    w_data->m_y = y;
+    w_data->m_moved = true;
+}
+
+internal void
+glfw_mouse_button_proc(GLFWwindow *win, s32 button, s32 action, s32 mods)
+{
+    if (button < MAX_MB)
+    {
+	Window_Data *w_data = (Window_Data *)glfwGetWindowUserPointer(win);
+	if (action == GLFW_PRESS) w_data->mb_map[button] = true;
+	else if (action == GLFW_RELEASE) w_data->mb_map[button] = false;
+    }
+}
+
+
+#include <chrono>
+
 s32
 main(s32 argc
      , char * argv[])
@@ -289,6 +338,9 @@ main(s32 argc
 
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
+	allocate_memory_buffer(window.key_map, MAX_KEYS);
+	allocate_memory_buffer(window.mb_map, MAX_MB);
+	
 	window.w = 1280;
 	window.h = 720;
 	
@@ -298,17 +350,32 @@ main(s32 argc
 				  , NULL
 				  , NULL);
 
+	glfwSetInputMode(window.window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	glfwSetWindowUserPointer(window.window, &window);
+	glfwSetKeyCallback(window.window, glfw_keyboard_input_proc);
+	glfwSetMouseButtonCallback(window.window, glfw_mouse_button_proc);
+	glfwSetCursorPosCallback(window.window, glfw_mouse_position_proc);
+	glfwSetWindowSizeCallback(window.window, glfw_window_resize_proc);
+	
 	Vulkan_API::State vk = {};
 	Rendering::Rendering_State rnd = {};
 
 	Vulkan_API::init_state(&vk, window.window);
 	Rendering::init_rendering_state(&vk, &rnd);
 	
-	u32 current_frame = 0;
+	Scene scene;
+	init_scene(&scene, &window);
+	
+	auto now = std::chrono::high_resolution_clock::now();
+	
 	while(!glfwWindowShouldClose(window.window))
 	{
 	    glfwPollEvents();
-	    Rendering::render_frame(&rnd, &vk);
+	    update_scene(&scene, &window, &rnd, &vk, window.dt);
+	    
+	    auto new_now = std::chrono::high_resolution_clock::now();
+	    window.dt = std::chrono::duration<f32, std::chrono::seconds::period>(new_now - now).count();
+	    now = new_now;
 	}
 
 	OUTPUT_DEBUG_LOG("stack allocator start address is : %p\n", stack_allocator_global.current);

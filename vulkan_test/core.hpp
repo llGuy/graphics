@@ -51,6 +51,25 @@ typedef u8 byte;
 #define internal static
 #define global_var static
 
+template <typename T>
+struct Memory_Buffer_View
+{
+    u32 count;
+    T *buffer;
+    
+    T &
+    operator[](u32 i)
+    {
+	return(buffer[i]);
+    }
+
+    const T &
+    operator[](u32 i) const
+    {
+	return(buffer[i]);
+    }
+};
+
 inline constexpr u32
 left_shift(u32 n)
 {
@@ -66,10 +85,20 @@ void
 output_debug(const char *format
 	     , ...);
 
-struct Window
+struct Window_Data
 {
     s32 w, h;
     struct GLFWwindow *window;
+    f32 dt = 0.0f;
+
+    Memory_Buffer_View<bool> key_map;
+    Memory_Buffer_View<bool> mb_map;
+
+    s32 m_x = 0;
+    s32 m_y = 0;
+
+    bool m_moved = false;
+    bool window_resized = false;
 };
 
 using Alignment = u8;
@@ -377,25 +406,6 @@ template <typename T
 	OUTPUT_DEBUG_LOG("%s -> %s\n", map_debug_name, "failed to find value requested from hash");
 	assert(false);
 	return(nullptr);
-    }
-};
-
-template <typename T>
-struct Memory_Buffer_View
-{
-    u32 count;
-    T *buffer;
-    
-    T &
-    operator[](u32 i)
-    {
-	return(buffer[i]);
-    }
-
-    const T &
-    operator[](u32 i) const
-    {
-	return(buffer[i]);
     }
 };
 

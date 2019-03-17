@@ -479,7 +479,7 @@ namespace Rendering
 								  , gpu);
     }
 
-    internal void
+    /*internal void
     update_ubo(u32 current_image
 	       , Vulkan_API::GPU *gpu
 	       , Vulkan_API::Swapchain *swapchain
@@ -517,7 +517,7 @@ namespace Rendering
 	map.begin(gpu);
 	map.fill(Memory_Byte_Buffer{sizeof(ubo), &ubo});
 	map.end(gpu);
-    }
+    }*/
 
     	
     internal void
@@ -726,7 +726,7 @@ namespace Rendering
 	}
     }
 	
-    global_var u32 current_frame = 0;
+    /*global_var u32 current_frame = 0;
 	
     void
     render_frame(Rendering_State *rendering_objects
@@ -788,7 +788,7 @@ namespace Rendering
 	}
 
 	current_frame = (current_frame + 1) % MAX_FRAMES_IN_FLIGHT;
-    }
+	}*/
     
     void
     init_rendering_state(Vulkan_API::State *vulkan_state

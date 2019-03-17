@@ -34,10 +34,6 @@ namespace Rendering
     };
 
     void
-    render_frame(Rendering_State *rnd
-	       , Vulkan_API::State *vk);
-    
-    void
     init_rendering_state(Vulkan_API::State *vulkan_state
 			 , Rendering_State *cache);
 
