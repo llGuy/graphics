@@ -1,3 +1,6 @@
+// IMPLEMENT LINEAR ALLOCATOR ALREADY
+
+
 #pragma once
 
 #include <cassert>
@@ -102,6 +105,23 @@ struct Window_Data
 };
 
 using Alignment = u8;
+
+extern struct Linear_Allocator
+{
+    void *start = nullptr;
+    void *current = nullptr;
+
+    u32 capacity;
+} linear_allocator_global;
+
+void *
+allocate_linear(u32 alloc_size
+		, Alignment alignment = 1
+		, const char *name = ""
+		, Linear_Allocator *allocator = &linear_allocator_global);
+
+void
+clear_linear(Linear_Allocator *allocator = &linear_allocator_global);
 
 struct Stack_Allocation_Header
 {
@@ -417,6 +437,13 @@ allocate_memory_buffer(Memory_Buffer_View<T> &view, u32 count)
 {
     view.count = count;
     view.buffer = (T *)allocate_free_list(count * sizeof(T));
+}
+
+template <typename T> void
+allocate_memory_buffer_tmp(Memory_Buffer_View<T> &view, u32 count)
+{
+    view.count = count;
+    view.buffer = (T *)allocate_linear(count * sizeof(T));
 }
 
 struct Memory_Byte_Buffer

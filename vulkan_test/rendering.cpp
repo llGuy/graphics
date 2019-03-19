@@ -96,6 +96,8 @@ namespace Rendering
 	binding->push_attribute(2, VK_FORMAT_R32G32_SFLOAT, sizeof(Vertex::uvs));
 
 	binding->end_attributes_creation();
+
+	//	model.p->create_vbo_list();
     }
     
     internal void
@@ -448,6 +450,8 @@ namespace Rendering
 								  , command_pool.p
 								  , object_model_vbo.p
 								  , gpu);
+
+	object_model.p->create_vbo_list();
     }
 
     persist u32 mesh_indices[]
@@ -657,8 +661,6 @@ namespace Rendering
 	Vulkan_API::Registered_Buffer &vbo = model.p->bindings[0].buffer;
 	Vulkan_API::Registered_Buffer &ibo = model.p->index_data.index_buffer;
 
-	auto buffer_list = model.p->create_vbo_list();
-	    
 	for (u32 i = 0
 		 ; i < command_buffers.size
 		 ; ++i)
@@ -679,8 +681,8 @@ namespace Rendering
 	    Vulkan_API::command_buffer_bind_pipeline(pipeline_ptr.p, &command_buffers.p[i]);
 
 	    VkDeviceSize offset[] = {0};
-	    Vulkan_API::command_buffer_bind_vbos(buffer_list
-						 , Memory_Buffer_View<VkDeviceSize>{buffer_list.count, offset}
+	    Vulkan_API::command_buffer_bind_vbos(model.p->raw_cache_for_rendering
+						 , Memory_Buffer_View<VkDeviceSize>{model.p->raw_cache_for_rendering.count, offset}
 						 , 0, 1
 						 , &command_buffers.p[i]);
 
@@ -705,7 +707,7 @@ namespace Rendering
 	    Vulkan_API::end_command_buffer(&command_buffers.p[i]);
 	}
     }
-	
+    
     internal constexpr u32 MAX_FRAMES_IN_FLIGHT = 2;
 	
     internal void
@@ -849,29 +851,40 @@ namespace Rendering
 
 
 
+    
+    /* TODO(luc): first test push constants with current scene
+     *            write function to render materials
+     *            use push constants
+     *            
+     */
+
     struct Renderer_Init_Data
     {
-	s32 mtrl_count;
+	s32 mtrl_max;
 	Constant_String ppln_id;
-	Memory_Buffer_View<Constant_String> registered_imgs;
+	// images are stored in the descriptor sets
+	Memory_Buffer_View<Constant_String> descriptor_sets;
     };
-
+    
     // almost acts like the actual render component object itself
     struct Material
     {
 	// possibly uniform data or data to be submitted to a instance buffer of something
 	void *data = nullptr;
 	u32 data_size = 0;
+
+	Vulkan_API::Registered_Model model;
+	Vulkan_API::Draw_Indexed_Data draw_info;
     };
 
     struct Renderer // renders a material type
     {
 	// shader, pipieline states...
 	Vulkan_API::Registered_Graphics_Pipeline ppln;
+	Memory_Buffer_View<VkDescriptorSet> sets;
 	
-	// material textures
-	Memory_Buffer_View<Vulkan_API::Registered_Image2D> imgs;
 	Memory_Buffer_View<Material> mtrls;
+	
 	u32 mtrl_count;
 
 	enum Render_Method { INLINE, INSTANCED } mthd;
@@ -880,25 +893,50 @@ namespace Rendering
 	init(Renderer_Init_Data *data)
 	{
 	    mtrl_count = 0;
-	    allocate_memory_buffer(mtrls, data->mtrl_count);
+	    allocate_memory_buffer(mtrls, data->mtrl_max);
 
-	    allocate_memory_buffer(imgs, data->registered_imgs.count);
-	    for (u32 i = 0; i < imgs.count; ++i)
+	    allocate_memory_buffer(sets, data->descriptor_sets.count);
+	    
+	    for (u32 i = 0; i < sets.count; ++i)
 	    {
-		imgs[i] = Vulkan_API::get_object(data->registered_imgs[i]);
+		Vulkan_API::Registered_Descriptor_Set tmp_set = Vulkan_API::get_object(data->descriptor_sets[i]);
+		sets[i] = tmp_set.p->set;
 	    }
 
 	    ppln = Vulkan_API::get_object(data->ppln_id);
 	}
 	
 	void
-	update(void)
+	update(VkCommandBuffer *record_cmd)
 	{
 	    switch(mthd)
 	    {
 	    case Render_Method::INLINE:
 		{
-		    
+		    Vulkan_API::command_buffer_bind_pipeline(ppln.p, record_cmd);
+
+		    for (u32 i = 0; i < mtrl_count; ++i)
+		    {
+			Material *mtrl = &mtrls[i];
+
+			Memory_Buffer_View<VkDeviceSize> offsets;
+			allocate_memory_buffer_tmp(offsets, mtrl->model.p->binding_count);
+			Vulkan_API::command_buffer_bind_vbos(mtrl->model.p->raw_cache_for_rendering
+							     , offsets
+							     , 0
+							     , mtrl->model.p->binding_count
+							     , record_cmd);
+			
+			Vulkan_API::command_buffer_bind_ibo(mtrl->model.p->index_data
+							    , record_cmd);
+			
+			Vulkan_API::command_buffer_bind_descriptor_sets(ppln.p
+									, sets
+									, record_cmd);
+
+			Vulkan_API::command_buffer_draw_indexed(record_cmd
+								, mtrl->draw_info);
+		    }
 		}break;
 	    case Render_Method::INSTANCED:
 		{
@@ -914,9 +952,9 @@ namespace Rendering
 	}
     };
 
-    struct Material_Request { s32 renderer_id, material_id; };
+    struct Material_Request { s32 rndr_id, mtrl_id; };
     
-    struct Render_Component_System
+    struct Render_System
     {
 	// 1 renderer per material type
 	Memory_Buffer_View<Renderer> rndrs;
@@ -933,7 +971,7 @@ namespace Rendering
 	{
 	    for (u32 i = 0; i < rndrs.count; ++i)
 	    {
-		rndrs.buffer[i].update();
+		//rndrs.buffer[i].update();
 	    }
 	}
 

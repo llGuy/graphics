@@ -1,5 +1,3 @@
-#pragma once
-
 #include "core.hpp"
 
 // parser has 2 sections : the static section, and dynamic

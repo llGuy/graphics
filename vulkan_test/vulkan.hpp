@@ -186,12 +186,34 @@ namespace Vulkan_API
 	}
     };
 
+    struct Draw_Indexed_Data
+    {
+	u32 index_count;
+	u32 instance_count;
+	u32 first_index;
+	u32 vertex_offset;
+	u32 first_instance;
+    };
+    
     struct Model_Index_Data
     {
 	Registered_Buffer index_buffer;
 	u32 index_count;
 	u32 index_offset;
 	VkIndexType index_type;
+
+	Draw_Indexed_Data
+	init_draw_indexed_data(u32 first_index
+			       , u32 offset)
+	{
+	    Draw_Indexed_Data data;
+	    data.index_count = index_count;
+	    // default the instance_count to 0
+	    data.instance_count = 1;
+	    data.first_index = 0;
+	    data.vertex_offset = offset;
+	    data.first_instance = 0;
+	}
     };
     
     internal FORCEINLINE void
@@ -399,6 +421,8 @@ namespace Vulkan_API
 	VkVertexInputAttributeDescription *attributes_buffer;
 
 	Model_Index_Data index_data;
+
+	Memory_Buffer_View<VkBuffer> raw_cache_for_rendering;
 	
 	VkVertexInputBindingDescription *
 	create_binding_descriptions(void)
@@ -428,28 +452,16 @@ namespace Vulkan_API
 	    info->pVertexAttributeDescriptions = attributes_buffer;
 	}
 
-	Memory_Buffer_View<VkBuffer>
+	void
 	create_vbo_list(void)
 	{
-	    Memory_Buffer_View<VkBuffer> view {};
-	    allocate_memory_buffer(view, binding_count);
+	    allocate_memory_buffer(raw_cache_for_rendering, binding_count);
 	    
 	    for (u32 i = 0; i < binding_count; ++i)
 	    {
-		view[i] = bindings[i].buffer.p->buffer;
+		raw_cache_for_rendering[i] = bindings[i].buffer.p->buffer;
 	    }
-
-	    return(view);
 	}
-    };
-
-    struct Draw_Indexed_Data
-    {
-	u32 index_count;
-	u32 instance_count;
-	u32 first_index;
-	u32 vertex_offset;
-	u32 first_instance;
     };
     
     internal FORCEINLINE void

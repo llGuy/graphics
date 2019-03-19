@@ -66,6 +66,8 @@ read_file_data(const File &file, Read_Flags flags)
     case File_Format::BINARY: return(read_binary(file));
     case File_Format::PNG: case File_Format::JPG: return(read_image(file));
     };
+
+    return(File_Data{});
 }
 
 void

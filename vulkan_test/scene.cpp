@@ -1,3 +1,5 @@
+// TODO : TEST RERECORDING COMMAND BUFFERS EVERY FRAME !!! AND PUSH CONSTANTS !!!
+
 #include <chrono>
 #include "scene.hpp"
 #include <glm/glm.hpp>

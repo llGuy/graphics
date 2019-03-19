@@ -11,11 +11,13 @@
 
 #define DEBUG_FILE ".debug"
 
-#define STACK_ALLOCATOR_GLOBAL_SIZE 0xffff
+
+Linear_Allocator linear_allocator_global;
 Stack_Allocator stack_allocator_global;
+Free_List_Allocator free_list_allocator_global;
+
 Debug_Output output_file;
 Window_Data window;
-Free_List_Allocator free_list_allocator_global;
 
 internal bool running;
 
@@ -47,6 +49,26 @@ output_debug(const char *format
     va_end(arg_list);
 
     fflush(output_file.fp);
+}
+
+void *
+allocate_linear(u32 alloc_size
+		, Alignment alignment
+		, const char *name
+		, Linear_Allocator *allocator)
+{
+    void *prev = allocator->current;
+    void *new_crnt = (byte *)allocator->current + alloc_size;
+
+    allocator->current = new_crnt;
+
+    return(prev);
+}
+
+void
+clear_linear(Linear_Allocator *allocator)
+{
+    allocator->current = allocator->start;
 }
 
 void *
@@ -320,12 +342,15 @@ main(s32 argc
 	open_debug_file();
 	
 	OUTPUT_DEBUG_LOG("%s\n", "starting session");
-	
-	stack_allocator_global.start = stack_allocator_global.current = malloc(megabytes(8));
-	stack_allocator_global.capacity = STACK_ALLOCATOR_GLOBAL_SIZE;
 
-	free_list_allocator_global.start = malloc(megabytes(8));
+	linear_allocator_global.capacity = megabytes(megabytes(4));
+	linear_allocator_global.start = linear_allocator_global.current = malloc(linear_allocator_global.capacity);
+	
+	stack_allocator_global.capacity = megabytes(8);
+	stack_allocator_global.start = stack_allocator_global.current = malloc(stack_allocator_global.capacity);
+
 	free_list_allocator_global.available_bytes = megabytes(8);
+	free_list_allocator_global.start = malloc(free_list_allocator_global.available_bytes);
 	init_free_list_allocator_head(&free_list_allocator_global);
 	
 	OUTPUT_DEBUG_LOG("stack allocator start address : %p\n", stack_allocator_global.current);
@@ -355,7 +380,7 @@ main(s32 argc
 	glfwSetMouseButtonCallback(window.window, glfw_mouse_button_proc);
 	glfwSetCursorPosCallback(window.window, glfw_mouse_position_proc);
 	glfwSetWindowSizeCallback(window.window, glfw_window_resize_proc);
-	
+
 	Vulkan_API::State vk = {};
 	Rendering::Rendering_State rnd = {};
 
@@ -366,6 +391,8 @@ main(s32 argc
 	init_scene(&scene, &window);
 	
 	auto now = std::chrono::high_resolution_clock::now();
+
+	f32 fps = 0.0f;
 	
 	while(!glfwWindowShouldClose(window.window))
 	{
@@ -375,13 +402,22 @@ main(s32 argc
 	    auto new_now = std::chrono::high_resolution_clock::now();
 	    window.dt = std::chrono::duration<f32, std::chrono::seconds::period>(new_now - now).count();
 	    now = new_now;
+
+	    if (glfwGetKey(window.window, GLFW_KEY_R))
+	    {
+		fps = 1.0f / window.dt;
+	    }
+	    
+	    clear_linear();
 	}
 
 	OUTPUT_DEBUG_LOG("stack allocator start address is : %p\n", stack_allocator_global.current);
 	OUTPUT_DEBUG_LOG("stack allocator allocated %d bytes\n", (u32)((u8 *)stack_allocator_global.current - (u8 *)stack_allocator_global.start));
 	
-	OUTPUT_DEBUG_LOG("finished session\n", 1);
+	OUTPUT_DEBUG_LOG("finished session : FPS : %f\n", 1, fps);
 
+	printf("%f\n", fps);
+	
 	close_debug_file();
 
 	// destroy rnd and vk
