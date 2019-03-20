@@ -1,6 +1,7 @@
 #pragma once
 
 #include "core.hpp"
+#include "vulkan.hpp"
 #include <glm/glm.hpp>
 #include "rendering.hpp"
 
@@ -31,11 +32,18 @@ struct Camera
 struct Scene
 {
     Camera user_camera;
+
+    VkCommandPool cmdpool;
+    VkCommandBuffer cmdbuf;
+    VkSemaphore rndr_finished;
+    VkSemaphore img_ready;
+    VkFence cpu_wait;
 };
 
 void
 init_scene(Scene *scene
-	   , Window_Data *window);
+	   , Window_Data *window
+	   , Vulkan_API::State *vk);
 
 void
 update_scene(Scene *scene

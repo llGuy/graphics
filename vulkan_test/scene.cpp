@@ -36,9 +36,24 @@ Camera::compute_view(void)
 
 void
 init_scene(Scene *scene
-	   , Window_Data *window)
+	   , Window_Data *window
+	   , Vulkan_API::State *vk)
 {
     scene->user_camera.set_default(window->w, window->h, window->m_x, window->m_y);
+
+    // initialize cmdbuf semaphores and fence
+    Vulkan_API::allocate_command_pool(vk->gpu.queue_families.graphics_family
+				      , &vk->gpu
+				      , &scene->cmdpool);
+
+    Vulkan_API::allocate_command_buffers(&scene->cmdpool
+					 , VK_COMMAND_BUFFER_LEVEL_PRIMARY
+					 , &vk->gpu
+					 , Memory_Buffer_View<VkCommandBuffer>{1, &scene->cmdbuf});
+
+    Vulkan_API::init_semaphore(&vk->gpu, &scene->img_ready);
+    Vulkan_API::init_semaphore(&vk->gpu, &scene->rndr_finished);
+    Vulkan_API::init_fence(&vk->gpu, VK_FENCE_CREATE_SIGNALED_BIT, &scene->cpu_wait);
 }
 
 internal void
@@ -84,13 +99,65 @@ update_ubo(u32 current_image
 }
 
 internal void
+record_cmd(Rendering::Rendering_State *rnd_objs
+	   , Vulkan_API::State *vk
+	   , Scene *scene
+	   , u32 image_index, u32 frame_num)
+{
+    Vulkan_API::begin_command_buffer(&scene->cmdbuf, 0, nullptr);
+
+    Vulkan_API::Registered_Render_Pass render_pass = rnd_objs->test_render_pass;
+    Vulkan_API::Registered_Graphics_Pipeline pipeline_ptr = rnd_objs->graphics_pipeline;
+    Vulkan_API::Registered_Framebuffer fbo = vk->swapchain.framebuffers.extract(image_index);
+    Vulkan_API::Registered_Descriptor_Set descriptor_sets = rnd_objs->descriptor_sets;
+
+    VkClearValue clears[2] {Vulkan_API::init_clear_color_color(0, 0, 0, 0), Vulkan_API::init_clear_color_depth(1.0f, 0)};
+		
+    Vulkan_API::command_buffer_begin_render_pass(render_pass.p
+						 , fbo.p
+						 , Vulkan_API::init_render_area({0, 0}, vk->swapchain.extent)
+						 , Memory_Buffer_View<VkClearValue>{2, clears}
+						 , VK_SUBPASS_CONTENTS_INLINE
+						 , &scene->cmdbuf);
+
+    Vulkan_API::command_buffer_bind_pipeline(pipeline_ptr.p, &scene->cmdbuf);
+
+    VkDeviceSize offset[] = {0};
+    Vulkan_API::command_buffer_bind_vbos(rnd_objs->test_model.p->raw_cache_for_rendering
+					 , Memory_Buffer_View<VkDeviceSize>{rnd_objs->test_model.p->raw_cache_for_rendering.count, offset}
+					 , 0, 1
+					 , &scene->cmdbuf);
+
+    Vulkan_API::command_buffer_bind_ibo(rnd_objs->test_model.p->index_data
+					, &scene->cmdbuf);
+
+    Vulkan_API::Descriptor_Set *descriptor_set = &descriptor_sets.p[image_index];
+    Vulkan_API::command_buffer_bind_descriptor_sets(pipeline_ptr.p
+						    , Memory_Buffer_View<VkDescriptorSet>{1, &descriptor_set->set}
+						    , &scene->cmdbuf);
+
+    Vulkan_API::Draw_Indexed_Data index_data;
+    index_data.index_count = rnd_objs->test_model.p->index_data.index_count;
+    index_data.instance_count = 1;
+    index_data.first_index = 0;
+    index_data.vertex_offset = 0;
+    index_data.first_instance = 0;
+    Vulkan_API::command_buffer_draw_indexed(&scene->cmdbuf
+					    , index_data);
+
+    Vulkan_API::command_buffer_end_render_pass(&scene->cmdbuf);
+    Vulkan_API::end_command_buffer(&scene->cmdbuf);
+}
+
+internal void
 render_frame(Rendering::Rendering_State *rendering_objects
 	     , Vulkan_API::State *vulkan_state
 	     , Scene *scene)
 {
     persist u32 current_frame = 0;
     persist constexpr u32 MAX_FRAMES_IN_FLIGHT = 2;
-    
+
+#if 0
     Vulkan_API::Registered_Command_Buffer &command_buffers = rendering_objects->command_buffers;
     Vulkan_API::Registered_Fence &fences = rendering_objects->fences;
     Vulkan_API::Registered_Semaphore &image_ready_semaphores = rendering_objects->image_ready_semaphores;
@@ -146,7 +213,61 @@ render_frame(Rendering::Rendering_State *rendering_objects
     {
 	OUTPUT_DEBUG_LOG("%s\n", "failed to present swapchain image");
     }
+
+#else
+    Vulkan_API::wait_fences(&vulkan_state->gpu, Memory_Buffer_View<VkFence>{1, &scene->cpu_wait});
+
+    auto next_image_data = Vulkan_API::acquire_next_image(&vulkan_state->swapchain
+							  , &vulkan_state->gpu
+							  , &scene->img_ready
+							  , &scene->cpu_wait);
     
+    if (next_image_data.result == VK_ERROR_OUT_OF_DATE_KHR)
+    {
+	// recreate swapchain
+	return;
+    }
+    else if (next_image_data.result != VK_SUCCESS && next_image_data.result != VK_SUBOPTIMAL_KHR)
+    {
+	OUTPUT_DEBUG_LOG("%s\n", "failed to acquire swapchain image");
+    }
+
+    update_ubo(next_image_data.image_index
+	       , &vulkan_state->gpu
+	       , &vulkan_state->swapchain
+	       , rendering_objects->uniform_buffers
+	       , scene);
+
+    // KEEP EYE ON PERFORMANCE HERE!!
+    Vulkan_API::reset_fences(&vulkan_state->gpu, Memory_Buffer_View<VkFence>{1, &scene->cpu_wait});
+
+    record_cmd(rendering_objects, vulkan_state, scene, next_image_data.image_index, current_frame);
+    
+    VkPipelineStageFlags wait_stages = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;;
+	    
+    Vulkan_API::submit(Memory_Buffer_View<VkCommandBuffer>{1, &scene->cmdbuf}
+                               , Memory_Buffer_View<VkSemaphore>{1, &scene->img_ready}
+                               , Memory_Buffer_View<VkSemaphore>{1, &scene->rndr_finished}
+                               , Memory_Buffer_View<VkPipelineStageFlags>{1, &wait_stages}
+                               , &scene->cpu_wait
+                               , &vulkan_state->gpu.graphics_queue);
+    
+    VkSemaphore signal_semaphores[] = {scene->rndr_finished};
+
+    Vulkan_API::present(Memory_Buffer_View<VkSemaphore>{1, &scene->rndr_finished}
+                                , Memory_Buffer_View<VkSwapchainKHR>{1, &vulkan_state->swapchain.swapchain}
+                                , &next_image_data.image_index
+                                , &vulkan_state->gpu.present_queue);
+    
+    if (next_image_data.result == VK_ERROR_OUT_OF_DATE_KHR || next_image_data.result == VK_SUBOPTIMAL_KHR)
+    {
+	// recreate swapchain
+    }
+    else if (next_image_data.result != VK_SUCCESS)
+    {
+	OUTPUT_DEBUG_LOG("%s\n", "failed to present swapchain image");
+    }    
+#endif
     current_frame = (current_frame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 

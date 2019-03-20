@@ -9,6 +9,8 @@
 namespace Vulkan_API
 {
 
+    // only for resources (buffers, textures, framebuffers, shaders) - not stuff like command buffers
+    
     void
     init_manager(void);
 

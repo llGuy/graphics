@@ -388,7 +388,7 @@ main(s32 argc
 	Rendering::init_rendering_state(&vk, &rnd);
 	
 	Scene scene;
-	init_scene(&scene, &window);
+	init_scene(&scene, &window, &vk);
 	
 	auto now = std::chrono::high_resolution_clock::now();
 

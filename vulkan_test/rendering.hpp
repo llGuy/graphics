@@ -20,6 +20,7 @@ namespace Rendering
 	Vulkan_API::Registered_Graphics_Pipeline graphics_pipeline;
 	Vulkan_API::Registered_Command_Pool graphics_command_pool;
 	Vulkan_API::Registered_Image2D depth_image;
+	Vulkan_API::Registered_Model test_model;
 	Vulkan_API::Registered_Image2D texture;
 
 	Vulkan_API::Registered_Buffer uniform_buffers;
