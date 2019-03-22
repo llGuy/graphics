@@ -855,7 +855,8 @@ namespace Rendering
 	}
 	
 	void
-	update(VkCommandBuffer *record_cmd)
+	update(VkCommandBuffer *record_cmd
+	       , const Memory_Buffer_View<VkDescriptorSet> &additional_sets)
 	{
 	    switch(mthd)
 	    {
@@ -863,18 +864,8 @@ namespace Rendering
 		{
 		    Vulkan_API::command_buffer_bind_pipeline(ppln.p, record_cmd);
 
-
-
-
-
-
-
-		    // PROBLEM : BIND DESCRIPTOR SETS DOESNT ALTERNATE BETWEEN ALL THE DESCRIPTOR SETS DEPENDING ON THE FRAME INDEX
-
-
-		    
 		    Vulkan_API::command_buffer_bind_descriptor_sets(ppln.p
-								    , sets
+								    , additional_sets
 								    , record_cmd);
 
 		    for (u32 i = 0; i < mtrl_count; ++i)
@@ -909,12 +900,6 @@ namespace Rendering
 		}break;
 	    };
 	}
-
-	s32
-	request(void)
-	{
-	    return(++mtrl_count);
-	}
     };
     
     global_var struct Render_System
@@ -943,21 +928,34 @@ namespace Rendering
 	}
 	
 	void
-	update(VkCommandBuffer *record_cmd)
+	update(VkCommandBuffer *record_cmd
+	       , const Memory_Buffer_View<VkDescriptorSet> &additional_sets)
 	{
-	    for (u32 i = 0; i < rndrs.count; ++i)
+	    for (u32 i = 0; i < rndr_count; ++i)
 	    {
-		rndrs.buffer[i].update(record_cmd);
+		rndrs.buffer[i].update(record_cmd
+				       , additional_sets);
 	    }
 	}
 
-	Material_Request
-	request(const Constant_String &rndr_name)
+	Material_Access
+	init_material(const Constant_String &rndr_id
+		      , const Material_Data *i)
 	{
-	    s32 *rndr_id = rndr_id_map.get(rndr_name.hash);
-	    s32 mtrl_id = rndrs[*rndr_id].request();
+	    s32 rndr_index = *rndr_id_map.get(rndr_id.hash);
+	    Renderer *rndr = &rndrs[rndr_index];
 
-	    return(Material_Request{*rndr_id, mtrl_id});
+	    s32 mtrl_index = rndr->mtrl_count;
+	    Material *mtrl = &rndr->mtrls[mtrl_index];
+	    mtrl->data = i->data;
+	    mtrl->data_size = i->data_size;
+
+	    mtrl->model = i->model;
+	    mtrl->draw_info = i->draw_info;
+
+	    ++rndr->mtrl_count;
+
+	    return(Material_Access{rndr_index, mtrl_index});
 	}
     } rndr_sys;
 
@@ -974,15 +972,17 @@ namespace Rendering
     }
 
     void
-    update_renderers(VkCommandBuffer *record_cmd)
+    update_renderers(VkCommandBuffer *record_cmd
+		     , const Memory_Buffer_View<VkDescriptorSet> &additional_sets)
     {
-	rndr_sys.update(record_cmd);
+	rndr_sys.update(record_cmd, additional_sets);
     }
 
-    Material_Request
-    request_material(const Constant_String &rndr_id)
+    Material_Access
+    init_material(const Constant_String &id
+		  , const Material_Data *data)
     {
-	return(rndr_sys.request(rndr_id));
+	return(rndr_sys.init_material(id, data));
     }
 
 }

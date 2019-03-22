@@ -69,6 +69,22 @@ init_scene(Scene *scene
     rndr_d.descriptor_sets[0] = "descriptor_set.test_descriptor_sets"_hash;
 
     Rendering::add_renderer(&rndr_d);
+
+    Rendering::Material_Data mtrl_data = {};
+    mtrl_data.data = &scene->object_model_matrix;
+    mtrl_data.data_size = sizeof(scene->object_model_matrix);
+    Vulkan_API::Registered_Model model = Vulkan_API::get_object("vulkan_model.test_model"_hash);
+    mtrl_data.model = model;
+
+    Vulkan_API::Draw_Indexed_Data index_data = {};
+    index_data.index_count = model.p->index_data.index_count;
+    index_data.instance_count = 1;
+    index_data.first_index = 0;
+    index_data.vertex_offset = 0;
+    index_data.first_instance = 0;
+    mtrl_data.draw_info = index_data;
+    
+    Rendering::init_material("renderer.test_material_renderer"_hash, &mtrl_data);
 }
 
 internal void
@@ -135,7 +151,7 @@ record_cmd(Rendering::Rendering_State *rnd_objs
 						 , VK_SUBPASS_CONTENTS_INLINE
 						 , &scene->cmdbuf);
 
-    Rendering::update_renderers(&scene->cmdbuf);
+    Rendering::update_renderers(&scene->cmdbuf, Memory_Buffer_View<VkDescriptorSet>{1, &descriptor_sets.p[image_index].set});
     
     /*Vulkan_API::command_buffer_bind_pipeline(pipeline_ptr.p, &scene->cmdbuf);
 

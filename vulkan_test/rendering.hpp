@@ -56,11 +56,22 @@ namespace Rendering
     add_renderer(Renderer_Init_Data *init_data);
 
     void
-    update_renderers(VkCommandBuffer *record_cmd);
+    update_renderers(VkCommandBuffer *record_cmd
+		     , const Memory_Buffer_View<VkDescriptorSet> &additional_sets);
 
-    struct Material_Request { s32 rndr_id, mtrl_id; };
+    struct Material_Data
+    {
+	void *data;
+	u32 data_size = 0;
 
-    Material_Request
-    request_material(const Constant_String &rndr_id);
+	Vulkan_API::Registered_Model model;
+	Vulkan_API::Draw_Indexed_Data draw_info;
+    };
+
+    struct Material_Access { s32 rndr_id, mtrl_id; };
     
+    Material_Access
+    init_material(const Constant_String &rndr_id
+		  , const struct Material_Data *data);
+
 }
