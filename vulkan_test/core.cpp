@@ -421,6 +421,7 @@ main(s32 argc
 	close_debug_file();
 
 	// destroy rnd and vk
+	Vulkan_API::destroy_state(&vk);
 	
 	glfwDestroyWindow(window.window);
 	glfwTerminate();

@@ -196,6 +196,18 @@ namespace Vulkan_API
 	u32 vertex_offset;
 	u32 first_instance;
     };
+
+    internal FORCEINLINE Draw_Indexed_Data
+    init_draw_indexed_data_default(u32 instance_count, u32 index_count)
+    {
+	Draw_Indexed_Data index_data = {};
+	index_data.index_count = index_count;
+	index_data.instance_count = instance_count;
+	index_data.first_index = 0;
+	index_data.vertex_offset = 0;
+	index_data.first_instance = 0;
+	return(index_data);
+    }
     
     struct Model_Index_Data
     {
@@ -1040,5 +1052,8 @@ namespace Vulkan_API
     void
     init_state(State *state
 	       , GLFWwindow *window);
+
+    void
+    destroy_state(State *state);
 
 }

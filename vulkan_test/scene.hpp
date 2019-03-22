@@ -4,6 +4,7 @@
 #include "vulkan.hpp"
 #include <glm/glm.hpp>
 #include "rendering.hpp"
+#include <glm/gtx/transform.hpp>
 
 struct Camera
 {
@@ -40,6 +41,7 @@ struct Scene
     VkFence cpu_wait;
 
     glm::mat4 object_model_matrix = glm::mat4(1.0f);
+    glm::mat4 object_model_matrix2 = glm::translate(glm::vec3(0.0f, 5.0f, 0.0f));
 };
 
 void

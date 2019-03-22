@@ -76,14 +76,12 @@ init_scene(Scene *scene
     Vulkan_API::Registered_Model model = Vulkan_API::get_object("vulkan_model.test_model"_hash);
     mtrl_data.model = model;
 
-    Vulkan_API::Draw_Indexed_Data index_data = {};
-    index_data.index_count = model.p->index_data.index_count;
-    index_data.instance_count = 1;
-    index_data.first_index = 0;
-    index_data.vertex_offset = 0;
-    index_data.first_instance = 0;
-    mtrl_data.draw_info = index_data;
+    mtrl_data.draw_info = Vulkan_API::init_draw_indexed_data_default(1, model.p->index_data.index_count);
+
     
+    Rendering::init_material("renderer.test_material_renderer"_hash, &mtrl_data);
+
+    mtrl_data.data = &scene->object_model_matrix2;
     Rendering::init_material("renderer.test_material_renderer"_hash, &mtrl_data);
 }
 
@@ -133,9 +131,10 @@ internal void
 record_cmd(Rendering::Rendering_State *rnd_objs
 	   , Vulkan_API::State *vk
 	   , Scene *scene
-	   , u32 image_index, u32 frame_num)
+	   , u32 image_index, u32 frame_num
+	   , VkCommandBuffer *cmdbuf)
 {
-    Vulkan_API::begin_command_buffer(&scene->cmdbuf, 0, nullptr);
+    Vulkan_API::begin_command_buffer(cmdbuf, 0, nullptr);
 
     Vulkan_API::Registered_Render_Pass render_pass = rnd_objs->test_render_pass;
     Vulkan_API::Registered_Graphics_Pipeline pipeline_ptr = rnd_objs->graphics_pipeline;
@@ -149,47 +148,12 @@ record_cmd(Rendering::Rendering_State *rnd_objs
 						 , Vulkan_API::init_render_area({0, 0}, vk->swapchain.extent)
 						 , Memory_Buffer_View<VkClearValue>{2, clears}
 						 , VK_SUBPASS_CONTENTS_INLINE
-						 , &scene->cmdbuf);
+						 , cmdbuf);
 
-    Rendering::update_renderers(&scene->cmdbuf, Memory_Buffer_View<VkDescriptorSet>{1, &descriptor_sets.p[image_index].set});
-    
-    /*Vulkan_API::command_buffer_bind_pipeline(pipeline_ptr.p, &scene->cmdbuf);
+    Rendering::update_renderers(cmdbuf, Memory_Buffer_View<VkDescriptorSet>{1, &descriptor_sets.p[image_index].set});
 
-    VkDeviceSize offset[] = {0};
-    Vulkan_API::command_buffer_bind_vbos(rnd_objs->test_model.p->raw_cache_for_rendering
-					 , Memory_Buffer_View<VkDeviceSize>{rnd_objs->test_model.p->raw_cache_for_rendering.count, offset}
-					 , 0, 1
-					 , &scene->cmdbuf);
-
-    Vulkan_API::command_buffer_bind_ibo(rnd_objs->test_model.p->index_data
-					, &scene->cmdbuf);
-
-    Vulkan_API::Descriptor_Set *descriptor_set = &descriptor_sets.p[image_index];
-    Vulkan_API::command_buffer_bind_descriptor_sets(pipeline_ptr.p
-						    , Memory_Buffer_View<VkDescriptorSet>{1, &descriptor_set->set}
-						    , &scene->cmdbuf);
-
-    glm::mat4 model = glm::scale(glm::vec3(3.0f));
-    Vulkan_API::command_buffer_push_constant(&model
-					     , sizeof(model)
-					     , 0
-					     , VK_SHADER_STAGE_VERTEX_BIT
-					     , pipeline_ptr.p
-					     , &scene->cmdbuf);
-
-    model = glm::mat4(0.0f);
-
-    Vulkan_API::Draw_Indexed_Data index_data;
-    index_data.index_count = rnd_objs->test_model.p->index_data.index_count;
-    index_data.instance_count = 1;
-    index_data.first_index = 0;
-    index_data.vertex_offset = 0;
-    index_data.first_instance = 0;
-    Vulkan_API::command_buffer_draw_indexed(&scene->cmdbuf
-					    , index_data);*/
-
-    Vulkan_API::command_buffer_end_render_pass(&scene->cmdbuf);
-    Vulkan_API::end_command_buffer(&scene->cmdbuf);
+    Vulkan_API::command_buffer_end_render_pass(cmdbuf);
+    Vulkan_API::end_command_buffer(cmdbuf);
 }
 
 internal void
@@ -200,7 +164,7 @@ render_frame(Rendering::Rendering_State *rendering_objects
     persist u32 current_frame = 0;
     persist constexpr u32 MAX_FRAMES_IN_FLIGHT = 2;
 
-#if 0
+#if 1
     Vulkan_API::Registered_Command_Buffer &command_buffers = rendering_objects->command_buffers;
     Vulkan_API::Registered_Fence &fences = rendering_objects->fences;
     Vulkan_API::Registered_Semaphore &image_ready_semaphores = rendering_objects->image_ready_semaphores;
@@ -232,6 +196,8 @@ render_frame(Rendering::Rendering_State *rendering_objects
     // KEEP EYE ON PERFORMANCE HERE!!
     Vulkan_API::reset_fences(&vulkan_state->gpu, Memory_Buffer_View<VkFence>{1, &fences.p[current_frame]});
 
+    record_cmd(rendering_objects, vulkan_state, scene, next_image_data.image_index, current_frame, &command_buffers.p[next_image_data.image_index]);
+    
     VkPipelineStageFlags wait_stages = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;;
 	    
     Vulkan_API::submit(Memory_Buffer_View<VkCommandBuffer>{1, &command_buffers.p[next_image_data.image_index]}

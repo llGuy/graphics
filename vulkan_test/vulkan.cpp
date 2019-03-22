@@ -1,3 +1,7 @@
+#include <iostream>
+
+
+
 #define GLFW_INCLUDE_VULKAN
 
 #include <cstring>
@@ -6,6 +10,12 @@
 #include <limits.h>
 #include <GLFW/glfw3.h>
 #include <vulkan/vulkan.h>
+
+
+
+
+
+
 
 namespace Vulkan_API
 {
@@ -249,7 +259,8 @@ namespace Vulkan_API
 		      , const VkDebugUtilsMessengerCallbackDataEXT *message_data
 		      , void *user_data)
     {
-	OUTPUT_DEBUG_LOG("validation layer - %s\n", message_data->pMessage);
+	//	OUTPUT_DEBUG_LOG("validation layer - %s\n", message_data->pMessage);
+	std::cout << "VALIDATION LAYER STUFF!!!!!!! - " << message_data->pMessage << std::endl;
 
 	return(VK_FALSE);
     }
@@ -1358,7 +1369,7 @@ namespace Vulkan_API
 									    , Alignment(1)
 									    , "vulkan_instanc_extension_names_list_allocation");
 	memcpy(total_extension_buffer, extension_names, sizeof(const char *) * extension_count);
-	total_extension_buffer[extension_count++] = VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
+	total_extension_buffer[extension_count++] = "VK_EXT_debug_utils";
 	total_extension_buffer[extension_count++] = "VK_EXT_debug_report";
 	
 	Instance_Create_Extension_Params extension_params = {};
@@ -1410,6 +1421,25 @@ namespace Vulkan_API
 		       , &state->surface
 		       , &state->gpu
 		       , &state->swapchain);
+    }
+
+    void
+    destroy_debug_utils_messenger_ext(VkInstance instance
+				      , VkDebugUtilsMessengerEXT messenger
+				      , const VkAllocationCallbacks *allocator)
+    {
+	auto func = (PFN_vkDestroyDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
+	if (func != nullptr)
+	{
+	    func(instance, messenger, allocator);
+	}
+    }
+    
+    void
+    destroy_state(State *state)
+    {
+	destroy_debug_utils_messenger_ext(state->instance, state->debug_messenger, nullptr);
+	vkDestroyInstance(state->instance, nullptr);
     }
 
 }

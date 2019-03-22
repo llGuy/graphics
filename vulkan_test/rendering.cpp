@@ -709,6 +709,11 @@ namespace Rendering
 	    Vulkan_API::command_buffer_draw_indexed(&command_buffers.p[i]
 						    , index_data);
 
+	    Vulkan_API::command_buffer_bind_vbos(model.p->raw_cache_for_rendering
+						 , Memory_Buffer_View<VkDeviceSize>{model.p->raw_cache_for_rendering.count, offset}
+						 , 0, 1
+						 , &command_buffers.p[i]);
+	    
 	    Vulkan_API::command_buffer_end_render_pass(&command_buffers.p[i]);
 	    Vulkan_API::end_command_buffer(&command_buffers.p[i]);
 	}
@@ -795,13 +800,6 @@ namespace Rendering
 
 
 
-    
-    /* TODO(luc): first test push constants with current scene
-     *            write function to render materials
-     *            use push constants
-     *            
-     */
-    
     // almost acts like the actual render component object itself
     struct Material
     {
@@ -874,24 +872,30 @@ namespace Rendering
 
 			Memory_Buffer_View<VkDeviceSize> offsets;
 			allocate_memory_buffer_tmp(offsets, mtrl->model.p->binding_count);
-			Vulkan_API::command_buffer_bind_vbos(mtrl->model.p->raw_cache_for_rendering
+			
+			vkCmdBindVertexBuffers(*record_cmd
+					       , 0
+					       , 1
+					       , &mtrl->model.p->raw_cache_for_rendering[0]
+					       , offsets.buffer);
+			/*Vulkan_API::command_buffer_bind_vbos(mtrl->model.p->raw_cache_for_rendering
 							     , offsets
 							     , 0
 							     , mtrl->model.p->binding_count
-							     , record_cmd);
+							     , record_cmd);*/
 			
-			Vulkan_API::command_buffer_bind_ibo(mtrl->model.p->index_data
-							    , record_cmd);
+			/*Vulkan_API::command_buffer_bind_ibo(mtrl->model.p->index_data
+			  , record_cmd);*/
 
-			Vulkan_API::command_buffer_push_constant(mtrl->data
+			/*Vulkan_API::command_buffer_push_constant(mtrl->data
 								 , mtrl->data_size
 								 , 0
 								 , mtrl_unique_data_stage_dst
 								 , ppln.p
-								 , record_cmd);
+								 , record_cmd);*/
 
-			Vulkan_API::command_buffer_draw_indexed(record_cmd
-								, mtrl->draw_info);
+			/*Vulkan_API::command_buffer_draw_indexed(record_cmd
+								, mtrl->draw_info);*/
 		    }
 		}break;
 	    case Render_Method::INSTANCED:
