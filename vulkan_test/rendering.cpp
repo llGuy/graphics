@@ -113,8 +113,8 @@ namespace Rendering
 	graphics_pipeline.p->descriptor_set_layout = Vulkan_API::get_object("descriptor_set_layout.test_descriptor_set_layout"_hash);
 	
 	// create shaders
-	File_Contents vsh_bytecode = read_file("../vulkan/shaders/vert.spv");
-	File_Contents fsh_bytecode = read_file("../vulkan/shaders/frag.spv");
+	File_Contents vsh_bytecode = read_file("shaders/vert.spv");
+	File_Contents fsh_bytecode = read_file("shaders/frag.spv");
 	
 	VkShaderModule vsh_module;
 	Vulkan_API::init_shader(VK_SHADER_STAGE_VERTEX_BIT, vsh_bytecode.size, vsh_bytecode.content, gpu, &vsh_module);
@@ -182,7 +182,13 @@ namespace Rendering
 	// init pipeline layout
 	Vulkan_API::Registered_Descriptor_Set_Layout &descriptor_set_layout = graphics_pipeline.p->descriptor_set_layout;
 	Memory_Buffer_View<VkDescriptorSetLayout> layouts = {1, descriptor_set_layout.p};
-	Memory_Buffer_View<VkPushConstantRange> ranges = {0, nullptr};
+
+	VkPushConstantRange push_k_rng  = {};
+	Vulkan_API::init_push_constant_range(VK_SHADER_STAGE_VERTEX_BIT
+					     , sizeof(glm::mat4)
+					     , 0
+					     , &push_k_rng);
+	Memory_Buffer_View<VkPushConstantRange> ranges = {1, &push_k_rng};
 	Vulkan_API::init_pipeline_layout(&layouts, &ranges, gpu, &graphics_pipeline.p->layout);
 
 	// init depth stencil info
@@ -795,14 +801,6 @@ namespace Rendering
      *            use push constants
      *            
      */
-
-    struct Renderer_Init_Data
-    {
-	s32 mtrl_max;
-	Constant_String ppln_id;
-	// images are stored in the descriptor sets
-	Memory_Buffer_View<Constant_String> descriptor_sets;
-    };
     
     // almost acts like the actual render component object itself
     struct Material
@@ -820,6 +818,7 @@ namespace Rendering
 	// shader, pipieline states...
 	Vulkan_API::Registered_Graphics_Pipeline ppln;
 	Memory_Buffer_View<VkDescriptorSet> sets;
+	VkShaderStageFlags mtrl_unique_data_stage_dst;
 	
 	Memory_Buffer_View<Material> mtrls;
 	
@@ -833,15 +832,26 @@ namespace Rendering
 	    mtrl_count = 0;
 	    allocate_memory_buffer(mtrls, data->mtrl_max);
 
-	    allocate_memory_buffer(sets, data->descriptor_sets.count);
-	    
-	    for (u32 i = 0; i < sets.count; ++i)
+	    u32 set_count = 0;
+	    for (u32 i = 0; i < data->descriptor_sets.count; ++i)
 	    {
 		Vulkan_API::Registered_Descriptor_Set tmp_set = Vulkan_API::get_object(data->descriptor_sets[i]);
-		sets[i] = tmp_set.p->set;
+		set_count += tmp_set.size;
+	    }
+	    
+	    allocate_memory_buffer(sets, set_count);
+	    for (u32 i = 0; i < sets.count; ++i)
+	    {
+		u32 p = i;
+		Vulkan_API::Registered_Descriptor_Set tmp_set = Vulkan_API::get_object(data->descriptor_sets[i]);
+		for (; i < p + tmp_set.size; ++i)
+		{
+		    sets[i] = tmp_set.p[i].set;
+		}
 	    }
 
 	    ppln = Vulkan_API::get_object(data->ppln_id);
+	    mtrl_unique_data_stage_dst = data->mtrl_unique_data_stage_dst;
 	}
 	
 	void
@@ -852,6 +862,20 @@ namespace Rendering
 	    case Render_Method::INLINE:
 		{
 		    Vulkan_API::command_buffer_bind_pipeline(ppln.p, record_cmd);
+
+
+
+
+
+
+
+		    // PROBLEM : BIND DESCRIPTOR SETS DOESNT ALTERNATE BETWEEN ALL THE DESCRIPTOR SETS DEPENDING ON THE FRAME INDEX
+
+
+		    
+		    Vulkan_API::command_buffer_bind_descriptor_sets(ppln.p
+								    , sets
+								    , record_cmd);
 
 		    for (u32 i = 0; i < mtrl_count; ++i)
 		    {
@@ -867,10 +891,13 @@ namespace Rendering
 			
 			Vulkan_API::command_buffer_bind_ibo(mtrl->model.p->index_data
 							    , record_cmd);
-			
-			Vulkan_API::command_buffer_bind_descriptor_sets(ppln.p
-									, sets
-									, record_cmd);
+
+			Vulkan_API::command_buffer_push_constant(mtrl->data
+								 , mtrl->data_size
+								 , 0
+								 , mtrl_unique_data_stage_dst
+								 , ppln.p
+								 , record_cmd);
 
 			Vulkan_API::command_buffer_draw_indexed(record_cmd
 								, mtrl->draw_info);
@@ -889,27 +916,38 @@ namespace Rendering
 	    return(++mtrl_count);
 	}
     };
-
-    struct Material_Request { s32 rndr_id, mtrl_id; };
     
-    struct Render_System
+    global_var struct Render_System
     {
+	static constexpr u32 MAX_RNDRS = 20;
+	
 	// 1 renderer per material type
 	Memory_Buffer_View<Renderer> rndrs;
+	u32 rndr_count;
 	Hash_Table_Inline<s32, 30, 4, 3> rndr_id_map;
 
+	Render_System(void) :rndr_id_map("") {}
+	
 	void
-	add_renderer(const Renderer_Init_Data &init_data)
+	init_system(void)
 	{
-	    
+	    allocate_memory_buffer(rndrs, MAX_RNDRS);
+	    rndr_count = 0;
 	}
 	
 	void
-	update(void)
+	add_renderer(Renderer_Init_Data *init_data)
+	{
+	    rndrs[rndr_count].init(init_data);
+	    rndr_id_map.insert(init_data->rndr_id.hash, rndr_count++);
+	}
+	
+	void
+	update(VkCommandBuffer *record_cmd)
 	{
 	    for (u32 i = 0; i < rndrs.count; ++i)
 	    {
-		//rndrs.buffer[i].update();
+		rndrs.buffer[i].update(record_cmd);
 	    }
 	}
 
@@ -921,6 +959,30 @@ namespace Rendering
 
 	    return(Material_Request{*rndr_id, mtrl_id});
 	}
-    };
+    } rndr_sys;
+
+    void
+    init_rendering_system(void)
+    {
+	rndr_sys.init_system();
+    }
+
+    void
+    add_renderer(Renderer_Init_Data *init_data)
+    {
+	rndr_sys.add_renderer(init_data);
+    }
+
+    void
+    update_renderers(VkCommandBuffer *record_cmd)
+    {
+	rndr_sys.update(record_cmd);
+    }
+
+    Material_Request
+    request_material(const Constant_String &rndr_id)
+    {
+	return(rndr_sys.request(rndr_id));
+    }
 
 }

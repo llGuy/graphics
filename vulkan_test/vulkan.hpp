@@ -241,6 +241,41 @@ namespace Vulkan_API
 			       , offsets.buffer);
     }
 
+    
+    struct Graphics_Pipeline
+    {
+	enum Shader_Stages_Bits : s32 { VERTEX_SHADER_BIT = 1 << 0
+					  , GEOMETRY_SHADER_BIT = 1 << 1
+					  , TESSELATION_SHADER_BIT = 1 << 2
+					  , FRAGMENT_SHADER_BIT = 1 << 3};
+
+	s32 stages;
+	// "[some_dir]/[name]_"
+	const char *base_dir_and_name;
+
+	Registered_Descriptor_Set_Layout descriptor_set_layout;
+	
+	VkPipelineLayout layout;
+
+	VkPipeline pipeline;
+    };
+    
+    internal FORCEINLINE void
+    command_buffer_push_constant(void *data
+				 , u32 size
+				 , u32 offset
+				 , VkShaderStageFlags stage
+				 , Graphics_Pipeline *ppln
+				 , VkCommandBuffer *command_buffer)
+    {
+	vkCmdPushConstants(*command_buffer
+			   , ppln->layout
+			   , stage
+			   , offset
+			   , size
+			   , data);
+    }
+
     void
     init_buffer(VkDeviceSize buffer_size
 		  , VkBufferUsageFlags usage
@@ -478,24 +513,6 @@ namespace Vulkan_API
 			 , data.first_instance);
     }
 
-    struct Graphics_Pipeline
-    {
-	enum Shader_Stages_Bits : s32 { VERTEX_SHADER_BIT = 1 << 0
-					  , GEOMETRY_SHADER_BIT = 1 << 1
-					  , TESSELATION_SHADER_BIT = 1 << 2
-					  , FRAGMENT_SHADER_BIT = 1 << 3};
-
-	s32 stages;
-	// "[some_dir]/[name]_"
-	const char *base_dir_and_name;
-
-	Registered_Descriptor_Set_Layout descriptor_set_layout;
-	
-	VkPipelineLayout layout;
-
-	VkPipeline pipeline;
-    };
-
     internal FORCEINLINE void
     command_buffer_bind_pipeline(Graphics_Pipeline *pipeline
 				 , VkCommandBuffer *command_buffer)
@@ -662,6 +679,17 @@ namespace Vulkan_API
 			 , GPU *gpu
 			 , VkPipelineLayout *pipeline_layout);
 
+    internal FORCEINLINE void
+    init_push_constant_range(VkShaderStageFlags stage_flags
+			     , u32 size
+			     , u32 offset
+			     , VkPushConstantRange *rng)
+    {
+	rng->stageFlags = stage_flags;
+	rng->offset = offset;
+	rng->size = size;
+    }
+    
     internal FORCEINLINE void
     init_pipeline_depth_stencil_info(VkBool32 depth_test_enable
 				     , VkBool32 depth_write_enable

@@ -54,6 +54,21 @@ init_scene(Scene *scene
     Vulkan_API::init_semaphore(&vk->gpu, &scene->img_ready);
     Vulkan_API::init_semaphore(&vk->gpu, &scene->rndr_finished);
     Vulkan_API::init_fence(&vk->gpu, VK_FENCE_CREATE_SIGNALED_BIT, &scene->cpu_wait);
+
+
+
+    Rendering::init_rendering_system();
+
+    Rendering::Renderer_Init_Data rndr_d = {};
+    rndr_d.rndr_id = "renderer.test_material_renderer"_hash;
+    rndr_d.mtrl_max = 3;
+    rndr_d.ppln_id = "pipeline.main_pipeline"_hash;
+    rndr_d.mtrl_unique_data_stage_dst = VK_SHADER_STAGE_VERTEX_BIT;
+
+    allocate_memory_buffer(rndr_d.descriptor_sets, 1);
+    rndr_d.descriptor_sets[0] = "descriptor_set.test_descriptor_sets"_hash;
+
+    Rendering::add_renderer(&rndr_d);
 }
 
 internal void
@@ -86,7 +101,7 @@ update_ubo(u32 current_image
     ubo.projection_matrix = glm::perspective(glm::radians(60.0f)
 					     , (float)swapchain->extent.width / (float)swapchain->extent.height
 					     , 0.1f
-					     , 10.0f);
+					     , 1000.0f);
 
     ubo.projection_matrix[1][1] *= -1;
 
@@ -120,7 +135,9 @@ record_cmd(Rendering::Rendering_State *rnd_objs
 						 , VK_SUBPASS_CONTENTS_INLINE
 						 , &scene->cmdbuf);
 
-    Vulkan_API::command_buffer_bind_pipeline(pipeline_ptr.p, &scene->cmdbuf);
+    Rendering::update_renderers(&scene->cmdbuf);
+    
+    /*Vulkan_API::command_buffer_bind_pipeline(pipeline_ptr.p, &scene->cmdbuf);
 
     VkDeviceSize offset[] = {0};
     Vulkan_API::command_buffer_bind_vbos(rnd_objs->test_model.p->raw_cache_for_rendering
@@ -136,6 +153,16 @@ record_cmd(Rendering::Rendering_State *rnd_objs
 						    , Memory_Buffer_View<VkDescriptorSet>{1, &descriptor_set->set}
 						    , &scene->cmdbuf);
 
+    glm::mat4 model = glm::scale(glm::vec3(3.0f));
+    Vulkan_API::command_buffer_push_constant(&model
+					     , sizeof(model)
+					     , 0
+					     , VK_SHADER_STAGE_VERTEX_BIT
+					     , pipeline_ptr.p
+					     , &scene->cmdbuf);
+
+    model = glm::mat4(0.0f);
+
     Vulkan_API::Draw_Indexed_Data index_data;
     index_data.index_count = rnd_objs->test_model.p->index_data.index_count;
     index_data.instance_count = 1;
@@ -143,7 +170,7 @@ record_cmd(Rendering::Rendering_State *rnd_objs
     index_data.vertex_offset = 0;
     index_data.first_instance = 0;
     Vulkan_API::command_buffer_draw_indexed(&scene->cmdbuf
-					    , index_data);
+					    , index_data);*/
 
     Vulkan_API::command_buffer_end_render_pass(&scene->cmdbuf);
     Vulkan_API::end_command_buffer(&scene->cmdbuf);
@@ -314,12 +341,16 @@ handle_input(Scene *scene
     u32 movements = 0;
     auto acc_v = [&movements](const glm::vec3 &d, glm::vec3 &dst){ ++movements; dst += d; };
 
+    glm::vec3 d = glm::normalize(glm::vec3(scene->user_camera.d.x
+					   , 0.0f
+					   , scene->user_camera.d.z));
+    
     glm::vec3 res = {};
 	    
-    if (window->key_map[GLFW_KEY_W]) acc_v(scene->user_camera.d, res);
-    if (window->key_map[GLFW_KEY_A]) acc_v(-glm::cross(scene->user_camera.d, scene->user_camera.u), res);
-    if (window->key_map[GLFW_KEY_S]) acc_v(-scene->user_camera.d, res);
-    if (window->key_map[GLFW_KEY_D]) acc_v(glm::cross(scene->user_camera.d, scene->user_camera.u), res);
+    if (window->key_map[GLFW_KEY_W]) acc_v(d, res);
+    if (window->key_map[GLFW_KEY_A]) acc_v(-glm::cross(d, scene->user_camera.u), res);
+    if (window->key_map[GLFW_KEY_S]) acc_v(-d, res);
+    if (window->key_map[GLFW_KEY_D]) acc_v(glm::cross(d, scene->user_camera.u), res);
     if (window->key_map[GLFW_KEY_SPACE]) acc_v(scene->user_camera.u, res);
     if (window->key_map[GLFW_KEY_LEFT_SHIFT]) acc_v(-scene->user_camera.u, res);
 

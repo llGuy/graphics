@@ -37,5 +37,30 @@ namespace Rendering
     init_rendering_state(Vulkan_API::State *vulkan_state
 			 , Rendering_State *cache);
 
+    void
+    init_rendering_system(void);
+
+    struct Renderer_Init_Data
+    {
+	Constant_String rndr_id;
+	
+	s32 mtrl_max;
+	Constant_String ppln_id;
+	// images are stored in the descriptor sets
+	Memory_Buffer_View<Constant_String> descriptor_sets;
+
+	VkShaderStageFlags mtrl_unique_data_stage_dst;
+    };
+    
+    void
+    add_renderer(Renderer_Init_Data *init_data);
+
+    void
+    update_renderers(VkCommandBuffer *record_cmd);
+
+    struct Material_Request { s32 rndr_id, mtrl_id; };
+
+    Material_Request
+    request_material(const Constant_String &rndr_id);
     
 }
