@@ -140,6 +140,7 @@ record_cmd(Rendering::Rendering_State *rnd_objs
     Vulkan_API::Registered_Graphics_Pipeline pipeline_ptr = rnd_objs->graphics_pipeline;
     Vulkan_API::Registered_Framebuffer fbo = vk->swapchain.framebuffers.extract(image_index);
     Vulkan_API::Registered_Descriptor_Set descriptor_sets = rnd_objs->descriptor_sets;
+    Vulkan_API::Registered_Model model = rnd_objs->test_model;
 
     VkClearValue clears[2] {Vulkan_API::init_clear_color_color(0, 0, 0, 0), Vulkan_API::init_clear_color_depth(1.0f, 0)};
 		
@@ -164,7 +165,7 @@ render_frame(Rendering::Rendering_State *rendering_objects
     persist u32 current_frame = 0;
     persist constexpr u32 MAX_FRAMES_IN_FLIGHT = 2;
 
-#if 1
+#if 0
     Vulkan_API::Registered_Command_Buffer &command_buffers = rendering_objects->command_buffers;
     Vulkan_API::Registered_Fence &fences = rendering_objects->fences;
     Vulkan_API::Registered_Semaphore &image_ready_semaphores = rendering_objects->image_ready_semaphores;
@@ -247,13 +248,11 @@ render_frame(Rendering::Rendering_State *rendering_objects
 	       , rendering_objects->uniform_buffers
 	       , scene);
 
-    // KEEP EYE ON PERFORMANCE HERE!!
-    Vulkan_API::reset_fences(&vulkan_state->gpu, Memory_Buffer_View<VkFence>{1, &scene->cpu_wait});
-
-    record_cmd(rendering_objects, vulkan_state, scene, next_image_data.image_index, current_frame);
+    record_cmd(rendering_objects, vulkan_state, scene, next_image_data.image_index, current_frame, &scene->cmdbuf);
     
     VkPipelineStageFlags wait_stages = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;;
 	    
+    Vulkan_API::reset_fences(&vulkan_state->gpu, Memory_Buffer_View<VkFence>{1, &scene->cpu_wait});
     Vulkan_API::submit(Memory_Buffer_View<VkCommandBuffer>{1, &scene->cmdbuf}
                                , Memory_Buffer_View<VkSemaphore>{1, &scene->img_ready}
                                , Memory_Buffer_View<VkSemaphore>{1, &scene->rndr_finished}

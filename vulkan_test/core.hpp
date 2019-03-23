@@ -59,6 +59,12 @@ struct Memory_Buffer_View
 {
     u32 count;
     T *buffer;
+
+    void
+    zero(void)
+    {
+	memset(buffer, 0, count * sizeof(T));
+    }
     
     T &
     operator[](u32 i)
