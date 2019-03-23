@@ -68,7 +68,7 @@ init_scene(Scene *scene
     allocate_memory_buffer(rndr_d.descriptor_sets, 1);
     rndr_d.descriptor_sets[0] = "descriptor_set.test_descriptor_sets"_hash;
 
-    Rendering::add_renderer(&rndr_d);
+    Rendering::add_renderer(&rndr_d, &scene->cmdpool, &vk->gpu);
 
     Rendering::Material_Data mtrl_data = {};
     mtrl_data.data = &scene->object_model_matrix;
@@ -164,67 +164,7 @@ render_frame(Rendering::Rendering_State *rendering_objects
 {
     persist u32 current_frame = 0;
     persist constexpr u32 MAX_FRAMES_IN_FLIGHT = 2;
-
-#if 0
-    Vulkan_API::Registered_Command_Buffer &command_buffers = rendering_objects->command_buffers;
-    Vulkan_API::Registered_Fence &fences = rendering_objects->fences;
-    Vulkan_API::Registered_Semaphore &image_ready_semaphores = rendering_objects->image_ready_semaphores;
-    Vulkan_API::Registered_Semaphore &render_finished_semaphores = rendering_objects->render_finished_semaphores;
-
-    Vulkan_API::wait_fences(&vulkan_state->gpu, Memory_Buffer_View<VkFence>{1, &fences.p[current_frame]});
-
-    auto next_image_data = Vulkan_API::acquire_next_image(&vulkan_state->swapchain
-							  , &vulkan_state->gpu
-							  , &image_ready_semaphores.p[current_frame]
-							  , &fences.p[current_frame]);
     
-    if (next_image_data.result == VK_ERROR_OUT_OF_DATE_KHR)
-    {
-	// recreate swapchain
-	return;
-    }
-    else if (next_image_data.result != VK_SUCCESS && next_image_data.result != VK_SUBOPTIMAL_KHR)
-    {
-	OUTPUT_DEBUG_LOG("%s\n", "failed to acquire swapchain image");
-    }
-
-    update_ubo(next_image_data.image_index
-	       , &vulkan_state->gpu
-	       , &vulkan_state->swapchain
-	       , rendering_objects->uniform_buffers
-	       , scene);
-
-    // KEEP EYE ON PERFORMANCE HERE!!
-    Vulkan_API::reset_fences(&vulkan_state->gpu, Memory_Buffer_View<VkFence>{1, &fences.p[current_frame]});
-
-    record_cmd(rendering_objects, vulkan_state, scene, next_image_data.image_index, current_frame, &command_buffers.p[next_image_data.image_index]);
-    
-    VkPipelineStageFlags wait_stages = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;;
-	    
-    Vulkan_API::submit(Memory_Buffer_View<VkCommandBuffer>{1, &command_buffers.p[next_image_data.image_index]}
-                               , Memory_Buffer_View<VkSemaphore>{1, &image_ready_semaphores.p[current_frame]}
-                               , Memory_Buffer_View<VkSemaphore>{1, &render_finished_semaphores.p[current_frame]}
-                               , Memory_Buffer_View<VkPipelineStageFlags>{1, &wait_stages}
-                               , &fences.p[current_frame]
-                               , &vulkan_state->gpu.graphics_queue);
-    
-    VkSemaphore signal_semaphores[] = {render_finished_semaphores.p[current_frame]};
-
-    Vulkan_API::present(Memory_Buffer_View<VkSemaphore>{1, &render_finished_semaphores.p[current_frame]}
-                                , Memory_Buffer_View<VkSwapchainKHR>{1, &vulkan_state->swapchain.swapchain}
-                                , &next_image_data.image_index
-                                , &vulkan_state->gpu.present_queue);
-    
-    if (next_image_data.result == VK_ERROR_OUT_OF_DATE_KHR || next_image_data.result == VK_SUBOPTIMAL_KHR)
-    {
-	// recreate swapchain
-    }
-    else if (next_image_data.result != VK_SUCCESS)
-    {
-	OUTPUT_DEBUG_LOG("%s\n", "failed to present swapchain image");
-    }
-
-#else
     Vulkan_API::wait_fences(&vulkan_state->gpu, Memory_Buffer_View<VkFence>{1, &scene->cpu_wait});
 
     auto next_image_data = Vulkan_API::acquire_next_image(&vulkan_state->swapchain
@@ -248,6 +188,7 @@ render_frame(Rendering::Rendering_State *rendering_objects
 	       , rendering_objects->uniform_buffers
 	       , scene);
 
+    // where all the draw calls come
     record_cmd(rendering_objects, vulkan_state, scene, next_image_data.image_index, current_frame, &scene->cmdbuf);
     
     VkPipelineStageFlags wait_stages = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;;
@@ -275,7 +216,7 @@ render_frame(Rendering::Rendering_State *rendering_objects
     {
 	OUTPUT_DEBUG_LOG("%s\n", "failed to present swapchain image");
     }    
-#endif
+
     current_frame = (current_frame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 

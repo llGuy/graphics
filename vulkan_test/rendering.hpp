@@ -53,7 +53,7 @@ namespace Rendering
     };
     
     void
-    add_renderer(Renderer_Init_Data *init_data);
+    add_renderer(Renderer_Init_Data *init_data, VkCommandPool *cmdpool, Vulkan_API::GPU *gpu);
 
     void
     update_renderers(VkCommandBuffer *record_cmd

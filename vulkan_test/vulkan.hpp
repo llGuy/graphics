@@ -253,6 +253,15 @@ namespace Vulkan_API
 			       , offsets.buffer);
     }
 
+    internal FORCEINLINE void
+    command_buffer_execute_commands(VkCommandBuffer *cmdbuf
+				    , const Memory_Buffer_View<VkCommandBuffer> &cmds)
+    {
+	vkCmdExecuteCommands(*cmdbuf
+			     , cmds.count
+			     , cmds.buffer);
+    }
+
     
     struct Graphics_Pipeline
     {

@@ -113,8 +113,8 @@ namespace Rendering
 	graphics_pipeline.p->descriptor_set_layout = Vulkan_API::get_object("descriptor_set_layout.test_descriptor_set_layout"_hash);
 	
 	// create shaders
-	File_Contents vsh_bytecode = read_file("shaders/vert.spv");
-	File_Contents fsh_bytecode = read_file("shaders/frag.spv");
+	File_Contents vsh_bytecode = read_file("shaders/SPV/triangle.vert.spv");
+	File_Contents fsh_bytecode = read_file("shaders/SPV/triangle.frag.spv");
 	
 	VkShaderModule vsh_module;
 	Vulkan_API::init_shader(VK_SHADER_STAGE_VERTEX_BIT, vsh_bytecode.size, vsh_bytecode.content, gpu, &vsh_module);
@@ -427,18 +427,22 @@ namespace Rendering
     init_vbo(Vulkan_API::GPU *gpu)
     {
 	struct Vertex { glm::vec3 pos, color; glm::vec2 uvs; };
+
+	glm::vec3 color = glm::vec3(1.0f);
+	
+	f32 radius = 2.0f;
 	
 	persist Vertex vertices[]
 	{
-	    {{-1.0f, -0.5f, 1.0f}, {0.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
-	    {{0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
-	    {{0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
-	    {{-0.5f, 0.5f, 1.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}},
-
-	    {{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-	    {{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-	    {{0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-	    {{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}
+	    {{-radius, -radius, radius}, color},
+	    {{radius, -radius, radius}, color},
+	    {{radius, radius, radius}, color},
+	    {{-radius, radius, radius}, color},
+												 
+	    {{-radius, -radius, -radius}, color},
+	    {{radius, -radius, -radius}, color},
+	    {{radius, radius, -radius}, color},
+	    {{-radius, radius, -radius}, color}
 	};
 	
 	Vulkan_API::Registered_Model object_model = Vulkan_API::get_object("vulkan_model.test_model"_hash);
@@ -460,10 +464,25 @@ namespace Rendering
 	object_model.p->create_vbo_list();
     }
 
-    persist u32 mesh_indices[]
+    persist u32 mesh_indices[] = 
     {
-	0, 1, 2, 2, 3, 0,
-	4, 5, 6, 6, 7, 4
+	0, 1, 2,
+	2, 3, 0,
+
+	1, 5, 6,
+	6, 2, 1,
+
+	7, 6, 5,
+	5, 4, 7,
+	    
+	4, 0, 3,
+	3, 7, 4,
+	    
+	4, 5, 1,
+	1, 0, 4,
+	    
+	3, 2, 6,
+	6, 7, 3	
     };    
 
     internal void
@@ -488,47 +507,6 @@ namespace Rendering
 								  , gpu);
     }
 
-    /*internal void
-    update_ubo(u32 current_image
-	       , Vulkan_API::GPU *gpu
-	       , Vulkan_API::Swapchain *swapchain
-	       , Vulkan_API::Registered_Buffer &uniform_buffers)
-    {
-	struct Uniform_Buffer_Object
-	{
-	    alignas(16) glm::mat4 model_matrix;
-	    alignas(16) glm::mat4 view_matrix;
-	    alignas(16) glm::mat4 projection_matrix;
-	};
-	
-	persist auto start_time = std::chrono::high_resolution_clock::now();
-
-	auto current_time = std::chrono::high_resolution_clock::now();
-	float time = std::chrono::duration<float, std::chrono::seconds::period>(current_time - start_time).count();
-
-	Uniform_Buffer_Object ubo = {};
-
-	ubo.model_matrix = glm::rotate(time * glm::radians(90.0f)
-				       , glm::vec3(0.0f, 0.0f, 1.0f));
-	ubo.view_matrix = glm::lookAt(glm::vec3(2.0f)
-				      , glm::vec3(0.0f)
-				      , glm::vec3(0.0f, 0.0f, 1.0f));
-	ubo.projection_matrix = glm::perspective(glm::radians(60.0f)
-						 , (float)swapchain->extent.width / (float)swapchain->extent.height
-						 , 0.1f
-						 , 10.0f);
-
-	ubo.projection_matrix[1][1] *= -1;
-
-	Vulkan_API::Buffer &current_ubo = uniform_buffers.p[current_image];
-
-	auto map = current_ubo.construct_map();
-	map.begin(gpu);
-	map.fill(Memory_Byte_Buffer{sizeof(ubo), &ubo});
-	map.end(gpu);
-    }*/
-
-    	
     internal void
     init_ubos(Vulkan_API::GPU *gpu
 	      , Vulkan_API::Swapchain *swapchain
@@ -819,8 +797,13 @@ namespace Rendering
 
 	enum Render_Method { INLINE, INSTANCED } mthd;
 
+	// reuse for different render passes (e.g. for example for rendering shadow maps, reflection / refraction...)
+	VkCommandBuffer rndr_cmdbuf;
+	
 	void
-	init(Renderer_Init_Data *data)
+	init(Renderer_Init_Data *data
+	     , VkCommandPool *cmdpool
+	     , Vulkan_API::GPU *gpu)
 	{
 	    mtrl_count = 0;
 	    allocate_memory_buffer(mtrls, data->mtrl_max);
@@ -845,21 +828,27 @@ namespace Rendering
 
 	    ppln = Vulkan_API::get_object(data->ppln_id);
 	    mtrl_unique_data_stage_dst = data->mtrl_unique_data_stage_dst;
+
+	    Vulkan_API::allocate_command_buffers(cmdpool
+						 , VK_COMMAND_BUFFER_LEVEL_SECONDARY
+						 , gpu
+						 , Memory_Buffer_View<VkCommandBuffer>{1, &rndr_cmdbuf});
 	}
 	
 	void
-	update(VkCommandBuffer *record_cmd
-	       , const Memory_Buffer_View<VkDescriptorSet> &additional_sets)
+	update(const Memory_Buffer_View<VkDescriptorSet> &additional_sets)
 	{
+	    Vulkan_API::begin_command_buffer(&rndr_cmdbuf, 0, nullptr);
+	    
 	    switch(mthd)
-	    {
+	    {	
 	    case Render_Method::INLINE:
 		{
-		    Vulkan_API::command_buffer_bind_pipeline(ppln.p, record_cmd);
+		    Vulkan_API::command_buffer_bind_pipeline(ppln.p, &rndr_cmdbuf);
 
 		    Vulkan_API::command_buffer_bind_descriptor_sets(ppln.p
 								    , additional_sets
-								    , record_cmd);
+								    , &rndr_cmdbuf);
 
 		    for (u32 i = 0; i < mtrl_count; ++i)
 		    {
@@ -873,19 +862,19 @@ namespace Rendering
 							     , offsets
 							     , 0
 							     , mtrl->model.p->binding_count
-							     , record_cmd);
+							     , &rndr_cmdbuf);
 			
 			Vulkan_API::command_buffer_bind_ibo(mtrl->model.p->index_data
-							    , record_cmd);
+							    , &rndr_cmdbuf);
 
 			Vulkan_API::command_buffer_push_constant(mtrl->data
 								 , mtrl->data_size
 								 , 0
 								 , mtrl_unique_data_stage_dst
 								 , ppln.p
-								 , record_cmd);
+								 , &rndr_cmdbuf);
 
-			Vulkan_API::command_buffer_draw_indexed(record_cmd
+			Vulkan_API::command_buffer_draw_indexed(&rndr_cmdbuf
 								, mtrl->draw_info);
 		    }
 		}break;
@@ -894,6 +883,8 @@ namespace Rendering
 		    
 		}break;
 	    };
+
+	    Vulkan_API::end_command_buffer(&rndr_cmdbuf);
 	}
     };
     
@@ -916,21 +907,29 @@ namespace Rendering
 	}
 	
 	void
-	add_renderer(Renderer_Init_Data *init_data)
+	add_renderer(Renderer_Init_Data *init_data, VkCommandPool *cmdpool, Vulkan_API::GPU *gpu)
 	{
-	    rndrs[rndr_count].init(init_data);
+	    rndrs[rndr_count].init(init_data, cmdpool, gpu);
 	    rndr_id_map.insert(init_data->rndr_id.hash, rndr_count++);
 	}
 	
 	void
-	update(VkCommandBuffer *record_cmd
-	       , const Memory_Buffer_View<VkDescriptorSet> &additional_sets)
+	update(VkCommandBuffer *cmdbuf
+	       ,const Memory_Buffer_View<VkDescriptorSet> &additional_sets)
 	{
+	    Memory_Buffer_View<VkCommandBuffer> cmds;
+	    cmds.zero();
+	    allocate_memory_buffer_tmp(cmds, rndr_count);
+	    
 	    for (u32 i = 0; i < rndr_count; ++i)
 	    {
-		rndrs.buffer[i].update(record_cmd
-				       , additional_sets);
+		rndrs.buffer[i].update(additional_sets);
+		cmds.buffer[i] = rndrs.buffer[i].rndr_cmdbuf;
 	    }
+
+	    // later will comme in handy for shadows ...
+	    Vulkan_API::command_buffer_execute_commands(cmdbuf
+							, cmds);
 	}
 
 	Material_Access
@@ -961,16 +960,16 @@ namespace Rendering
     }
 
     void
-    add_renderer(Renderer_Init_Data *init_data)
+    add_renderer(Renderer_Init_Data *init_data, VkCommandPool *cmdpool, Vulkan_API::GPU *gpu)
     {
-	rndr_sys.add_renderer(init_data);
+	rndr_sys.add_renderer(init_data, cmdpool, gpu);
     }
 
     void
-    update_renderers(VkCommandBuffer *record_cmd
+    update_renderers(VkCommandBuffer *cmdbuf
 		     , const Memory_Buffer_View<VkDescriptorSet> &additional_sets)
     {
-	rndr_sys.update(record_cmd, additional_sets);
+	rndr_sys.update(cmdbuf, additional_sets);
     }
 
     Material_Access
