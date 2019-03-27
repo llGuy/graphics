@@ -631,6 +631,52 @@ namespace Vulkan_API
     {
 	model->create_vertex_input_state_info(info);
     }
+
+    internal FORCEINLINE VkVertexInputAttributeDescription
+    init_attribute_description(u32 binding
+			       , u32 location
+			       , VkFormat format
+			       , u32 offset)
+    {
+	VkVertexInputAttributeDescription info = {};
+
+	info.binding = binding;
+	info.location = location;
+	info.format = format;
+	info.offset = offset;
+
+	return(info);
+    }
+    
+    internal FORCEINLINE VkVertexInputBindingDescription
+    init_binding_description(u32 binding
+			     , u32 stride
+			     , VkVertexInputRate input_rate)
+    {
+	VkVertexInputBindingDescription info = {};
+
+	info.binding = binding;
+	info.stride = stride;
+	info.inputRate = input_rate;
+
+	return(info);
+    }
+    
+    internal FORCEINLINE VkPipelineVertexInputStateCreateInfo
+    init_pipeline_vertex_input_info(const Memory_Buffer_View<VkVertexInputBindingDescription> &bindings
+				    , const Memory_Buffer_View<VkVertexInputAttributeDescription> & attributes)
+    {
+	VkPipelineVertexInputStateCreateInfo info = {};
+
+	info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+	
+	info.vertexBindingDescriptionCount = bindings.count;
+	info.pVertexBindingDescriptions = bindings.buffer;
+	info.vertexAttributeDescriptionCount = attributes.count;
+	info.pVertexAttributeDescriptions = attributes.buffer;
+
+	return(info);
+    }
     
     internal FORCEINLINE void
     init_pipeline_input_assembly_info(VkPipelineInputAssemblyStateCreateFlags flags
@@ -913,6 +959,7 @@ namespace Vulkan_API
 				, u32 height
 				, VkFormat format
 				, VkImageUsageFlags usage
+				, GPU *gpu
 				, Image2D *attachment);
     
     void
@@ -921,6 +968,26 @@ namespace Vulkan_API
 		     , u32 height
 		     , GPU *gpu
 		     , Framebuffer *framebuffer); // need to initialize the attachment handles
+
+    internal FORCEINLINE VkDescriptorSetLayoutBinding
+    init_descriptor_set_layout_binding(VkDescriptorType type
+				       , u32 binding
+				       , u32 count
+				       , VkShaderStageFlags stage)
+    {
+	VkDescriptorSetLayoutBinding ubo_binding	= {};
+	ubo_binding.binding				= binding;
+	ubo_binding.descriptorType			= type;
+	ubo_binding.descriptorCount			= count;
+	ubo_binding.stageFlags				= stage;
+	ubo_binding.pImmutableSamplers			= nullptr;
+	return(ubo_binding);
+    }
+
+    void
+    init_descriptor_set_layout(const Memory_Buffer_View<VkDescriptorSetLayoutBinding> &bindings
+			       , GPU *gpu
+			       , VkDescriptorSetLayout *dst);
     
     struct Descriptor_Set
     {

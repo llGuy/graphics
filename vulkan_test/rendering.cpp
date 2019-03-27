@@ -219,29 +219,16 @@ namespace Rendering
 	// create descriptor set layout in manager
 	Vulkan_API::Registered_Descriptor_Set_Layout layout = Vulkan_API::register_object("descriptor_set_layout.test_descriptor_set_layout"_hash
 											  , sizeof(VkDescriptorSetLayout));
+
+	VkDescriptorSetLayoutBinding bindings[] =
+	{
+	    Vulkan_API::init_descriptor_set_layout_binding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, 1, VK_SHADER_STAGE_VERTEX_BIT)
+	    , Vulkan_API::init_descriptor_set_layout_binding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, 1, VK_SHADER_STAGE_FRAGMENT_BIT)
+	};
 	
-	VkDescriptorSetLayoutBinding ubo_binding	= {};
-	ubo_binding.binding				= 0;
-	ubo_binding.descriptorType			= VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	ubo_binding.descriptorCount			= 1;
-	ubo_binding.stageFlags				= VK_SHADER_STAGE_VERTEX_BIT;
-	ubo_binding.pImmutableSamplers			= nullptr;
-
-	VkDescriptorSetLayoutBinding sampler_binding	= {};
-	sampler_binding.binding				= 1;
-	sampler_binding.descriptorCount			= 1;
-	sampler_binding.descriptorType			= VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	sampler_binding.pImmutableSamplers		= nullptr;
-	sampler_binding.stageFlags			= VK_SHADER_STAGE_FRAGMENT_BIT;
-
-	VkDescriptorSetLayoutBinding bindings[] = {ubo_binding, sampler_binding};
-
-	VkDescriptorSetLayoutCreateInfo layout_info	= {};
-	layout_info.sType				= VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-	layout_info.bindingCount			= 2;
-	layout_info.pBindings				= bindings;
-
-	VK_CHECK(vkCreateDescriptorSetLayout(gpu->logical_device, &layout_info, nullptr, layout.p));
+	Vulkan_API::init_descriptor_set_layout(Memory_Buffer_View<VkDescriptorSetLayoutBinding>{2, bindings}
+					       , gpu
+					       , layout.p);
     }
 
     internal void
@@ -564,7 +551,7 @@ namespace Rendering
 	Vulkan_API::init_descriptor_pool_size(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, swapchain->images.size, &pool_sizes[1]);
     
 	Vulkan_API::init_descriptor_pool(Memory_Buffer_View<VkDescriptorPoolSize>{2, pool_sizes}, swapchain->images.size, gpu, descriptor_pool.p);
-    }
+    } 
 
     internal void
     init_descriptor_sets(Vulkan_API::Swapchain *swapchain
@@ -897,10 +884,15 @@ namespace Rendering
 
 	Vulkan_API::Registered_Render_Pass deferred_rndr_pass;
 	Vulkan_API::Registered_Framebuffer main_fbo;
+	Vulkan_API::Registered_Graphics_Pipeline deferred_pipeline;
+	Vulkan_API::Registered_Descriptor_Set_Layout deferred_descriptor_set_layout;
+	Vulkan_API::Registered_Descriptor_Set deferred_descriptor_set;
+
+	Vulkan_API::Registered_Buffer ppfx_quad;
 	
 	
 	Render_System(void) :rndr_id_map("") {}
-	
+
 	void
 	init_system(Vulkan_API::Swapchain *swapchain
 		    , Vulkan_API::GPU *gpu)
@@ -1011,15 +1003,15 @@ namespace Rendering
 								  , VK_DEPENDENCY_BY_REGION_BIT);
 	    
 	    Vulkan_API::init_render_pass(Memory_Buffer_View<VkAttachmentDescription>{sizeof(descriptions) / sizeof(descriptions[0]), descriptions}
-					 , Memory_Buffer_View<VkSubpassDescription>{sizeof(subpasses) / sizeof(subpasses[0], subpasses)}
-					 , Memory_Buffer_View<VkSubpassDependency>{sizeof(dependencies) / sizeof(dependencies[0],dependencies)}
+					 , Memory_Buffer_View<VkSubpassDescription>{sizeof(subpasses) / sizeof(subpasses[0]), subpasses}
+					 , Memory_Buffer_View<VkSubpassDependency>{sizeof(dependencies) / sizeof(dependencies[0]) ,dependencies}
 					 , gpu
 					 , deferred_rndr_pass.p);
 
 	    main_fbo = Vulkan_API::register_object("framebuffer.main_fbo"_hash, sizeof(Vulkan_API::Framebuffer));
 	    allocate_memory_buffer(main_fbo.p->color_attachments, (u32)G_Buffer_Attachment::INVALID - 1);
 
-	    auto create_attachment = [&swapchain](Vulkan_API::Registered_Framebuffer &main_fbo
+	    auto create_attachment = [&gpu, &swapchain](Vulkan_API::Registered_Framebuffer &main_fbo
 						  , const Constant_String &name
 						  , VkFormat format
 						  , VkImageUsageFlagBits usage
@@ -1032,6 +1024,7 @@ namespace Rendering
 							    , swapchain->extent.height
 							    , format
 							    , usage
+							    , gpu
 							    , main_fbo.p->color_attachments[(u32)attachment].p);
 		};
 
@@ -1047,6 +1040,68 @@ namespace Rendering
 					 , swapchain->extent.height
 					 , gpu
 					 , main_fbo.p);
+
+	    // create descriptor set
+	    deferred_descriptor_set_layout = Vulkan_API::register_object("descriptor_set_layout.deferred_layout"_hash, sizeof(VkDescriptorSetLayout));
+	    
+	    VkDescriptorSetLayoutBinding bindings[] = 
+	    {
+		Vulkan_API::init_descriptor_set_layout_binding(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 0, 1, VK_SHADER_STAGE_FRAGMENT_BIT)
+		, Vulkan_API::init_descriptor_set_layout_binding(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1, 1, VK_SHADER_STAGE_FRAGMENT_BIT)
+		, Vulkan_API::init_descriptor_set_layout_binding(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 2, 1, VK_SHADER_STAGE_FRAGMENT_BIT)
+		, Vulkan_API::init_descriptor_set_layout_binding(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 3, 1, VK_SHADER_STAGE_FRAGMENT_BIT)
+	    };
+	    
+	    Vulkan_API::init_descriptor_set_layout(Memory_Buffer_View<VkDescriptorSetLayoutBinding>{4, bindings}
+						   , gpu
+						   , deferred_descriptor_set_layout.p);
+	    
+	    // create the deferred rendering lighting pipeline
+	    deferred_pipeline = Vulkan_API::register_object("pipeline.deferred_pipeline"_hash, sizeof(Vulkan_API::Graphics_Pipeline));
+
+	    deferred_pipeline.p->stages = Vulkan_API::Graphics_Pipeline::Shader_Stages_Bits::VERTEX_SHADER_BIT
+		| Vulkan_API::Graphics_Pipeline::Shader_Stages_Bits::FRAGMENT_SHADER_BIT;
+	    deferred_pipeline.p->descriptor_set_layout = deferred_descriptor_set_layout;
+
+	
+	    // create shaders
+	    File_Contents vsh_bytecode = read_file("shaders/SPV/deferred_lighting.vert.spv");
+	    File_Contents fsh_bytecode = read_file("shaders/SPV/deferred_lighting.frag.spv");
+	
+	    VkShaderModule vsh_module;
+	    Vulkan_API::init_shader(VK_SHADER_STAGE_VERTEX_BIT, vsh_bytecode.size, vsh_bytecode.content, gpu, &vsh_module);
+	
+	    VkShaderModule fsh_module;
+	    Vulkan_API::init_shader(VK_SHADER_STAGE_FRAGMENT_BIT, fsh_bytecode.size, fsh_bytecode.content, gpu, &fsh_module);
+
+	    VkPipelineShaderStageCreateInfo module_infos[2] = {};
+	    Vulkan_API::init_shader_pipeline_info(&vsh_module, VK_SHADER_STAGE_VERTEX_BIT, &module_infos[0]);
+	    Vulkan_API::init_shader_pipeline_info(&fsh_module, VK_SHADER_STAGE_FRAGMENT_BIT, &module_infos[1]);
+
+	    // init vertex input stuff
+	    VkVertexInputAttributeDescription attribute_descriptions[] =
+	    {
+		Vulkan_API::init_attribute_description(0, 0, VK_FORMAT_R32G32_SFLOAT, 0)
+		, Vulkan_API::init_attribute_description(0, 1, VK_FORMAT_R32G32_SFLOAT, sizeof(f32) * 2)
+	    };
+	    `	    
+	    VkVertexInputBindingDescription binding_descriptions[] =
+	    {
+	    Vulkan_API::Registered_Command_Pool command_pool = Vulkan_API::get_object("command_pool.graphics_command_pool"_hash);
+	    
+	    Vulkan_API::invoke_staging_buffer_for_device_local_buffer(Memory_Byte_Buffer{sizeof (vertices), vertices }
+								      , command_pool.p
+								      , ppfx_quad.p
+								      , gpu);
+
+	    Vulkan_API::register_object("descriptor_set.deferred_descriptor_sets"_hash, sizeof(Vulkan_API::Descriptor_Set));
+
+	    VkDescriptorImageInfo image_infos [4];
+	    Vulkan_API::Registered_Image2D albedo_image = Vulkan_API::get_object("image2D.fbo_albedo"_hash);
+	    Vulkan_API::Registered_Image2D position_image = Vulkan_API::get_object("image2D.fbo_position"_hash);
+	    Vulkan_API::Registered_Image2D normal_image = Vulkan_API::get_object("image2D.fbo_normal"_hash);
+	    Vulkan_API::Registered_Image2D extra_image = Vulkan_API::get_object("image2D.fbo_extra"_hash);
+	    Vulkan_API::init_descriptor_set_image_info(&);
 	}
 	
 	void

@@ -1296,6 +1296,19 @@ namespace Vulkan_API
 
 	VK_CHECK(vkCreateDescriptorPool(gpu->logical_device, &pool_info, nullptr, &pool->pool));
     }
+
+    void
+    init_descriptor_set_layout(const Memory_Buffer_View<VkDescriptorSetLayoutBinding> &bindings
+			       , GPU *gpu
+			       , VkDescriptorSetLayout *dst)
+    {
+	VkDescriptorSetLayoutCreateInfo layout_info	= {};
+	layout_info.sType				= VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+	layout_info.bindingCount			= bindings.count;
+	layout_info.pBindings				= bindings.buffer;
+	
+	VK_CHECK(vkCreateDescriptorSetLayout(gpu->logical_device, &layout_info, nullptr, dst));
+    }
     
     void
     update_descriptor_sets(const Memory_Buffer_View<VkWriteDescriptorSet> &writes
