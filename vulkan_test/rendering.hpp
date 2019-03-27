@@ -38,7 +38,7 @@ namespace Rendering
 			 , Rendering_State *cache);
 
     void
-    init_rendering_system(void);
+    init_rendering_system(Vulkan_API::Swapchain *swapchain, Vulkan_API::GPU *gpu);
 
     struct Renderer_Init_Data
     {

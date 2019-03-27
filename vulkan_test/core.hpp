@@ -438,6 +438,9 @@ template <typename T
 template <typename T> internal constexpr Memory_Buffer_View<T>
 null_buffer(void) {return(Memory_Buffer_View<T>{0, nullptr});}
 
+template <typename T> internal constexpr Memory_Buffer_View<T>
+single_buffer(T *address) {return(Memory_Buffer_View<T>{1, address});}
+
 template <typename T> void
 allocate_memory_buffer(Memory_Buffer_View<T> &view, u32 count)
 {

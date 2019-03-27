@@ -57,7 +57,7 @@ init_scene(Scene *scene
 
 
 
-    Rendering::init_rendering_system();
+    Rendering::init_rendering_system(&vk->swapchain, &vk->gpu);
 
     Rendering::Renderer_Init_Data rndr_d = {};
     rndr_d.rndr_id = "renderer.test_material_renderer"_hash;

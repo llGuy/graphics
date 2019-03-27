@@ -19,53 +19,49 @@ namespace Rendering
 	
 	enum {COLOR_DESCRIPTION = 0, DEPTH_DESCRIPTION = 1};
 	
-	VkAttachmentDescription descriptions[2]		= {};
-	descriptions[COLOR_DESCRIPTION].format		= swapchain->format;
-	descriptions[COLOR_DESCRIPTION].samples		= VK_SAMPLE_COUNT_1_BIT;
-	descriptions[COLOR_DESCRIPTION].loadOp		= VK_ATTACHMENT_LOAD_OP_CLEAR;
-	descriptions[COLOR_DESCRIPTION].storeOp		= VK_ATTACHMENT_STORE_OP_STORE;
-	descriptions[COLOR_DESCRIPTION].stencilLoadOp	= VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-	descriptions[COLOR_DESCRIPTION].stencilStoreOp	= VK_ATTACHMENT_STORE_OP_DONT_CARE;
-	descriptions[COLOR_DESCRIPTION].initialLayout	= VK_IMAGE_LAYOUT_UNDEFINED;
-	descriptions[COLOR_DESCRIPTION].finalLayout	= VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+	VkAttachmentDescription descriptions[2]	= {};
+	descriptions[COLOR_DESCRIPTION] = Vulkan_API::init_attachment_description(swapchain->format
+										  , VK_SAMPLE_COUNT_1_BIT
+										  , VK_ATTACHMENT_LOAD_OP_CLEAR
+										  , VK_ATTACHMENT_STORE_OP_STORE
+										  , VK_ATTACHMENT_LOAD_OP_DONT_CARE
+										  , VK_ATTACHMENT_STORE_OP_DONT_CARE
+										  , VK_IMAGE_LAYOUT_UNDEFINED
+										  , VK_IMAGE_LAYOUT_PRESENT_SRC_KHR); 
 
-	descriptions[DEPTH_DESCRIPTION].format		= gpu->supported_depth_format;
-	descriptions[DEPTH_DESCRIPTION].samples		= VK_SAMPLE_COUNT_1_BIT;
-	descriptions[DEPTH_DESCRIPTION].loadOp		= VK_ATTACHMENT_LOAD_OP_CLEAR;
-	descriptions[DEPTH_DESCRIPTION].storeOp		= VK_ATTACHMENT_STORE_OP_DONT_CARE;
-	descriptions[DEPTH_DESCRIPTION].stencilLoadOp	= VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-	descriptions[DEPTH_DESCRIPTION].stencilStoreOp	= VK_ATTACHMENT_STORE_OP_DONT_CARE;
-	descriptions[DEPTH_DESCRIPTION].initialLayout	= VK_IMAGE_LAYOUT_UNDEFINED;
-	descriptions[DEPTH_DESCRIPTION].finalLayout	= VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-	VkAttachmentReference references[2]		= {};
-	references[COLOR_DESCRIPTION].attachment	= 0;
-	references[COLOR_DESCRIPTION].layout		= VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-	references[DEPTH_DESCRIPTION].attachment	= 1;
-	references[DEPTH_DESCRIPTION].layout		= VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-	VkSubpassDescription subpass	= {};
-	subpass.pipelineBindPoint	= VK_PIPELINE_BIND_POINT_GRAPHICS;
-	subpass.colorAttachmentCount	= 1;
-	subpass.pColorAttachments	= &references[COLOR_DESCRIPTION];
-	subpass.pDepthStencilAttachment	= &references[DEPTH_DESCRIPTION];
-
-	VkSubpassDependency dependency	= {};
-	dependency.srcSubpass		= VK_SUBPASS_EXTERNAL;
-	dependency.dstSubpass		= 0;
-	dependency.srcStageMask		= VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-	dependency.srcAccessMask	= 0;
-	dependency.dstStageMask		= VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-	dependency.dstAccessMask	= VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+	descriptions[DEPTH_DESCRIPTION] = Vulkan_API::init_attachment_description(gpu->supported_depth_format
+										  , VK_SAMPLE_COUNT_1_BIT
+										  , VK_ATTACHMENT_LOAD_OP_CLEAR
+										  , VK_ATTACHMENT_STORE_OP_DONT_CARE
+										  , VK_ATTACHMENT_LOAD_OP_DONT_CARE
+										  , VK_ATTACHMENT_STORE_OP_DONT_CARE
+										  , VK_IMAGE_LAYOUT_UNDEFINED
+										  , VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+	
+	VkAttachmentReference references[2] = {};
+	
+	references[COLOR_DESCRIPTION] = Vulkan_API::init_attachment_reference(0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+	references[DEPTH_DESCRIPTION] = Vulkan_API::init_attachment_reference(1, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+	
+	VkSubpassDescription subpass = Vulkan_API::init_subpass_description(single_buffer(&references[COLOR_DESCRIPTION])
+									    , &references[DEPTH_DESCRIPTION]
+									    , null_buffer<VkAttachmentReference>());
+	
+	VkSubpassDependency dependency = Vulkan_API::init_subpass_dependency(VK_SUBPASS_EXTERNAL
+									     , 0
+									     , VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
+									     , 0
+									     , VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
+									     , VK_ACCESS_COLOR_ATTACHMENT_READ_BIT
+									     | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT);
 
 	Memory_Buffer_View<VkAttachmentDescription> descriptions_array	= {2, descriptions};
 	Memory_Buffer_View<VkSubpassDescription> subpasses_array		= {1, &subpass};
 	Memory_Buffer_View<VkSubpassDependency> dependencies_array		= {1, &dependency};
 	
-	Vulkan_API::init_render_pass(&descriptions_array
-				     , &subpasses_array
-				     , &dependencies_array
+	Vulkan_API::init_render_pass(descriptions_array
+				     , subpasses_array
+				     , dependencies_array
 				     , gpu
 				     , test_render_pass.p);
     }
@@ -428,21 +424,22 @@ namespace Rendering
     {
 	struct Vertex { glm::vec3 pos, color; glm::vec2 uvs; };
 
-	glm::vec3 color = glm::vec3(1.0f);
+	glm::vec3 green = glm::vec3(0.0f, 1.0f, 0.0f);
+	glm::vec3 blue = glm::vec3(1.0f, 0.0f, 0.0f);
 	
 	f32 radius = 2.0f;
 	
 	persist Vertex vertices[]
 	{
-	    {{-radius, -radius, radius}, color},
-	    {{radius, -radius, radius}, color},
-	    {{radius, radius, radius}, color},
-	    {{-radius, radius, radius}, color},
+	    {{-radius, -radius, radius	}, green},
+	    {{radius, -radius, radius	}, green},
+	    {{radius, radius, radius	}, green},
+	    {{-radius, radius, radius	}, green},
 												 
-	    {{-radius, -radius, -radius}, color},
-	    {{radius, -radius, -radius}, color},
-	    {{radius, radius, -radius}, color},
-	    {{-radius, radius, -radius}, color}
+	    {{-radius, -radius, -radius	}, blue},
+	    {{radius, -radius, -radius	}, blue},
+	    {{radius, radius, -radius	}, blue},
+	    {{-radius, radius, -radius	}, blue}
 	};
 	
 	Vulkan_API::Registered_Model object_model = Vulkan_API::get_object("vulkan_model.test_model"_hash);
@@ -897,13 +894,159 @@ namespace Rendering
 	u32 rndr_count;
 	Hash_Table_Inline<s32, 30, 4, 3> rndr_id_map;
 
+
+	Vulkan_API::Registered_Render_Pass deferred_rndr_pass;
+	Vulkan_API::Registered_Framebuffer main_fbo;
+	
+	
 	Render_System(void) :rndr_id_map("") {}
 	
 	void
-	init_system(void)
+	init_system(Vulkan_API::Swapchain *swapchain
+		    , Vulkan_API::GPU *gpu)
 	{
 	    allocate_memory_buffer(rndrs, MAX_RNDRS);
 	    rndr_count = 0;
+
+
+	    // initialize deferred renderer render pass
+	    deferred_rndr_pass = Vulkan_API::register_object("render_pass.deferred_pass"_hash, sizeof(Vulkan_API::Render_Pass));
+
+	    enum class G_Buffer_Attachment :u32 {FINAL, ALBEDO, POSITION, NORMAL, EXTRA, DEPTH, INVALID};
+	    VkAttachmentDescription descriptions[(u32)G_Buffer_Attachment::INVALID] = {};
+
+	    descriptions[(u32)G_Buffer_Attachment::FINAL]
+		= Vulkan_API::init_attachment_description(swapchain->format
+							  , VK_SAMPLE_COUNT_1_BIT
+							  , VK_ATTACHMENT_LOAD_OP_CLEAR
+							  , VK_ATTACHMENT_STORE_OP_STORE
+							  , VK_ATTACHMENT_LOAD_OP_DONT_CARE
+							  , VK_ATTACHMENT_STORE_OP_DONT_CARE
+							  , VK_IMAGE_LAYOUT_UNDEFINED
+							  , VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+
+	    descriptions[(u32)G_Buffer_Attachment::ALBEDO]
+		= Vulkan_API::init_attachment_description(VK_FORMAT_R8G8B8A8_UNORM
+							  , VK_SAMPLE_COUNT_1_BIT
+							  , VK_ATTACHMENT_LOAD_OP_CLEAR
+							  , VK_ATTACHMENT_STORE_OP_STORE
+							  , VK_ATTACHMENT_LOAD_OP_DONT_CARE
+							  , VK_ATTACHMENT_STORE_OP_DONT_CARE
+							  , VK_IMAGE_LAYOUT_UNDEFINED
+							  , VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
+	    descriptions[(u32)G_Buffer_Attachment::POSITION]
+		= Vulkan_API::init_attachment_description(VK_FORMAT_R16G16B16A16_SFLOAT
+							  , VK_SAMPLE_COUNT_1_BIT
+							  , VK_ATTACHMENT_LOAD_OP_CLEAR
+							  , VK_ATTACHMENT_STORE_OP_STORE
+							  , VK_ATTACHMENT_LOAD_OP_DONT_CARE
+							  , VK_ATTACHMENT_STORE_OP_DONT_CARE
+							  , VK_IMAGE_LAYOUT_UNDEFINED
+							  , VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
+	    descriptions[(u32)G_Buffer_Attachment::NORMAL]
+		= Vulkan_API::init_attachment_description(VK_FORMAT_R16G16B16A16_SFLOAT
+							  , VK_SAMPLE_COUNT_1_BIT
+							  , VK_ATTACHMENT_LOAD_OP_CLEAR
+							  , VK_ATTACHMENT_STORE_OP_STORE
+							  , VK_ATTACHMENT_LOAD_OP_DONT_CARE
+							  , VK_ATTACHMENT_STORE_OP_DONT_CARE
+							  , VK_IMAGE_LAYOUT_UNDEFINED
+							  , VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
+	    descriptions[(u32)G_Buffer_Attachment::EXTRA]
+		= Vulkan_API::init_attachment_description(VK_FORMAT_R16G16B16A16_SFLOAT
+							  , VK_SAMPLE_COUNT_1_BIT
+							  , VK_ATTACHMENT_LOAD_OP_CLEAR
+							  , VK_ATTACHMENT_STORE_OP_STORE
+							  , VK_ATTACHMENT_LOAD_OP_DONT_CARE
+							  , VK_ATTACHMENT_STORE_OP_DONT_CARE
+							  , VK_IMAGE_LAYOUT_UNDEFINED
+							  , VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
+	    descriptions[(u32)G_Buffer_Attachment::DEPTH]
+		= Vulkan_API::init_attachment_description(gpu->supported_depth_format
+							  , VK_SAMPLE_COUNT_1_BIT
+							  , VK_ATTACHMENT_LOAD_OP_CLEAR
+							  , VK_ATTACHMENT_STORE_OP_STORE
+							  , VK_ATTACHMENT_LOAD_OP_DONT_CARE
+							  , VK_ATTACHMENT_STORE_OP_DONT_CARE
+							  , VK_IMAGE_LAYOUT_UNDEFINED
+							  , VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
+	    enum class Subpass :u32 { G_BUFFER_INIT, LIGHTING, INVALID };
+	    VkSubpassDescription subpasses[(u32)Subpass::INVALID];
+
+	    VkAttachmentReference g_buffer_init_references[] = {Vulkan_API::init_attachment_reference((u32)G_Buffer_Attachment::FINAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
+								, Vulkan_API::init_attachment_reference((u32)G_Buffer_Attachment::ALBEDO, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
+								, Vulkan_API::init_attachment_reference((u32)G_Buffer_Attachment::POSITION, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
+								, Vulkan_API::init_attachment_reference((u32)G_Buffer_Attachment::NORMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
+								, Vulkan_API::init_attachment_reference((u32)G_Buffer_Attachment::EXTRA, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)};
+
+	    VkAttachmentReference depth_reference = Vulkan_API::init_attachment_reference((u32)G_Buffer_Attachment::DEPTH, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+	    
+	    subpasses[(u32)Subpass::G_BUFFER_INIT] = Vulkan_API::init_subpass_description(Memory_Buffer_View<VkAttachmentReference>{5, g_buffer_init_references}
+											  , &depth_reference, null_buffer<VkAttachmentReference>());
+
+	    subpasses[(u32)Subpass::LIGHTING] = Vulkan_API::init_subpass_description(Memory_Buffer_View<VkAttachmentReference>{1, &g_buffer_init_references[0]}
+										     , &depth_reference
+										     , Memory_Buffer_View<VkAttachmentReference>{4, &g_buffer_init_references[1]});
+
+	    VkSubpassDependency dependencies[3];
+	    dependencies[0] = Vulkan_API::init_subpass_dependency(VK_SUBPASS_EXTERNAL
+								  , 0
+								  , VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT
+								  , VK_ACCESS_MEMORY_READ_BIT
+								  , VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
+								  , VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT
+								  , VK_DEPENDENCY_BY_REGION_BIT);
+
+	    dependencies[1] = Vulkan_API::init_subpass_dependency(0
+								  , 1
+								  , VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
+								  , VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT
+								  , VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT
+								  , VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT
+								  , VK_DEPENDENCY_BY_REGION_BIT);
+	    
+	    Vulkan_API::init_render_pass(Memory_Buffer_View<VkAttachmentDescription>{sizeof(descriptions) / sizeof(descriptions[0]), descriptions}
+					 , Memory_Buffer_View<VkSubpassDescription>{sizeof(subpasses) / sizeof(subpasses[0], subpasses)}
+					 , Memory_Buffer_View<VkSubpassDependency>{sizeof(dependencies) / sizeof(dependencies[0],dependencies)}
+					 , gpu
+					 , deferred_rndr_pass.p);
+
+	    main_fbo = Vulkan_API::register_object("framebuffer.main_fbo"_hash, sizeof(Vulkan_API::Framebuffer));
+	    allocate_memory_buffer(main_fbo.p->color_attachments, (u32)G_Buffer_Attachment::INVALID - 1);
+
+	    auto create_attachment = [&swapchain](Vulkan_API::Registered_Framebuffer &main_fbo
+						  , const Constant_String &name
+						  , VkFormat format
+						  , VkImageUsageFlagBits usage
+						  , G_Buffer_Attachment attachment)
+		{
+		    main_fbo.p->color_attachments[(u32)attachment]
+		    = Vulkan_API::register_object(name, sizeof(Vulkan_API::Image2D));
+
+		    Vulkan_API::init_framebuffer_attachment(swapchain->extent.width
+							    , swapchain->extent.height
+							    , format
+							    , usage
+							    , main_fbo.p->color_attachments[(u32)attachment].p);
+		};
+
+	    create_attachment(main_fbo, "image2D.fbo_final"_hash, swapchain->format, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, G_Buffer_Attachment::FINAL);
+	    create_attachment(main_fbo, "image2D.fbo_albedo"_hash, swapchain->format, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, G_Buffer_Attachment::ALBEDO);
+	    create_attachment(main_fbo, "image2D.fbo_position"_hash, swapchain->format, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, G_Buffer_Attachment::POSITION);
+	    create_attachment(main_fbo, "image2D.fbo_normal"_hash, swapchain->format, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, G_Buffer_Attachment::NORMAL);
+	    create_attachment(main_fbo, "image2D.fbo_extra"_hash, swapchain->format, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, G_Buffer_Attachment::EXTRA);
+	    create_attachment(main_fbo, "image2D.fbo_depth"_hash, gpu->supported_depth_format, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, G_Buffer_Attachment::DEPTH);
+
+	    Vulkan_API::init_framebuffer(deferred_rndr_pass.p
+					 , swapchain->extent.width
+					 , swapchain->extent.height
+					 , gpu
+					 , main_fbo.p);
 	}
 	
 	void
@@ -927,7 +1070,6 @@ namespace Rendering
 		cmds.buffer[i] = rndrs.buffer[i].rndr_cmdbuf;
 	    }
 
-	    // later will comme in handy for shadows ...
 	    Vulkan_API::command_buffer_execute_commands(cmdbuf
 							, cmds);
 	}
@@ -954,9 +1096,9 @@ namespace Rendering
     } rndr_sys;
 
     void
-    init_rendering_system(void)
+    init_rendering_system(Vulkan_API::Swapchain *swapchain, Vulkan_API::GPU *gpu)
     {
-	rndr_sys.init_system();
+	rndr_sys.init_system(swapchain, gpu);
     }
 
     void

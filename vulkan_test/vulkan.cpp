@@ -604,6 +604,8 @@ namespace Vulkan_API
 	Memory::allocate_gpu_memory(properties, mem_requirements, gpu, &dest_image->device_memory);
 
 	vkBindImageMemory(gpu->logical_device, dest_image->image, dest_image->device_memory, 0);
+
+	dest_image->format;
     }
     
     void
@@ -1029,23 +1031,23 @@ namespace Vulkan_API
     }
     
     void
-    init_render_pass(Memory_Buffer_View<VkAttachmentDescription> *attachment_descriptions
-		     , Memory_Buffer_View<VkSubpassDescription> *subpass_descriptions
-		     , Memory_Buffer_View<VkSubpassDependency> *subpass_dependencies
+    init_render_pass(const Memory_Buffer_View<VkAttachmentDescription> &attachment_descriptions
+		     , const Memory_Buffer_View<VkSubpassDescription> &subpass_descriptions
+		     , const Memory_Buffer_View<VkSubpassDependency> &subpass_dependencies
 		     , GPU *gpu
 		     , Render_Pass *dest_render_pass)
     {
 	VkRenderPassCreateInfo render_pass_info	= {};
 	render_pass_info.sType			= VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-	render_pass_info.attachmentCount	= attachment_descriptions->count;
-	render_pass_info.pAttachments		= attachment_descriptions->buffer;
-	render_pass_info.subpassCount		= subpass_descriptions->count;
-	render_pass_info.pSubpasses		= subpass_descriptions->buffer;
-	render_pass_info.dependencyCount	= subpass_dependencies->count;
-	render_pass_info.pDependencies		= subpass_dependencies->buffer;
+	render_pass_info.attachmentCount	= attachment_descriptions.count;
+	render_pass_info.pAttachments		= attachment_descriptions.buffer;
+	render_pass_info.subpassCount		= subpass_descriptions.count;
+	render_pass_info.pSubpasses		= subpass_descriptions.buffer;
+	render_pass_info.dependencyCount	= subpass_dependencies.count;
+	render_pass_info.pDependencies		= subpass_dependencies.buffer;
 
 	VK_CHECK(vkCreateRenderPass(gpu->logical_device, &render_pass_info, nullptr, &dest_render_pass->render_pass));
-	dest_render_pass->subpass_count = subpass_descriptions->count;
+	dest_render_pass->subpass_count = subpass_descriptions.count;
     }
 
     // find gpu supported depth format
@@ -1188,6 +1190,34 @@ namespace Vulkan_API
 	VK_CHECK(vkCreateCommandPool(gpu->logical_device, &pool_info, nullptr, command_pool));
     }
 
+    void
+    init_framebuffer_attachment(u32 width
+				, u32 height
+				, VkFormat format
+				, VkImageUsageFlags usage
+				, GPU *gpu
+				, Image2D *attachment)
+    {
+	Vulkan_API::init_image(width
+			       , height
+			       , format
+			       , VK_IMAGE_TILING_OPTIMAL
+			       , usage
+			       , VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+			       , gpu
+			       , attachment);
+
+	VkImageAspectFlags aspect_flags;
+	if (usage & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) aspect_flags = VK_IMAGE_ASPECT_COLOR_BIT;
+	if (usage & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) aspect_flags = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
+	
+	Vulkan_API::init_image_view(&attachment->image
+				    , format
+				    , aspect_flags
+				    , gpu
+				    , &attachment->image_view);
+    }
+    
     void
     init_framebuffer(Render_Pass *compatible_render_pass
 		     , u32 width
@@ -1438,6 +1468,11 @@ namespace Vulkan_API
     void
     destroy_state(State *state)
     {
+	vkQueueWaitIdle(state->gpu.present_queue);
+	vkQueueWaitIdle(state->gpu.graphics_queue);
+
+	vkDestroySurfaceKHR(state->instance, state->surface, nullptr);
+	
 	destroy_debug_utils_messenger_ext(state->instance, state->debug_messenger, nullptr);
 	vkDestroyInstance(state->instance, nullptr);
     }

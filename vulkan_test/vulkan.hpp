@@ -313,6 +313,8 @@ namespace Vulkan_API
 	VkSampler image_sampler = VK_NULL_HANDLE;
 	VkDeviceMemory device_memory = VK_NULL_HANDLE;
 
+	VkFormat format;
+	
 	inline VkMemoryRequirements
 	get_memory_requirements(GPU *gpu)
 	{
@@ -375,6 +377,74 @@ namespace Vulkan_API
 	u32 subpass_count;
     };
 
+    internal FORCEINLINE VkAttachmentDescription
+    init_attachment_description(VkFormat format
+			       , VkSampleCountFlagBits samples
+			       , VkAttachmentLoadOp load, VkAttachmentStoreOp store
+			       , VkAttachmentLoadOp stencil_load, VkAttachmentStoreOp stencil_store
+			       , VkImageLayout initial_layout, VkImageLayout final_layout)
+    {
+	VkAttachmentDescription desc = {};
+	desc.format		= format;
+	desc.samples		= VK_SAMPLE_COUNT_1_BIT;
+	desc.loadOp		= VK_ATTACHMENT_LOAD_OP_CLEAR;
+	desc.storeOp		= VK_ATTACHMENT_STORE_OP_STORE;
+	desc.stencilLoadOp	= VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	desc.stencilStoreOp	= VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	desc.initialLayout	= VK_IMAGE_LAYOUT_UNDEFINED;
+	desc.finalLayout	= VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+	return(desc);
+    }
+
+    internal FORCEINLINE VkAttachmentReference
+    init_attachment_reference(u32 attachment
+			      , VkImageLayout layout)
+    {
+	VkAttachmentReference ref = {};
+	ref.attachment = attachment;
+	ref.layout = layout;
+	return(ref);
+    }
+
+    internal FORCEINLINE VkSubpassDescription
+    init_subpass_description(const Memory_Buffer_View<VkAttachmentReference> &color_refs
+			     , VkAttachmentReference *depth
+			     , const Memory_Buffer_View<VkAttachmentReference> &input_refs)
+    {
+	VkSubpassDescription subpass	= {};
+	subpass.pipelineBindPoint	= VK_PIPELINE_BIND_POINT_GRAPHICS;
+	subpass.colorAttachmentCount	= color_refs.count;
+	subpass.pColorAttachments	= color_refs.buffer;
+	subpass.pDepthStencilAttachment	= depth;
+	subpass.inputAttachmentCount	= input_refs.count;
+	subpass.pInputAttachments	= input_refs.buffer;
+	return(subpass);
+    }
+
+    internal FORCEINLINE VkSubpassDependency
+    init_subpass_dependency(u32 src_subpass
+			    , u32 dst_subpass
+			    , VkPipelineStageFlags src_stage
+			    , u32 src_access_mask
+			    , VkPipelineStageFlags dst_stage
+			    , u32 dst_access_mask
+			    , VkDependencyFlagBits flags = (VkDependencyFlagBits)0)
+    {
+	VkSubpassDependency dependency	= {};
+	dependency.srcSubpass		= src_subpass;
+	dependency.dstSubpass		= dst_subpass;
+	
+	dependency.srcStageMask		= src_stage;
+	dependency.srcAccessMask	= src_access_mask;
+	
+	dependency.dstStageMask		= dst_stage;
+	dependency.dstAccessMask	= dst_access_mask;
+
+	dependency.dependencyFlags = flags;
+	
+	return(dependency);
+    }
+
     internal FORCEINLINE VkClearValue
     init_clear_color_color(f32 r, f32 g, f32 b, f32 a)
     {
@@ -415,9 +485,9 @@ namespace Vulkan_API
     }
     
     void
-    init_render_pass(Memory_Buffer_View<VkAttachmentDescription> *attachment_descriptions
-		     , Memory_Buffer_View<VkSubpassDescription> *subpass_descriptions
-		     , Memory_Buffer_View<VkSubpassDependency> *subpass_dependencies
+    init_render_pass(const Memory_Buffer_View<VkAttachmentDescription> &attachment_descriptions
+		     , const Memory_Buffer_View<VkSubpassDescription> &subpass_descriptions
+		     , const Memory_Buffer_View<VkSubpassDependency> &subpass_dependencies
 		     , GPU *gpu
 		     , Render_Pass *dest_render_pass);
     void
@@ -837,6 +907,13 @@ namespace Vulkan_API
 	Memory_Buffer_View<Registered_Image2D> color_attachments;
 	Registered_Image2D depth_attachment;
     };
+
+    void
+    init_framebuffer_attachment(u32 width
+				, u32 height
+				, VkFormat format
+				, VkImageUsageFlags usage
+				, Image2D *attachment);
     
     void
     init_framebuffer(Render_Pass *compatible_render_pass
