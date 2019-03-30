@@ -13,7 +13,7 @@
 
 
 
-
+#include <vector>
 
 
 
@@ -1408,7 +1408,7 @@ namespace Vulkan_API
 
 	u32 extension_count;
 	const char **extension_names = glfwGetRequiredInstanceExtensions(&extension_count);
-	const char **total_extension_buffer = (const char **)allocate_stack(sizeof(const char *) * (extension_count + 2)
+	const char **total_extension_buffer = (const char **)allocate_stack(sizeof(const char *) * (extension_count + 4)
 									    , Alignment(1)
 									    , "vulkan_instanc_extension_names_list_allocation");
 	memcpy(total_extension_buffer, extension_names, sizeof(const char *) * extension_count);
