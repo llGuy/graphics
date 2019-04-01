@@ -1072,6 +1072,23 @@ namespace Vulkan_API
     }
 
     internal void
+    init_input_attachment_descriptor_set_write(Descriptor_Set *set
+				    , u32 binding
+				    , u32 dst_array_element
+				    , u32 count
+				    , VkDescriptorImageInfo *infos
+				    , VkWriteDescriptorSet *write)
+    {
+	write->sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	write->dstSet = set->set;
+	write->dstBinding = binding;
+	write->dstArrayElement = dst_array_element;
+	write->descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+	write->descriptorCount = count;
+	write->pImageInfo = infos;
+    }
+    
+    internal void
     init_image_descriptor_set_write(Descriptor_Set *set
 				    , u32 binding
 				    , u32 dst_array_element
