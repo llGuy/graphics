@@ -18,5 +18,5 @@ layout(input_attachment_index = 3, binding = 3) uniform subpassInput g_buffer_ex
 void
 main(void)
 {
-    out_color = subpassLoad(g_buffer_albedo);
+    out_color = vec4(in_uvs, 0.0f, 1.0f);
 }

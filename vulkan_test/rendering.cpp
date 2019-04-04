@@ -286,8 +286,8 @@ namespace Rendering
     init_swapchain_framebuffers(Vulkan_API::GPU *gpu
 				, Vulkan_API::Swapchain *swapchain)
     {
-	swapchain->framebuffers = Vulkan_API::register_object("framebuffer.swapchain_framebuffers"_hash
-							      , sizeof(Vulkan_API::Framebuffer) * swapchain->images.size);
+	swapchain->framebuffers = Vulkan_API::register_object("framebuffer.swapchain_framebuffers"_hash	
+						      , sizeof(Vulkan_API::Framebuffer) * swapchain->images.size);
 	
 	
 	char framebuffer_images_name[] = "framebuffer.swapchain_framebuffer0";
@@ -883,7 +883,9 @@ namespace Rendering
 
 
 	Vulkan_API::Registered_Render_Pass deferred_rndr_pass;
-	Vulkan_API::Registered_Framebuffer main_fbo;
+	
+	Vulkan_API::Registered_Framebuffer fbos;
+	
 	Vulkan_API::Registered_Graphics_Pipeline deferred_pipeline;
 	Vulkan_API::Registered_Descriptor_Set_Layout deferred_descriptor_set_layout;
 	Vulkan_API::Registered_Descriptor_Set deferred_descriptor_set;
@@ -910,11 +912,26 @@ namespace Rendering
 	
 	void
 	update(VkCommandBuffer *cmdbuf
+	       , VkExtent2D swapchain_extent
+	       , u32 image_index
 	       ,const Memory_Buffer_View<VkDescriptorSet> &additional_sets)
 	{
+	    VkClearValue clears[] {Vulkan_API::init_clear_color_color(0, 0, 0, 0)
+		    , Vulkan_API::init_clear_color_depth(1.0f, 0)
+		    , Vulkan_API::init_clear_color_color(0, 0, 0, 0)
+		    , Vulkan_API::init_clear_color_color(0, 0, 0, 0)
+		    , Vulkan_API::init_clear_color_color(0, 0, 0, 0)};
+
+	    /*Vulkan_API::command_buffer_begin_render_pass(deferred_rndr_pass.p
+							 , &fbos.p[image_index]
+							 , Vulkan_API::init_render_area({0, 0}, swapchain_extent)
+							 , Memory_Buffer_View<VkClearValue> {sizeof(clears) / sizeof(clears[0]), clears}
+							 , VK_SUBPASS_CONTENTS_INLINE
+							 , cmdbuf);*/
+
 	    Memory_Buffer_View<VkCommandBuffer> cmds;
-	    cmds.zero();
 	    allocate_memory_buffer_tmp(cmds, rndr_count);
+	    cmds.zero();
 	    
 	    for (u32 i = 0; i < rndr_count; ++i)
 	    {
@@ -924,6 +941,22 @@ namespace Rendering
 
 	    Vulkan_API::command_buffer_execute_commands(cmdbuf
 							, cmds);
+	    
+	    /*Vulkan_API::command_buffer_next_subpass(cmdbuf
+						    , VK_SUBPASS_CONTENTS_INLINE);*/
+	    
+	    /*Vulkan_API::command_buffer_bind_pipeline(deferred_pipeline.p
+						     , cmdbuf);
+	    Vulkan_API::command_buffer_bind_descriptor_sets(deferred_pipeline.p
+							    , Memory_Buffer_View<VkDescriptorSet>{1, &deferred_descriptor_set.p->set}
+							    , cmdbuf);
+	    Vulkan_API::command_buffer_draw(cmdbuf
+					    , 3, 1, 0, 0);*/
+
+	    /*	    Vulkan_API::command_buffer_execute_commands(cmdbuf
+		    , cmds);*/
+	    
+	    //	    Vulkan_API::command_buffer_end_render_pass(cmdbuf);
 	}
 
 	Material_Access
@@ -956,10 +989,10 @@ namespace Rendering
 								  , sizeof(Vulkan_API::Render_Pass));
 	
 	enum G_Buffer_Attachment :u32 {FINAL_ATTACHMENT
-				       , DEPTH_ATTACHMENT
 				       , ALBEDO_ATTACHMENT
 				       , POSITION_ATTACHMENT
 				       , NORMAL_ATTACHMENT
+				       , DEPTH_ATTACHMENT
 				       , INVALID_ATTACHMENT};
 	
 	VkAttachmentDescription descriptions[INVALID_ATTACHMENT] = {};
@@ -970,7 +1003,7 @@ namespace Rendering
 										 , VK_ATTACHMENT_LOAD_OP_DONT_CARE
 										 , VK_ATTACHMENT_STORE_OP_DONT_CARE
 										 , VK_IMAGE_LAYOUT_UNDEFINED
-										 , VK_IMAGE_LAYOUT_PRESENT_SRC_KHR); 
+										 , VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
 	descriptions[ALBEDO_ATTACHMENT] = Vulkan_API::init_attachment_description(VK_FORMAT_R8G8B8A8_UNORM
 										  , VK_SAMPLE_COUNT_1_BIT
@@ -1074,39 +1107,52 @@ namespace Rendering
     init_deferred_fbos(Vulkan_API::GPU *gpu
 		       , Vulkan_API::Swapchain *swapchain)
     {
-	enum class G_Buffer_Attachment :u32 {FINAL, DEPTH, ALBEDO, POSITION, NORMAL, INVALID};
+	enum class G_Buffer_Attachment :u32 {FINAL, ALBEDO, POSITION, NORMAL, DEPTH, INVALID};
 
-	rndr_sys.main_fbo = Vulkan_API::register_object("framebuffer.main_fbo"_hash, sizeof(Vulkan_API::Framebuffer));
-	allocate_memory_buffer(rndr_sys.main_fbo.p->color_attachments, (u32)G_Buffer_Attachment::INVALID - 1);
+	rndr_sys.fbos = Vulkan_API::register_object("framebuffer.main_fbo"_hash, sizeof(Vulkan_API::Framebuffer) * swapchain->images.size);
+	for (u32 i = 0; i < swapchain->images.size; ++i)
+	{
+	    allocate_memory_buffer(rndr_sys.fbos.p[i].color_attachments, (u32)G_Buffer_Attachment::INVALID - 1);
+	}
 
-	auto create_attachment = [&gpu, &swapchain](Vulkan_API::Registered_Framebuffer &main_fbo
-						    , const Constant_String &name
+	auto create_attachment = [&gpu, &swapchain](const Constant_String &name
 						    , VkFormat format
 						    , VkImageUsageFlagBits usage
-						    , G_Buffer_Attachment attachment)
-	    {
-		main_fbo.p->color_attachments[(u32)attachment]
-		= Vulkan_API::register_object(name, sizeof(Vulkan_API::Image2D));
+						    , G_Buffer_Attachment attachment) -> Vulkan_API::Registered_Image2D
+	{
+	    Vulkan_API::Registered_Image2D img
+	    = Vulkan_API::register_object(name, sizeof(Vulkan_API::Image2D));
 
-		Vulkan_API::init_framebuffer_attachment(swapchain->extent.width
-							, swapchain->extent.height
-							, format
-							, usage
-							, gpu
-							, main_fbo.p->color_attachments[(u32)attachment].p);
-	    };
+	    Vulkan_API::init_framebuffer_attachment(swapchain->extent.width
+						    , swapchain->extent.height
+						    , format
+						    , usage
+						    , gpu
+						    , img.p);
 
-	create_attachment(rndr_sys.main_fbo, "image2D.fbo_final"_hash, swapchain->format, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, G_Buffer_Attachment::FINAL);
-	create_attachment(rndr_sys.main_fbo, "image2D.fbo_albedo"_hash, swapchain->format, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, G_Buffer_Attachment::ALBEDO);
-	create_attachment(rndr_sys.main_fbo, "image2D.fbo_position"_hash, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, G_Buffer_Attachment::POSITION);
-	create_attachment(rndr_sys.main_fbo, "image2D.fbo_normal"_hash, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, G_Buffer_Attachment::NORMAL);
-	create_attachment(rndr_sys.main_fbo, "image2D.fbo_depth"_hash, gpu->supported_depth_format, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, G_Buffer_Attachment::DEPTH);
+	    return(img);
+	};
 
-	Vulkan_API::init_framebuffer(rndr_sys.deferred_rndr_pass.p
-				     , swapchain->extent.width
-				     , swapchain->extent.height
-				     , gpu
-				     , rndr_sys.main_fbo.p);
+	auto albedo = create_attachment("image2D.fbo_albedo"_hash, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, G_Buffer_Attachment::ALBEDO);
+	auto position = create_attachment("image2D.fbo_position"_hash, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, G_Buffer_Attachment::POSITION);
+	auto normal = create_attachment("image2D.fbo_normal"_hash, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, G_Buffer_Attachment::NORMAL);
+	auto depth = create_attachment("image2D.fbo_depth"_hash, gpu->supported_depth_format, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, G_Buffer_Attachment::DEPTH);
+
+	for (u32 i = 0; i < swapchain->images.size; ++i)
+	{ 
+	    rndr_sys.fbos.p[i].color_attachments[0] = swapchain->images.extract(i);
+	    rndr_sys.fbos.p[i].color_attachments[1] = albedo;
+	    rndr_sys.fbos.p[i].color_attachments[2] = position;
+	    rndr_sys.fbos.p[i].color_attachments[3] = normal;
+
+	    rndr_sys.fbos.p[i].depth_attachment = depth;
+	    
+	    Vulkan_API::init_framebuffer(rndr_sys.deferred_rndr_pass.p
+					 , swapchain->extent.width
+					 , swapchain->extent.height
+					 , gpu
+					 , &rndr_sys.fbos.p[i]);
+	}
     }
 
     void
@@ -1226,7 +1272,7 @@ namespace Rendering
 
 	// init assembly info
 	VkPipelineInputAssemblyStateCreateInfo assembly_info = {};
-	Vulkan_API::init_pipeline_input_assembly_info(0, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, VK_FALSE, &assembly_info);
+	Vulkan_API::init_pipeline_input_assembly_info(0, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_FALSE, &assembly_info);
 
 	// init viewport info
 	VkViewport viewport = {};
@@ -1241,7 +1287,7 @@ namespace Rendering
 
 	// init rasterization info
 	VkPipelineRasterizationStateCreateInfo rasterization_info = {};
-	Vulkan_API::init_pipeline_rasterization_info(VK_POLYGON_MODE_FILL, VK_CULL_MODE_BACK_BIT, 1.0f, 0, &rasterization_info);
+	Vulkan_API::init_pipeline_rasterization_info(VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE, 1.0f, 0, &rasterization_info);
 
 	// init multisample info
 	VkPipelineMultisampleStateCreateInfo multisample_info = {};
@@ -1266,8 +1312,8 @@ namespace Rendering
 	VkDynamicState dynamic_states[]
 	{
 	    VK_DYNAMIC_STATE_VIEWPORT,
-		VK_DYNAMIC_STATE_LINE_WIDTH
-		};
+	    VK_DYNAMIC_STATE_LINE_WIDTH
+	};
 	Memory_Buffer_View<VkDynamicState> dynamic_states_ptr = {2, dynamic_states};
 	VkPipelineDynamicStateCreateInfo dynamic_info = {};
 	Vulkan_API::init_pipeline_dynamic_states_info(&dynamic_states_ptr, &dynamic_info);
@@ -1281,7 +1327,7 @@ namespace Rendering
 	Vulkan_API::init_pipeline_depth_stencil_info(VK_TRUE, VK_TRUE, 0.0f, 1.0f, VK_FALSE, &depth_stencil_info);
 
 	// init pipeline object
-	Vulkan_API::Registered_Render_Pass render_pass = Vulkan_API::get_object("render_pass.test_render_pass"_hash);
+	Vulkan_API::Registered_Render_Pass render_pass = rndr_sys.deferred_rndr_pass;
 	Memory_Buffer_View<VkPipelineShaderStageCreateInfo> modules = {2, module_infos};
 	Vulkan_API::init_graphics_pipeline(&modules
 					   , &vertex_input_info
@@ -1320,9 +1366,11 @@ namespace Rendering
 
     void
     update_renderers(VkCommandBuffer *cmdbuf
+		     , VkExtent2D swapchain_extent
+		     , u32 image_index
 		     , const Memory_Buffer_View<VkDescriptorSet> &additional_sets)
     {
-	rndr_sys.update(cmdbuf, additional_sets);
+	rndr_sys.update(cmdbuf, swapchain_extent, image_index, additional_sets);
     }
 
     Material_Access

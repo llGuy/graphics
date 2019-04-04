@@ -84,7 +84,7 @@ namespace Vulkan_API
 
 	~Registered_Object(void) {if (p) {decrease_shared_count(id);}}
     };
-    
+
     using Registered_Graphics_Pipeline		= Registered_Object<struct Graphics_Pipeline>;
     using Registered_Render_Pass		= Registered_Object<struct Render_Pass>;
     using Registered_Buffer			= Registered_Object<struct Buffer>;
@@ -478,6 +478,10 @@ namespace Vulkan_API
 				     , VkSubpassContents subpass_contents
 				     , VkCommandBuffer *command_buffer);
 
+    void
+    command_buffer_next_subpass(VkCommandBuffer *cmdbuf
+				, VkSubpassContents contents);
+
     internal FORCEINLINE void
     command_buffer_end_render_pass(VkCommandBuffer *command_buffer)
     {
@@ -602,6 +606,20 @@ namespace Vulkan_API
 			 , data.first_index
 			 , (s32)data.vertex_offset
 			 , data.first_instance);
+    }
+
+    internal FORCEINLINE void
+    command_buffer_draw(VkCommandBuffer *cmdbuf
+			, u32 v_count
+			, u32 i_count
+			, u32 first_v
+			, u32 first_i)
+    {
+	vkCmdDraw(*cmdbuf
+		  , v_count
+		  , i_count
+		  , first_v
+		  , first_i);
     }
 
     internal FORCEINLINE void

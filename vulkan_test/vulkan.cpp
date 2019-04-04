@@ -1207,6 +1207,13 @@ namespace Vulkan_API
 			       , gpu
 			       , attachment);
 
+	VkMemoryRequirements requirements = attachment->get_memory_requirements(gpu);
+	Vulkan_API::Memory::allocate_gpu_memory(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+						, requirements
+						, gpu
+						, &attachment->device_memory);
+	vkBindImageMemory(gpu->logical_device, attachment->image, attachment->device_memory, 0);
+	
 	VkImageAspectFlags aspect_flags;
 	if (usage & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) aspect_flags = VK_IMAGE_ASPECT_COLOR_BIT;
 	if (usage & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) aspect_flags = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
@@ -1370,6 +1377,14 @@ namespace Vulkan_API
 	vkCmdBeginRenderPass(*command_buffer
 			     , &render_pass_info
 			     , subpass_contents);
+    }
+
+    void
+    command_buffer_next_subpass(VkCommandBuffer *cmdbuf
+				, VkSubpassContents contents)
+    {
+	vkCmdNextSubpass(*cmdbuf
+			 , contents);
     }
 
     VkResult

@@ -57,6 +57,8 @@ namespace Rendering
 
     void
     update_renderers(VkCommandBuffer *record_cmd
+		     , VkExtent2D swapchain_extent
+		     , u32 image_index
 		     , const Memory_Buffer_View<VkDescriptorSet> &additional_sets);
 
     struct Material_Data

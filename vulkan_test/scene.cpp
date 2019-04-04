@@ -12,8 +12,8 @@ void
 Camera::set_default(f32 w, f32 h, f32 m_x, f32 m_y)
 {
     mp = glm::vec2(m_x, m_y);
-    p = glm::vec3(0);
-    d = glm::vec3(1, 0, 0);
+    p = glm::vec3(10.0f);
+    d = glm::vec3(-1, -1, -1);
     u = glm::vec3(0, 1, 0);
 
     fov = 60.0f;
@@ -151,7 +151,10 @@ record_cmd(Rendering::Rendering_State *rnd_objs
 						 , VK_SUBPASS_CONTENTS_INLINE
 						 , cmdbuf);
 
-    Rendering::update_renderers(cmdbuf, Memory_Buffer_View<VkDescriptorSet>{1, &descriptor_sets.p[image_index].set});
+    Rendering::update_renderers(cmdbuf
+				, vk->swapchain.extent
+				, image_index
+				, Memory_Buffer_View<VkDescriptorSet>{1, &descriptor_sets.p[image_index].set});
 
     Vulkan_API::command_buffer_end_render_pass(cmdbuf);
     Vulkan_API::end_command_buffer(cmdbuf);
