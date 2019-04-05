@@ -38,7 +38,9 @@ namespace Rendering
 			 , Rendering_State *cache);
 
     void
-    init_rendering_system(Vulkan_API::Swapchain *swapchain, Vulkan_API::GPU *gpu);
+    init_rendering_system(Vulkan_API::Swapchain *swapchain
+			  , Vulkan_API::GPU *gpu
+			  , Vulkan_API::Registered_Render_Pass rndr_pass);
 
     struct Renderer_Init_Data
     {
@@ -59,7 +61,8 @@ namespace Rendering
     update_renderers(VkCommandBuffer *record_cmd
 		     , VkExtent2D swapchain_extent
 		     , u32 image_index
-		     , const Memory_Buffer_View<VkDescriptorSet> &additional_sets);
+		     , const Memory_Buffer_View<VkDescriptorSet> &additional_sets
+		     , Vulkan_API::Registered_Render_Pass rndr_pass);
 
     struct Material_Data
     {

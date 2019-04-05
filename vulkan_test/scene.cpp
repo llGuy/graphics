@@ -57,7 +57,7 @@ init_scene(Scene *scene
 
 
 
-    Rendering::init_rendering_system(&vk->swapchain, &vk->gpu);
+    Rendering::init_rendering_system(&vk->swapchain, &vk->gpu, Vulkan_API::get_object("render_pass.test_render_pass"_hash));
 
     Rendering::Renderer_Init_Data rndr_d = {};
     rndr_d.rndr_id = "renderer.test_material_renderer"_hash;
@@ -144,19 +144,20 @@ record_cmd(Rendering::Rendering_State *rnd_objs
 
     VkClearValue clears[2] {Vulkan_API::init_clear_color_color(0, 0, 0, 0), Vulkan_API::init_clear_color_depth(1.0f, 0)};
 		
-    Vulkan_API::command_buffer_begin_render_pass(render_pass.p
+    /*Vulkan_API::command_buffer_begin_render_pass(render_pass.p
 						 , fbo.p
 						 , Vulkan_API::init_render_area({0, 0}, vk->swapchain.extent)
 						 , Memory_Buffer_View<VkClearValue>{2, clears}
 						 , VK_SUBPASS_CONTENTS_INLINE
-						 , cmdbuf);
+						 , cmdbuf);*/
 
     Rendering::update_renderers(cmdbuf
 				, vk->swapchain.extent
 				, image_index
-				, Memory_Buffer_View<VkDescriptorSet>{1, &descriptor_sets.p[image_index].set});
+				, Memory_Buffer_View<VkDescriptorSet>{1, &descriptor_sets.p[image_index].set}
+				, render_pass);
 
-    Vulkan_API::command_buffer_end_render_pass(cmdbuf);
+    //    Vulkan_API::command_buffer_end_render_pass(cmdbuf);
     Vulkan_API::end_command_buffer(cmdbuf);
 }
 
