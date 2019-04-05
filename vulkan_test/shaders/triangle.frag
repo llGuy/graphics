@@ -15,9 +15,9 @@ void main(void)
 {
     out_final = vec4(frag_color, 1.0);
 
-    /*   out_albedo = vec4(frag_color, 1.0f);
+    out_albedo = vec4(vec3(1.0f, 0.0f, 0.0f), 1.0f);
 
-    out_position = vec4(frag_position, 1.0f);
+    /*out_position = vec4(frag_position, 1.0f);
 
     out_normal = vec4(frag_position, 1.0f);*/
 }
