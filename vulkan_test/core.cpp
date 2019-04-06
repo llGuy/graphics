@@ -25,7 +25,7 @@ internal void
 open_debug_file(void)
 {
     output_file.fp = fopen(DEBUG_FILE, "w+");
-    assert(output_file.fp >= NULL);
+    assert(output_file.fp != NULL);
 }
 
 internal void
