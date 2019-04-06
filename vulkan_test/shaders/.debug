@@ -1,0 +1,31 @@
+[core.cpp:344] log: starting session
+[core.cpp:356] log: stack allocator start address : 00000170D7151040
+[core.cpp:99] log: stack allocation for "vulkan_instanc_extension_names_list_allocation"
+[core.cpp:99] log: stack allocation for "validation_layer_list_allocation"
+[vulkan.cpp:251] success : vkCreateInstance(&instance_info , nullptr , instance)
+[core.cpp:136] log: poping allocation "validation_layer_list_allocation" -> new head is "vulkan_instanc_extension_names_list_allocation"
+[core.cpp:127] log: cleared stack : last allocation was "vulkan_instanc_extension_names_list_allocation"
+[vulkan.cpp:286] success : vk_create_debug_utils_messenger(*instance, &debug_info, nullptr, messenger)
+[vulkan.cpp:1459] success : glfwCreateWindowSurface(state->instance , window , nullptr , &state->surface)
+[core.cpp:99] log: stack allocation for "physical_device_list_allocation"
+[vulkan.cpp:414] log: available physical hardware devices count : 2
+[core.cpp:99] log: stack allocation for "queue_family_list_allocation"
+[core.cpp:136] log: poping allocation "queue_family_list_allocation" -> new head is "physical_device_list_allocation"
+[core.cpp:99] log: stack allocation for "gpu_extension_properties_list_allocation"
+[core.cpp:136] log: poping allocation "gpu_extension_properties_list_allocation" -> new head is "physical_device_list_allocation"
+[core.cpp:99] log: stack allocation for "surface_format_list_allocation"
+[core.cpp:99] log: stack allocation for "surface_present_mode_list_allocation"
+[vulkan.cpp:434] log: found gpu compatible with application
+[core.cpp:99] log: stack allocation for "unique_queue_family_indices_allocation"
+[core.cpp:99] log: stack allocation for "unique_queue_list_allocation"
+[vulkan.cpp:498] success : vkCreateDevice(gpu->hardware , &device_info , nullptr , &gpu->logical_device)
+[core.cpp:136] log: poping allocation "unique_queue_list_allocation" -> new head is "unique_queue_family_indices_allocation"
+[core.cpp:136] log: poping allocation "unique_queue_family_indices_allocation" -> new head is "surface_present_mode_list_allocation"
+[vulkan.cpp:1005] success : vkCreateSwapchainKHR(gpu->logical_device, &swapchain_info, nullptr, &swapchain->swapchain)
+[core.cpp:99] log: stack allocation for "swapchain_images_list_allocation"
+[vulkan.cpp:629] success : vkCreateImageView(gpu->logical_device, &view_info, nullptr, dest_image_view)
+[vulkan.cpp:629] success : vkCreateImageView(gpu->logical_device, &view_info, nullptr, dest_image_view)
+[vulkan.cpp:629] success : vkCreateImageView(gpu->logical_device, &view_info, nullptr, dest_image_view)
+[vulkan.cpp:1049] success : vkCreateRenderPass(gpu->logical_device, &render_pass_info, nullptr, &dest_render_pass->render_pass)
+[vulkan.cpp:1317] success : vkCreateDescriptorSetLayout(gpu->logical_device, &layout_info, nullptr, dst)
+[c:\users\lucro\desktop\graphics\vulkan_test\core.hpp:213] log: error - couldnt load file "shaders/SPV/triangle.vert.spv"

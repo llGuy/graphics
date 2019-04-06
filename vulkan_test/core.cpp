@@ -385,10 +385,10 @@ main(s32 argc
 	Rendering::Rendering_State rnd = {};
 
 	Vulkan_API::init_state(&vk, window.window);
-	Rendering::init_rendering_state(&vk, &rnd);
+	//	Rendering::init_rendering_state(&vk, &rnd);
 	
 	Scene scene;
-	init_scene(&scene, &window, &vk);
+	init_scene(&scene, &window, &vk, &rnd);
 	
 	auto now = std::chrono::high_resolution_clock::now();
 

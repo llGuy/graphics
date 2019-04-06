@@ -47,7 +47,8 @@ struct Scene
 void
 init_scene(Scene *scene
 	   , Window_Data *window
-	   , Vulkan_API::State *vk);
+	   , Vulkan_API::State *vk
+	   , Rendering::Rendering_State *rnd);
 
 void
 update_scene(Scene *scene

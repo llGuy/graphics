@@ -4,6 +4,7 @@
 #include "scene.hpp"
 #include <glm/glm.hpp>
 #include <GLFW/glfw3.h>
+#include "rendering.hpp"
 #include <glm/gtx/transform.hpp>
 
 constexpr f32 PI = 3.14159265359f;
@@ -37,7 +38,8 @@ Camera::compute_view(void)
 void
 init_scene(Scene *scene
 	   , Window_Data *window
-	   , Vulkan_API::State *vk)
+	   , Vulkan_API::State *vk
+	   , Rendering::Rendering_State *rnd)
 {
     scene->user_camera.set_default(window->w, window->h, window->m_x, window->m_y);
 
@@ -56,9 +58,11 @@ init_scene(Scene *scene
     Vulkan_API::init_fence(&vk->gpu, VK_FENCE_CREATE_SIGNALED_BIT, &scene->cpu_wait);
 
 
-
-    Rendering::init_rendering_system(&vk->swapchain, &vk->gpu, Vulkan_API::get_object("render_pass.test_render_pass"_hash));
-
+    Vulkan_API::Registered_Render_Pass n {};
+    Rendering::init_rendering_system(&vk->swapchain, &vk->gpu, n);
+    
+    Rendering::init_rendering_state(vk, rnd);
+    
     Rendering::Renderer_Init_Data rndr_d = {};
     rndr_d.rndr_id = "renderer.test_material_renderer"_hash;
     rndr_d.mtrl_max = 3;

@@ -1207,12 +1207,12 @@ namespace Vulkan_API
 			       , gpu
 			       , attachment);
 
-	VkMemoryRequirements requirements = attachment->get_memory_requirements(gpu);
+	/*	VkMemoryRequirements requirements = attachment->get_memory_requirements(gpu);
 	Vulkan_API::Memory::allocate_gpu_memory(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
 						, requirements
 						, gpu
 						, &attachment->device_memory);
-	vkBindImageMemory(gpu->logical_device, attachment->image, attachment->device_memory, 0);
+						vkBindImageMemory(gpu->logical_device, attachment->image, attachment->device_memory, 0);*/
 	
 	VkImageAspectFlags aspect_flags;
 	if (usage & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) aspect_flags = VK_IMAGE_ASPECT_COLOR_BIT;
