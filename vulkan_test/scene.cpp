@@ -142,7 +142,6 @@ record_cmd(Rendering::Rendering_State *rnd_objs
 
     Vulkan_API::Registered_Render_Pass render_pass = rnd_objs->test_render_pass;
     Vulkan_API::Registered_Graphics_Pipeline pipeline_ptr = rnd_objs->graphics_pipeline;
-    Vulkan_API::Registered_Framebuffer fbo = vk->swapchain.framebuffers.extract(image_index);
     Vulkan_API::Registered_Descriptor_Set descriptor_sets = rnd_objs->descriptor_sets;
     Vulkan_API::Registered_Model model = rnd_objs->test_model;
 

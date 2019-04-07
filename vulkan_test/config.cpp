@@ -64,3 +64,27 @@ struct Config_Parser
     
     Memory_Buffer_View<Token> tks;
 };
+
+void
+begin_proc_init(void)
+{
+    
+}
+
+void
+push_proc(void)
+{
+    
+}
+
+void
+end_proc_init(void)
+{
+    
+}
+
+void
+open_config_file(const char *filename)
+{
+    FILE *fp = fopen("r", filename);
+}

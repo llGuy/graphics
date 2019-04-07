@@ -6,11 +6,11 @@
 #include <GLFW/glfw3.h>
 #include <vulkan/vulkan.h>
 
+#define MAKE_VK_VIEW_TYPES(VkName) using View_##VkName = VkName; using Real_##VkName = VkName;
+
 namespace Vulkan_API
 {
 
-    // only for resources (buffers, textures, framebuffers, shaders) - not stuff like command buffers
-    
     void
     init_manager(void);
 
@@ -20,6 +20,7 @@ namespace Vulkan_API
     void
     increase_shared_count(const Constant_String &id);    
 
+    // CPU memory used for allocating vulkan / gpu objects (images, vbos, ...)
     struct Registered_Object_Base
     {
 	// if p == nullptr, the object was deleted
@@ -35,10 +36,10 @@ namespace Vulkan_API
 
 	~Registered_Object_Base(void) {if (p) {decrease_shared_count(id);}}
     };
-    
+
     Registered_Object_Base
     register_object(const Constant_String &id
-	     , u32 bytes_size);
+		    , u32 size);
 
     Registered_Object_Base
     get_object(const Constant_String &id);
@@ -178,6 +179,7 @@ namespace Vulkan_API
     struct Buffer
     {
 	VkBuffer buffer;
+	
 	VkDeviceMemory memory;
 	VkDeviceSize size;
 
@@ -211,7 +213,8 @@ namespace Vulkan_API
     
     struct Model_Index_Data
     {
-	Registered_Buffer index_buffer;
+	VkBuffer index_buffer;
+	
 	u32 index_count;
 	u32 index_offset;
 	VkIndexType index_type;
@@ -235,7 +238,7 @@ namespace Vulkan_API
 			    , VkCommandBuffer *command_buffer)
     {
 	vkCmdBindIndexBuffer(*command_buffer
-			     , index_data.index_buffer.p->buffer
+			     , index_data.index_buffer
 			     , index_data.index_offset
 			     , index_data.index_type);
     }
@@ -271,10 +274,10 @@ namespace Vulkan_API
 					  , FRAGMENT_SHADER_BIT = 1 << 3};
 
 	s32 stages;
-	// "[some_dir]/[name]_"
+
 	const char *base_dir_and_name;
 
-	Registered_Descriptor_Set_Layout descriptor_set_layout;
+	VkDescriptorSetLayout descriptor_set_layout;
 	
 	VkPipelineLayout layout;
 
@@ -367,8 +370,8 @@ namespace Vulkan_API
 	VkSwapchainKHR swapchain;
 	VkExtent2D extent;
 	
-	Registered_Image2D images;
-	Registered_Framebuffer framebuffers;
+	Memory_Buffer_View<VkImage> imgs;
+	Memory_Buffer_View<VkImageView> views;
     };
     
     struct Render_Pass
@@ -505,7 +508,7 @@ namespace Vulkan_API
     struct Model_Binding
     {
 	// buffer that stores all the attributes
-	Registered_Buffer buffer;
+	VkBuffer buffer;
 	u32 binding;
 	VkVertexInputRate input_rate;
 
@@ -591,7 +594,7 @@ namespace Vulkan_API
 	    
 	    for (u32 i = 0; i < binding_count; ++i)
 	    {
-		raw_cache_for_rendering[i] = bindings[i].buffer.p->buffer;
+		raw_cache_for_rendering[i] = bindings[i].buffer;
 	    }
 	}
     };
@@ -968,8 +971,8 @@ namespace Vulkan_API
 	VkFramebuffer framebuffer;
 
 	// for color attachments only
-	Memory_Buffer_View<Registered_Image2D> color_attachments;
-	Registered_Image2D depth_attachment;
+	Memory_Buffer_View<VkImageView> color_attachments;
+	VkImageView depth_attachment;
     };
 
     void
@@ -1009,7 +1012,7 @@ namespace Vulkan_API
     
     struct Descriptor_Set
     {
-	Registered_Descriptor_Set_Layout layouts;
+	VkDescriptorSetLayout layouts;
 	VkDescriptorSet set;
 
 	void
@@ -1057,7 +1060,7 @@ namespace Vulkan_API
     }
     
     void
-    allocate_descriptor_sets(Memory_Buffer_View<Registered_Descriptor_Set> &descriptor_sets
+    allocate_descriptor_sets(Memory_Buffer_View<Descriptor_Set *> &descriptor_sets
 			     , const Memory_Buffer_View<VkDescriptorSetLayout> &layouts
 			     , GPU *gpu
 			     , VkDescriptorPool *descriptor_pool);

@@ -20,6 +20,9 @@ $(BINDIR)$(EXENAME): $(OBJS)
 $(OBJDIR)%.obj: %.cpp
 	$(CC) -Zi /EHsc /c /Fo$(OBJDIR) $(DEF) $(INCS) $< /std:c++latest
 
+tags: %.cpp %.hpp
+	etags *.cpp *.hpp
+
 $(OBJDIR)%.dep: %.cpp
 	gcc -MM $(GCCDEF) $(GCCINC) $< | sed 's/.o:/.obj:/' > $@
 

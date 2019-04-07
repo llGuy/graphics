@@ -8,75 +8,6 @@
 namespace Rendering
 {
 
-    /* initialize the rendering objects */
-    internal void
-    init_test_render_pass(Vulkan_API::Swapchain *swapchain
-			  , Vulkan_API::GPU *gpu)
-    {
-	/* init main renderpass */
-	Vulkan_API::Registered_Render_Pass test_render_pass = Vulkan_API::register_object("render_pass.test_render_pass"_hash
-											  , sizeof(Vulkan_API::Render_Pass));
-	
-	enum {COLOR_DESCRIPTION = 0, DEPTH_DESCRIPTION = 1};
-	
-	VkAttachmentDescription descriptions[2]	= {};
-	descriptions[COLOR_DESCRIPTION] = Vulkan_API::init_attachment_description(swapchain->format
-										  , VK_SAMPLE_COUNT_1_BIT
-										  , VK_ATTACHMENT_LOAD_OP_CLEAR
-										  , VK_ATTACHMENT_STORE_OP_STORE
-										  , VK_ATTACHMENT_LOAD_OP_DONT_CARE
-										  , VK_ATTACHMENT_STORE_OP_DONT_CARE
-										  , VK_IMAGE_LAYOUT_UNDEFINED
-										  , VK_IMAGE_LAYOUT_PRESENT_SRC_KHR); 
-
-	descriptions[DEPTH_DESCRIPTION] = Vulkan_API::init_attachment_description(gpu->supported_depth_format
-										  , VK_SAMPLE_COUNT_1_BIT
-										  , VK_ATTACHMENT_LOAD_OP_CLEAR
-										  , VK_ATTACHMENT_STORE_OP_DONT_CARE
-										  , VK_ATTACHMENT_LOAD_OP_DONT_CARE
-										  , VK_ATTACHMENT_STORE_OP_DONT_CARE
-										  , VK_IMAGE_LAYOUT_UNDEFINED
-										  , VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
-	
-	VkAttachmentReference references[2] = {};
-	
-	references[COLOR_DESCRIPTION] = Vulkan_API::init_attachment_reference(0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-	references[DEPTH_DESCRIPTION] = Vulkan_API::init_attachment_reference(1, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
-	
-	VkSubpassDescription subpass = Vulkan_API::init_subpass_description(single_buffer(&references[COLOR_DESCRIPTION])
-									    , &references[DEPTH_DESCRIPTION]
-									    , null_buffer<VkAttachmentReference>());
-
-	VkSubpassDependency dependencies[2] = {};
-	
-	dependencies[0] = Vulkan_API::init_subpass_dependency(VK_SUBPASS_EXTERNAL
-							      , 0
-							      , VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
-							      , 0
-							      , VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
-							      , VK_ACCESS_COLOR_ATTACHMENT_READ_BIT
-							      | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT
-							      , VK_DEPENDENCY_BY_REGION_BIT);
-
-	dependencies[1] = Vulkan_API::init_subpass_dependency(0
-							      , VK_SUBPASS_EXTERNAL
-							      , VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
-							      , VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT
-							      , VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT
-							      , VK_ACCESS_MEMORY_READ_BIT
-							      , VK_DEPENDENCY_BY_REGION_BIT);
-
-	Memory_Buffer_View<VkAttachmentDescription> descriptions_array	= {2, descriptions};
-	Memory_Buffer_View<VkSubpassDescription> subpasses_array		= {1, &subpass};
-	Memory_Buffer_View<VkSubpassDependency> dependencies_array		= {2, dependencies};
-	
-	Vulkan_API::init_render_pass(descriptions_array
-				     , subpasses_array
-				     , dependencies_array
-				     , gpu
-				     , test_render_pass.p);
-    }
-
     internal void
     init_model_info(void)
     {
@@ -117,7 +48,8 @@ namespace Rendering
 	graphics_pipeline.p->stages = Vulkan_API::Graphics_Pipeline::Shader_Stages_Bits::VERTEX_SHADER_BIT
 	    | Vulkan_API::Graphics_Pipeline::Shader_Stages_Bits::FRAGMENT_SHADER_BIT;
 	graphics_pipeline.p->base_dir_and_name = "../vulkan/shaders/";
-	graphics_pipeline.p->descriptor_set_layout = Vulkan_API::get_object("descriptor_set_layout.test_descriptor_set_layout"_hash);
+	Vulkan_API::Registered_Descriptor_Set_Layout l = Vulkan_API::get_object("descriptor_set_layout.test_descriptor_set_layout"_hash);
+	graphics_pipeline.p->descriptor_set_layout = *l.p;
 	
 	// create shaders
 	File_Contents vsh_bytecode = read_file("shaders/SPV/triangle.vert.spv");
@@ -199,8 +131,8 @@ namespace Rendering
 	Vulkan_API::init_pipeline_dynamic_states_info(&dynamic_states_ptr, &dynamic_info);
 
 	// init pipeline layout
-	Vulkan_API::Registered_Descriptor_Set_Layout &descriptor_set_layout = graphics_pipeline.p->descriptor_set_layout;
-	Memory_Buffer_View<VkDescriptorSetLayout> layouts = {1, descriptor_set_layout.p};
+	VkDescriptorSetLayout descriptor_set_layout = graphics_pipeline.p->descriptor_set_layout;
+	Memory_Buffer_View<VkDescriptorSetLayout> layouts = {1, &descriptor_set_layout};
 
 	VkPushConstantRange push_k_rng  = {};
 	Vulkan_API::init_push_constant_range(VK_SHADER_STAGE_VERTEX_BIT
@@ -264,84 +196,6 @@ namespace Rendering
 					  , gpu
 					  , graphics_command_pool.p);
     }
-
-    internal void
-    init_depth_texture(Vulkan_API::Swapchain *swapchain
-		       , Vulkan_API::GPU *gpu)
-    {
-	VkFormat depth_format = gpu->supported_depth_format;
-
-	Vulkan_API::Registered_Image2D depth_image = Vulkan_API::register_object("image2D.depth_image"_hash
-										 , sizeof(Vulkan_API::Image2D));
-
-	Vulkan_API::init_image(swapchain->extent.width
-			       , swapchain->extent.height
-			       , depth_format
-			       , VK_IMAGE_TILING_OPTIMAL
-			       , VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT
-			       , VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
-			       , gpu
-			       , depth_image.p);
-
-	VkMemoryRequirements requirements = depth_image.p->get_memory_requirements(gpu);
-	Vulkan_API::Memory::allocate_gpu_memory(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
-						, requirements
-						, gpu
-						, &depth_image.p->device_memory);
-	vkBindImageMemory(gpu->logical_device, depth_image.p->image, depth_image.p->device_memory, 0);
-
-	Vulkan_API::init_image_view(&depth_image.p->image
-				    , depth_format
-				    , VK_IMAGE_ASPECT_DEPTH_BIT
-				    , gpu
-				    , &depth_image.p->image_view);
-
-	Vulkan_API::Registered_Command_Pool command_pool = Vulkan_API::get_object("command_pool.graphics_command_pool"_hash);
-	Vulkan_API::transition_image_layout(&depth_image.p->image
-					    , depth_format
-					    , VK_IMAGE_LAYOUT_UNDEFINED
-					    , VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
-					    , command_pool.p
-					    , gpu);
-    }
-
-    internal void
-    init_swapchain_framebuffers(Vulkan_API::GPU *gpu
-				, Vulkan_API::Swapchain *swapchain)
-    {
-	swapchain->framebuffers = Vulkan_API::register_object("framebuffer.swapchain_framebuffers"_hash	
-						      , sizeof(Vulkan_API::Framebuffer) * swapchain->images.size);
-	
-	
-	char framebuffer_images_name[] = "framebuffer.swapchain_framebuffer0";
-	enum { NUMBER_STRING_INDEX = 33 };
-	enum { COLOR_ATTACHMENT = 0 };
-
-	persist constexpr u32 COLOR_ATTACHMENTS_PER_FBO = 1;
-
-	Vulkan_API::Registered_Render_Pass compatible_render_pass = Vulkan_API::get_object("render_pass.test_render_pass"_hash);
-	Vulkan_API::Registered_Image2D depth_image = Vulkan_API::get_object("image2D.depth_image"_hash);
-	
-	for (u32 i = 0
-		 ; i < swapchain->images.size
-		 ; ++i)
-	{
-	    auto *framebuffer = &swapchain->framebuffers.p[i];
-	    
-	    framebuffer->color_attachments.count = COLOR_ATTACHMENTS_PER_FBO;
-	    framebuffer->color_attachments.buffer = (Vulkan_API::Registered_Image2D *)allocate_free_list(sizeof(Vulkan_API::Registered_Image2D) * COLOR_ATTACHMENTS_PER_FBO);
-	    framebuffer->color_attachments.buffer[COLOR_ATTACHMENT] = swapchain->images.extract(i);
-	    framebuffer->depth_attachment = depth_image;
-	    
-	    Vulkan_API::init_framebuffer(compatible_render_pass.p
-					 , swapchain->extent.width
-					 , swapchain->extent.height
-					 , gpu
-					 , framebuffer);
-	}
-    }
-
-    
 
     internal void
     init_object_texture(Vulkan_API::GPU *gpu)
@@ -458,7 +312,6 @@ namespace Rendering
 	Vulkan_API::Registered_Buffer object_model_vbo = Vulkan_API::register_object("buffer.test_model_vbo"_hash
 										     , sizeof(Vulkan_API::Buffer));
 
-	main_binding->buffer = object_model_vbo;
 	
 	Memory_Byte_Buffer byte_buffer{sizeof(vertices), vertices};
 	Vulkan_API::Registered_Command_Pool command_pool = Vulkan_API::get_object("command_pool.graphics_command_pool"_hash);
@@ -468,6 +321,7 @@ namespace Rendering
 								  , object_model_vbo.p
 								  , gpu);
 
+	main_binding->buffer = object_model_vbo.p->buffer;
 	object_model.p->create_vbo_list();
     }
 
@@ -499,7 +353,6 @@ namespace Rendering
 	Vulkan_API::Registered_Buffer ibo = Vulkan_API::register_object("buffer.test_model_ibo"_hash
 									, sizeof(Vulkan_API::Buffer));
 
-	model.p->index_data.index_buffer = ibo;
 	model.p->index_data.index_type = VK_INDEX_TYPE_UINT32;
 	model.p->index_data.index_offset = 0;
 	model.p->index_data.index_count = sizeof(mesh_indices) / sizeof(mesh_indices[0]);
@@ -512,6 +365,8 @@ namespace Rendering
 								  , command_pool.p
 								  , ibo.p
 								  , gpu);
+
+	model.p->index_data.index_buffer = ibo.p->buffer;
     }
 
     internal void
@@ -526,7 +381,7 @@ namespace Rendering
 	    alignas(16) glm::mat4 projection_matrix;
 	};
 	
-	u32 uniform_buffer_count = swapchain->images.size;
+	u32 uniform_buffer_count = swapchain->imgs.count;
 	    
 	char ubo_name[] = "buffer.ubo0";
 	u32 char_count = sizeof(ubo_name) / sizeof(char);
@@ -570,17 +425,17 @@ namespace Rendering
 	    
 	VkDescriptorPoolSize pool_sizes[2] = {};
 
-	Vulkan_API::init_descriptor_pool_size(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, swapchain->images.size, &pool_sizes[0]);
-	Vulkan_API::init_descriptor_pool_size(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, swapchain->images.size, &pool_sizes[1]);
+	Vulkan_API::init_descriptor_pool_size(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, swapchain->imgs.count, &pool_sizes[0]);
+	Vulkan_API::init_descriptor_pool_size(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, swapchain->imgs.count, &pool_sizes[1]);
     
-	Vulkan_API::init_descriptor_pool(Memory_Buffer_View<VkDescriptorPoolSize>{2, pool_sizes}, swapchain->images.size, gpu, descriptor_pool.p);
+	Vulkan_API::init_descriptor_pool(Memory_Buffer_View<VkDescriptorPoolSize>{2, pool_sizes}, swapchain->imgs.count, gpu, descriptor_pool.p);
     } 
 
     internal void
     init_descriptor_sets(Vulkan_API::Swapchain *swapchain
 			 , Vulkan_API::GPU *gpu)
     {
-	u32 set_count = swapchain->images.size;
+	u32 set_count = swapchain->imgs.count;
 
 	VkDescriptorSetLayout *descriptor_set_layouts = (VkDescriptorSetLayout *)allocate_stack(set_count * sizeof(VkDescriptorSetLayout)
 												, Alignment(1)
@@ -594,7 +449,10 @@ namespace Rendering
 
 	Vulkan_API::Registered_Descriptor_Set descriptor_sets = Vulkan_API::register_object("descriptor_set.test_descriptor_sets"_hash
 											    , sizeof(Vulkan_API::Descriptor_Set) * set_count);
-	auto descriptor_sets_separate = descriptor_sets.separate();
+
+	Memory_Buffer_View<Vulkan_API::Descriptor_Set *> descriptor_sets_separate;
+	allocate_memory_buffer(descriptor_sets_separate, set_count);
+	for (u32 i = 0; i < set_count; ++i) descriptor_sets_separate[i] = &descriptor_sets.p[i];
 
 	Vulkan_API::Registered_Descriptor_Pool descriptor_pool = Vulkan_API::get_object("descriptor_pool.test_descriptor_pool"_hash);
 	    
@@ -629,76 +487,6 @@ namespace Rendering
 
 
 	
-    internal void
-    init_command_buffers(Vulkan_API::Swapchain *swapchain
-			 , Vulkan_API::GPU *gpu
-			 , const Vulkan_API::Registered_Descriptor_Set &descriptor_sets)
-    {
-	Vulkan_API::Registered_Command_Pool command_pool = Vulkan_API::get_object("command_pool.graphics_command_pool"_hash);
-
-	Vulkan_API::Registered_Command_Buffer command_buffers = Vulkan_API::register_object("command_buffer.main_command_buffers"_hash
-											    , sizeof(VkCommandBuffer) * swapchain->images.size);
-	    
-	Vulkan_API::allocate_command_buffers(command_pool.p
-					     , VK_COMMAND_BUFFER_LEVEL_PRIMARY
-					     , gpu
-					     , Memory_Buffer_View<VkCommandBuffer>{command_buffers.size, command_buffers.p});
-
-	Vulkan_API::Registered_Render_Pass render_pass = Vulkan_API::get_object("render_pass.test_render_pass"_hash);
-
-	Vulkan_API::Registered_Graphics_Pipeline pipeline_ptr = Vulkan_API::get_object("pipeline.main_pipeline"_hash);
-
-	Vulkan_API::Registered_Model model = Vulkan_API::get_object("vulkan_model.test_model"_hash);
-	Vulkan_API::Registered_Buffer &vbo = model.p->bindings[0].buffer;
-	Vulkan_API::Registered_Buffer &ibo = model.p->index_data.index_buffer;
-
-	for (u32 i = 0
-		 ; i < command_buffers.size
-		 ; ++i)
-	{
-	    Vulkan_API::begin_command_buffer(&command_buffers.p[i], VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT, nullptr);
-
-	    Vulkan_API::Registered_Framebuffer fbo = swapchain->framebuffers.extract(i);
-
-	    VkClearValue clears[2] {Vulkan_API::init_clear_color_color(0, 0, 0, 0), Vulkan_API::init_clear_color_depth(1.0f, 0)};
-		
-	    Vulkan_API::command_buffer_begin_render_pass(render_pass.p
-							 , fbo.p
-							 , Vulkan_API::init_render_area({0, 0}, swapchain->extent)
-							 , Memory_Buffer_View<VkClearValue>{2, clears}
-							 , VK_SUBPASS_CONTENTS_INLINE
-							 , &command_buffers.p[i]);
-
-	    Vulkan_API::command_buffer_bind_pipeline(pipeline_ptr.p, &command_buffers.p[i]);
-
-	    VkDeviceSize offset[] = {0};
-	    Vulkan_API::command_buffer_bind_vbos(model.p->raw_cache_for_rendering
-						 , Memory_Buffer_View<VkDeviceSize>{model.p->raw_cache_for_rendering.count, offset}
-						 , 0, 1
-						 , &command_buffers.p[i]);
-
-	    Vulkan_API::command_buffer_bind_ibo(model.p->index_data
-						, &command_buffers.p[i]);
-
-	    Vulkan_API::Descriptor_Set *descriptor_set = &descriptor_sets.p[i];
-	    Vulkan_API::command_buffer_bind_descriptor_sets(pipeline_ptr.p
-							    , Memory_Buffer_View<VkDescriptorSet>{1, &descriptor_set->set}
-							    , &command_buffers.p[i]);
-
-	    Vulkan_API::Draw_Indexed_Data index_data;
-	    index_data.index_count = model.p->index_data.index_count;
-	    index_data.instance_count = 1;
-	    index_data.first_index = 0;
-	    index_data.vertex_offset = 0;
-	    index_data.first_instance = 0;
-	    Vulkan_API::command_buffer_draw_indexed(&command_buffers.p[i]
-						    , index_data);
-	    
-	    Vulkan_API::command_buffer_end_render_pass(&command_buffers.p[i]);
-	    Vulkan_API::end_command_buffer(&command_buffers.p[i]);
-	}
-    }
-    
     internal constexpr u32 MAX_FRAMES_IN_FLIGHT = 2;
 	
     internal void
@@ -722,9 +510,6 @@ namespace Rendering
     init_rendering_state(Vulkan_API::State *vulkan_state
 			 , Rendering_State *cache)
     {
-	init_test_render_pass(&vulkan_state->swapchain
-			      , &vulkan_state->gpu);
-	
 	init_descriptor_set_layout(&vulkan_state->gpu);
 
 	init_model_info();
@@ -733,9 +518,6 @@ namespace Rendering
 
 	init_command_pool(&vulkan_state->gpu);
 
-	init_depth_texture(&vulkan_state->swapchain, &vulkan_state->gpu);
-
-	init_swapchain_framebuffers(&vulkan_state->gpu, &vulkan_state->swapchain);
 
 	init_object_texture(&vulkan_state->gpu);
 
@@ -753,20 +535,13 @@ namespace Rendering
 	init_descriptor_sets(&vulkan_state->swapchain
 			     , &vulkan_state->gpu);
 
-	init_command_buffers(&vulkan_state->swapchain
-			     , &vulkan_state->gpu
-			     , Vulkan_API::get_object("descriptor_set.test_descriptor_sets"_hash));
-
 	init_sync(&vulkan_state->gpu);
 	
-	cache->test_render_pass = Vulkan_API::get_object("render_pass.test_render_pass"_hash);
 	cache->descriptor_set_layout = Vulkan_API::get_object("descriptor_set_layout.test_descriptor_set_layout"_hash);
 	cache->descriptor_sets = Vulkan_API::get_object("descriptor_set.test_descriptor_sets"_hash);
 	cache->graphics_pipeline = Vulkan_API::get_object("pipeline.main_pipeline"_hash);
 	cache->graphics_command_pool = Vulkan_API::get_object("command_pool.graphics_command_pool"_hash);
-	cache->depth_image = Vulkan_API::get_object("image2D.depth_image"_hash);
 	cache->texture = Vulkan_API::get_object("image2D.texture"_hash);
-	cache->command_buffers = Vulkan_API::get_object("command_buffer.main_command_buffers"_hash);
 
 	cache->fences = Vulkan_API::get_object("fence.main_fences"_hash);
 	cache->image_ready_semaphores = Vulkan_API::get_object("semaphore.image_ready"_hash);
@@ -1140,10 +915,9 @@ namespace Rendering
     {
 	enum class G_Buffer_Attachment :u32 {FINAL, ALBEDO, POSITION, NORMAL, DEPTH, INVALID};
 
-	rndr_sys.fbos = Vulkan_API::register_object("framebuffer.main_fbo"_hash, sizeof(Vulkan_API::Framebuffer) * swapchain->images.size);
-	for (u32 i = 0; i < swapchain->images.size; ++i)
+	rndr_sys.fbos = Vulkan_API::register_object("framebuffer.main_fbo"_hash, sizeof(Vulkan_API::Framebuffer) * swapchain->imgs.count);
+	for (u32 i = 0; i < swapchain->imgs.count; ++i)
 	{
-	    //allocate_memory_buffer(rndr_sys.fbos.p[i].color_attachments, (u32)G_Buffer_Attachment::INVALID - 1);
 	    allocate_memory_buffer(rndr_sys.fbos.p[i].color_attachments, 2);
 	}
 
@@ -1184,47 +958,19 @@ namespace Rendering
 				       , VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT
 				       , G_Buffer_Attachment::DEPTH);
 
-	for (u32 i = 0; i < swapchain->images.size; ++i)
+	for (u32 i = 0; i < swapchain->imgs.count; ++i)
 	{ 
-	    rndr_sys.fbos.p[i].color_attachments[0] = swapchain->images.extract(i);
-	    rndr_sys.fbos.p[i].color_attachments[1] = albedo;
-		    /*rndr_sys.fbos.p[i].color_attachments[2] = position;
-	    rndr_sys.fbos.p[i].color_attachments[3] = normal;*/
+	    rndr_sys.fbos.p[i].color_attachments[0] = swapchain->views[i];
+	    rndr_sys.fbos.p[i].color_attachments[1] = albedo.p->image_view;
 
-	    rndr_sys.fbos.p[i].depth_attachment = depth;
+	    rndr_sys.fbos.p[i].depth_attachment = depth.p->image_view;
 
 	    Vulkan_API::init_framebuffer(rndr_pass.p
 					 , swapchain->extent.width
 					 , swapchain->extent.height
 					 , gpu
 					 , &rndr_sys.fbos.p[i]);
-	    /*	    Vulkan_API::init_framebuffer(rndr_sys.deferred_rndr_pass.p
-					 , swapchain->extent.width
-					 , swapchain->extent.height
-					 , gpu
-					 , &rndr_sys.fbos.p[i]);*/
 	}
-    }
-
-    void
-    init_ppfx(Vulkan_API::GPU *gpu)
-    {
-	rndr_sys.ppfx_quad = Vulkan_API::register_object("buffer.ppfx_quad"_hash, sizeof(Vulkan_API::Buffer));
-	
-	f32 vertices [] =
-	{
-	    -1.0f, -1.0f, 0.0f, 0.0f,
-	    -1.0f, +1.0f, 0.0f, 1.0f,
-	    +1.0f, -1.0f, 1.0f, 0.0f,
-	    +1.0f, +1.0f, 1.0f, 1.0f
-	};
-	    
-	Vulkan_API::Registered_Command_Pool command_pool = Vulkan_API::get_object("command_pool.graphics_command_pool"_hash);
-	    
-	Vulkan_API::invoke_staging_buffer_for_device_local_buffer(Memory_Byte_Buffer{sizeof (vertices), vertices }
-								      , command_pool.p
-								      , rndr_sys.ppfx_quad.p
-								      , gpu);
     }
             
     void
@@ -1253,7 +999,8 @@ namespace Rendering
 	Vulkan_API::init_descriptor_pool_size(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1, &pool_sizes[0]);
 	Vulkan_API::init_descriptor_pool(Memory_Buffer_View<VkDescriptorPoolSize>{1, pool_sizes}, 1, gpu, descriptor_pool.p);
 
-	auto sets_sb = single_buffer(&rndr_sys.deferred_descriptor_set);
+	Vulkan_API::Descriptor_Set *single_set = rndr_sys.deferred_descriptor_set.p;
+	auto sets_sb = single_buffer(&single_set);
 	
 	Vulkan_API::allocate_descriptor_sets(sets_sb
 					     , Memory_Buffer_View<VkDescriptorSetLayout>{1, rndr_sys.deferred_descriptor_set_layout.p}
@@ -1287,9 +1034,9 @@ namespace Rendering
 	graphics_pipeline.p->stages = Vulkan_API::Graphics_Pipeline::Shader_Stages_Bits::VERTEX_SHADER_BIT
 	    | Vulkan_API::Graphics_Pipeline::Shader_Stages_Bits::FRAGMENT_SHADER_BIT;
 	graphics_pipeline.p->base_dir_and_name = "../vulkan/shaders/";
-	graphics_pipeline.p->descriptor_set_layout = Vulkan_API::get_object("descriptor_set_layout.deferred_layout"_hash);
+	graphics_pipeline.p->descriptor_set_layout = *rndr_sys.deferred_descriptor_set_layout.p;
 
-	auto set_layout_sb = single_buffer(graphics_pipeline.p->descriptor_set_layout.p);
+	auto set_layout_sb = single_buffer(&graphics_pipeline.p->descriptor_set_layout);
 	auto null_b = null_buffer<VkPushConstantRange>();
 	Vulkan_API::init_pipeline_layout(&set_layout_sb
 					 , &null_b
@@ -1370,8 +1117,9 @@ namespace Rendering
 	Vulkan_API::init_pipeline_dynamic_states_info(&dynamic_states_ptr, &dynamic_info);
 
 	// init pipeline layout
-	Vulkan_API::Registered_Descriptor_Set_Layout &descriptor_set_layout = graphics_pipeline.p->descriptor_set_layout;
-	Memory_Buffer_View<VkDescriptorSetLayout> layouts = {1, descriptor_set_layout.p};
+	VkDescriptorSetLayout &descriptor_set_layout = graphics_pipeline.p->descriptor_set_layout;
+	Memory_Buffer_View<VkDescriptorSetLayout> layouts = {1, &
+							     descriptor_set_layout};
 
 	// init depth stencil info
 	VkPipelineDepthStencilStateCreateInfo depth_stencil_info = {};
@@ -1406,7 +1154,6 @@ namespace Rendering
 
 	init_deferred_render_pass(gpu, swapchain);
 	init_deferred_fbos(gpu, swapchain, rndr_sys.deferred_rndr_pass);
-	//	init_ppfx(gpu);
 	init_deferred_ppln(gpu, swapchain);
     }
 

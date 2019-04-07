@@ -1,21 +1,11 @@
 #include <iostream>
-
-
-
 #define GLFW_INCLUDE_VULKAN
-
 #include <cstring>
 
 #include "vulkan.hpp"
 #include <limits.h>
 #include <GLFW/glfw3.h>
 #include <vulkan/vulkan.h>
-
-
-
-#include <vector>
-
-
 
 namespace Vulkan_API
 {
@@ -1005,28 +995,28 @@ namespace Vulkan_API
 	VK_CHECK(vkCreateSwapchainKHR(gpu->logical_device, &swapchain_info, nullptr, &swapchain->swapchain));
 
 	vkGetSwapchainImagesKHR(gpu->logical_device, swapchain->swapchain, &image_count, nullptr);
-	VkImage *images_array = (VkImage *)allocate_stack(sizeof(VkImage) * image_count
-						    , Alignment(1)
-						    , "swapchain_images_list_allocation");
-	vkGetSwapchainImagesKHR(gpu->logical_device, swapchain->swapchain, &image_count, images_array);
-	swapchain->images = register_object("image2D.swapchain_images"_hash
-					    , sizeof(Image2D) * image_count);
+
+	allocate_memory_buffer(swapchain->imgs, image_count);
+	
+	vkGetSwapchainImagesKHR(gpu->logical_device, swapchain->swapchain, &image_count, swapchain->imgs.buffer);
 	
 	swapchain->extent = surface_extent;
 	swapchain->format = surface_format.format;
 	swapchain->present_mode = present_mode;
 
+	allocate_memory_buffer(swapchain->views, image_count);
+	
 	for (u32 i = 0
 		 ; i < image_count
 		 ; ++i)
 	{
-	    Image2D *image = &swapchain->images.p[i];
-	    image->image = images_array[i];
-	    init_image_view(&image->image
+	    VkImage *image = &swapchain->imgs[i];
+
+	    init_image_view(image
 			    , swapchain->format
 			    , VK_IMAGE_ASPECT_COLOR_BIT
 			    , gpu
-			    , &image->image_view);
+			    , &swapchain->views[i]);
 	}
     }
     
@@ -1241,13 +1231,13 @@ namespace Vulkan_API
 		 ; i < image_view_attachments.count
 		 ; ++i)
 	{
-	    VkImageView *image = &framebuffer->color_attachments.buffer[i].p->image_view;
+	    VkImageView *image = &framebuffer->color_attachments.buffer[i];
 	    image_view_attachments.buffer[i] = *image;
 	}
 
-	if (framebuffer->depth_attachment.p != nullptr)
+	if (framebuffer->depth_attachment != VK_NULL_HANDLE)
 	{
-	    VkImageView *depth_image = &framebuffer->depth_attachment.p->image_view;
+	    VkImageView *depth_image = &framebuffer->depth_attachment;
 	    extend_stack_top(sizeof(VkImageView));
 	    image_view_attachments.buffer[image_view_attachments.count++] = *depth_image;
 	}
@@ -1266,7 +1256,7 @@ namespace Vulkan_API
     }
 
     void
-    allocate_descriptor_sets(Memory_Buffer_View<Registered_Descriptor_Set> &descriptor_sets
+    allocate_descriptor_sets(Memory_Buffer_View<Descriptor_Set *> &descriptor_sets
 			     , const Memory_Buffer_View<VkDescriptorSetLayout> &layouts
 			     , GPU *gpu
 			     , VkDescriptorPool *descriptor_pool)
@@ -1285,7 +1275,7 @@ namespace Vulkan_API
 	// copy back into descriptor_sets objects
 	loop_through_memory(descriptor_sets
 			    , [&descriptor_sets_buffer, &descriptor_sets] (u32 i) -> void
-			    {descriptor_sets[i].p->set = descriptor_sets_buffer[i];});
+			    {descriptor_sets[i]->set = descriptor_sets_buffer[i];});
     }
 
     void
