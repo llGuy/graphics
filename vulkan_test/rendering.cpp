@@ -718,10 +718,6 @@ namespace Rendering
 	    VkClearValue clears[] {Vulkan_API::init_clear_color_color(0, 0, 0, 0)
 		    , Vulkan_API::init_clear_color_color(0, 0, 0, 0)
 		    , Vulkan_API::init_clear_color_depth(1.0f, 0)};
-		    //		    , Vulkan_API::init_clear_color_color(0, 0, 0, 0)
-		    //		    , Vulkan_API::init_clear_color_color(0, 0, 0, 0)};
-
-	    //	    VkClearValue clears[2] {Vulkan_API::init_clear_color_color(0, 0, 0, 0), Vulkan_API::init_clear_color_depth(1.0f, 0)};
 	    
 	    Vulkan_API::command_buffer_begin_render_pass(deferred_rndr_pass.p
 							 , &fbos.p[image_index]
@@ -755,9 +751,6 @@ namespace Rendering
 	    
 	    Vulkan_API::command_buffer_draw(cmdbuf
 					    , 3, 1, 0, 0);
-	    
-	    /*Vulkan_API::command_buffer_execute_commands(cmdbuf
-	      , cmds);*/
 	    
 	    Vulkan_API::command_buffer_end_render_pass(cmdbuf);
 	}

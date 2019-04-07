@@ -1,15 +1,4 @@
-* Creating an API for Vulkan
-  * Create wrapper classes / functions for vulkan objects (UNFINISHED)
-    + Descriptor sets (DONE)
-    + Descriptor pools (UNFINISHED)
-    + Command Buffers (NOT STARTED)
-    + Sync objects (NOT STARTED)
-  * Create system for managing these objects (object managers - IDEAL OF NOT HANDLES STORED) (UNFINISHED)
-    + CREATE NEW GENERIC MANAGING SYSTEM!!! (UNFINISHED)
 * Create 3D scene (NOT STARTED)
-  * Camera
-  * Rendering system (materials ...)
-    * Deferred rendering
   * Entities
     * Component system
     * Scene graph

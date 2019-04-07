@@ -14,14 +14,14 @@ OBJS := $(patsubst %,$(OBJDIR)%,$(CPPS:.cpp=.obj))
 DEPFILES := $(patsubst %,$(OBJDIR)%,$(CPPS:.cpp=.dep))
 EXENAME := vulkan.exe
 
-$(BINDIR)$(EXENAME): $(OBJS)
+$(BINDIR)$(EXENAME): $(OBJS) TAGS
 	$(CC) $(CFLAGS) /DEBUG:FULL /Fe$@ $(DEF) $(INCS) $(OBJS) $(LIBS)
+
+tags: $(OBJS)
+	etags *.cpp *.hpp
 
 $(OBJDIR)%.obj: %.cpp
 	$(CC) -Zi /EHsc /c /Fo$(OBJDIR) $(DEF) $(INCS) $< /std:c++latest
-
-tags: %.cpp %.hpp
-	etags *.cpp *.hpp
 
 $(OBJDIR)%.dep: %.cpp
 	gcc -MM $(GCCDEF) $(GCCINC) $< | sed 's/.o:/.obj:/' > $@

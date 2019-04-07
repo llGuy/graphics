@@ -71,7 +71,7 @@ namespace Rendering
 
 	Vulkan_API::Registered_Model model;
 	Vulkan_API::Draw_Indexed_Data draw_info;
-    };
+   };
 
     struct Material_Access { s32 rndr_id, mtrl_id; };
     

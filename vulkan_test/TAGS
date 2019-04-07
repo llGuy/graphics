@@ -1,5 +1,5 @@
 
-config.cpp,1308
+config.cpp,1401
 enum class Token_Type 7,213
 enum class Token_Type { KEYWORD7,213
 			, CONSTANT8,246
@@ -41,6 +41,10 @@ struct Config_Parser59,1092
     Hash_Table_Inline<Hash_Table_Inline63,1142
     Hash_Table_Inline<MAC_Definition, 7, 3, 3> *mac_lkup_tbl;mac_lkup_tbl63,1142
     Memory_Buffer_View<Token> tks;65,1211
+begin_proc_init(69,1259
+push_proc(75,1302
+end_proc_init(81,1339
+open_config_file(87,1380
 
 core.cpp,762
 #define DEBUG_FILE 12,195
@@ -61,13 +65,13 @@ pop_stack(120,2968
 init_free_list_allocator_head(146,3830
 allocate_free_list(153,4091
 deallocate_free_list(203,6127
-#define MAX_KEYS 290,9430
-#define MAX_MB 291,9452
-glfw_window_resize_proc(294,9487
-glfw_keyboard_input_proc(303,9715
-glfw_mouse_position_proc(314,10057
-glfw_mouse_button_proc(323,10283
-main(337,10630
+#define MAX_KEYS 289,9428
+#define MAX_MB 290,9450
+glfw_window_resize_proc(293,9485
+glfw_keyboard_input_proc(302,9713
+glfw_mouse_position_proc(313,10055
+glfw_mouse_button_proc(322,10281
+main(336,10628
 
 file_system.cpp,247
 global_var const char *virtual_file_path virtual_file_path6,100
@@ -78,192 +82,226 @@ read_image(39,1021
 read_file_data(62,1663
 destroy_file_data(74,1932
 
-rendering.cpp,4291
+load.cpp,156
+namespace Load10,145
+    process_vertex(13,174
+    split(40,1097
+    break_face_line(51,1363
+    create_model(65,1915
+    load_model_from_obj(76,2178
+
+rendering.cpp,3902
 namespace Rendering8,156
-    init_test_render_pass(13,245
-	enum {COLOR_DESCRIPTION COLOR_DESCRIPTION20,544
-	enum {COLOR_DESCRIPTION = 0, DEPTH_DESCRIPTION 20,544
-    init_model_info(81,3268
-	struct Vertex 95,3968
-	struct Vertex { glm::vec3 pos;95,3968
-	struct Vertex { glm::vec3 pos; glm::vec3 color;95,3968
-	struct Vertex { glm::vec3 pos; glm::vec3 color; glm::vec2 uvs;95,3968
-    init_graphics_pipeline(111,4530
-    init_descriptor_set_layout(240,10442
-    init_command_pool(258,11226
-    init_depth_texture(269,11600
-    init_swapchain_framebuffers(309,13090
-	enum { NUMBER_STRING_INDEX 317,13444
-	enum { COLOR_ATTACHMENT 318,13481
-    init_object_texture(347,14522
-    init_vbo(433,17526
-	struct Vertex 435,17569
-	struct Vertex { glm::vec3 pos,435,17569
-	struct Vertex { glm::vec3 pos, color;435,17569
-	struct Vertex { glm::vec3 pos, color; glm::vec2 uvs;435,17569
-    persist u32 mesh_indices[mesh_indices474,18900
-    init_ibo(496,19132
-    init_ubos(518,20003
-	struct Uniform_Buffer_Object522,20136
-    struct Uniform_Buffer_Object552,20972
-    init_descriptor_pool(565,21171
-    init_descriptor_sets(580,21922
-    init_command_buffers(633,24153
-    internal constexpr u32 MAX_FRAMES_IN_FLIGHT 702,27200
-    init_sync(705,27276
-    init_rendering_state(722,28102
-    struct Material784,30333
-	Vulkan_API::Registered_Model model;790,30493
-	Vulkan_API::Draw_Indexed_Data draw_info;791,30531
-    struct Renderer 794,30584
-	Vulkan_API::Registered_Graphics_Pipeline ppln;797,30672
-	Memory_Buffer_View<VkDescriptorSet> sets;798,30721
-	VkShaderStageFlags mtrl_unique_data_stage_dst;799,30765
-	Memory_Buffer_View<Material> mtrls;801,30817
-	u32 mtrl_count;803,30858
-	enum Render_Method 805,30878
-	enum Render_Method { INLINE,805,30878
-	enum Render_Method { INLINE, INSTANCED 805,30878
-	enum Render_Method { INLINE, INSTANCED } mthd;805,30878
-	VkCommandBuffer rndr_cmdbuf;808,31041
-	init(811,31082
-	update(846,32113
-    global_var struct Render_System898,33482
-	Memory_Buffer_View<Renderer> rndrs;903,33602
-	u32 rndr_count;904,33640
-	Hash_Table_Inline<Hash_Table_Inline905,33658
-	Hash_Table_Inline<s32, 30, 4, 3> rndr_id_map;905,33658
-	Vulkan_API::Registered_Render_Pass deferred_rndr_pass;908,33710
-	Vulkan_API::Registered_Framebuffer fbos;910,33770
-	Vulkan_API::Registered_Graphics_Pipeline deferred_pipeline;912,33816
-	Vulkan_API::Registered_Descriptor_Set_Layout deferred_descriptor_set_layout;913,33878
-	Vulkan_API::Registered_Descriptor_Set deferred_descriptor_set;914,33957
-	Vulkan_API::Registered_Buffer ppfx_quad;916,34024
-	Render_System(919,34073
-	init_system(922,34124
-	add_renderer(930,34290
-	update(937,34520
-	init_material(991,36520
-    } rndr_sys;1009,37021
-    init_deferred_render_pass(1012,37050
-	enum G_Buffer_Attachment 1019,37334
-	enum G_Buffer_Attachment :u32 {FINAL_ATTACHMENTFINAL_ATTACHMENT1019,37334
-				       , ALBEDO_ATTACHMENT1020,37384
-				       , DEPTH_ATTACHMENT1021,37416
-				       , INVALID_ATTACHMENT}INVALID_ATTACHMENT1022,37447
-	enum G_Buffer_Reference 1071,39739
-	enum G_Buffer_Reference :u32 {FINAL_REFERENCEFINAL_REFERENCE1071,39739
-				      , ALBEDO_REFERENCE1072,39787
-				      , DEPTH_REFERENCE1073,39817
-				      , INVALID_REFERENCE}INVALID_REFERENCE1074,39846
-	enum Subpass_Stage 1086,40718
-	enum Subpass_Stage :u32 {G_BUFFER_INIT,G_BUFFER_INIT1086,40718
-	enum Subpass_Stage :u32 {G_BUFFER_INIT, LIGHTING,1086,40718
-	enum Subpass_Stage :u32 {G_BUFFER_INIT, LIGHTING, INVALID_STAGE}INVALID_STAGE1086,40718
-    init_deferred_fbos(1137,43055
-	enum class G_Buffer_Attachment 1141,43210
-	enum class G_Buffer_Attachment :u32 {FINAL,FINAL1141,43210
-	enum class G_Buffer_Attachment :u32 {FINAL, ALBEDO,1141,43210
-	enum class G_Buffer_Attachment :u32 {FINAL, ALBEDO, POSITION,1141,43210
-	enum class G_Buffer_Attachment :u32 {FINAL, ALBEDO, POSITION, NORMAL,1141,43210
-	enum class G_Buffer_Attachment :u32 {FINAL, ALBEDO, POSITION, NORMAL, DEPTH,1141,43210
-	enum class G_Buffer_Attachment :u32 {FINAL, ALBEDO, POSITION, NORMAL, DEPTH, INVALID}INVALID1141,43210
-    init_ppfx(1210,45824
-    init_deferred_ppln(1231,46499
-    init_rendering_system(1403,55346
-    add_renderer(1414,55714
-    update_renderers(1420,55885
-    init_material(1430,56243
+    init_model_info(12,201
+	struct Vertex 26,901
+	struct Vertex { glm::vec3 pos;26,901
+	struct Vertex { glm::vec3 pos; glm::vec3 color;26,901
+	struct Vertex { glm::vec3 pos; glm::vec3 color; glm::vec2 uvs;26,901
+    init_graphics_pipeline(42,1463
+    init_descriptor_set_layout(172,7407
+    init_command_pool(190,8191
+    init_object_texture(201,8565
+    init_vbo(287,11569
+	struct Vertex 289,11612
+	struct Vertex { glm::vec3 pos,289,11612
+	struct Vertex { glm::vec3 pos, color;289,11612
+	struct Vertex { glm::vec3 pos, color; glm::vec2 uvs;289,11612
+    persist u32 mesh_indices[mesh_indices328,12953
+    init_ibo(350,13185
+    init_ubos(373,14068
+	struct Uniform_Buffer_Object377,14201
+    struct Uniform_Buffer_Object407,15036
+    init_descriptor_pool(420,15235
+    init_descriptor_sets(435,15983
+    internal constexpr u32 MAX_FRAMES_IN_FLIGHT 490,18365
+    init_sync(493,18441
+    init_rendering_state(510,19267
+    struct Material559,20847
+	Vulkan_API::Registered_Model model;565,21007
+	Vulkan_API::Draw_Indexed_Data draw_info;566,21045
+    struct Renderer 569,21098
+	Vulkan_API::Registered_Graphics_Pipeline ppln;572,21186
+	Memory_Buffer_View<VkDescriptorSet> sets;573,21235
+	VkShaderStageFlags mtrl_unique_data_stage_dst;574,21279
+	Memory_Buffer_View<Material> mtrls;576,21331
+	u32 mtrl_count;578,21372
+	enum Render_Method 580,21392
+	enum Render_Method { INLINE,580,21392
+	enum Render_Method { INLINE, INSTANCED 580,21392
+	enum Render_Method { INLINE, INSTANCED } mthd;580,21392
+	VkCommandBuffer rndr_cmdbuf;583,21555
+	init(586,21596
+	update(621,22627
+    global_var struct Render_System673,23996
+	Memory_Buffer_View<Renderer> rndrs;678,24116
+	u32 rndr_count;679,24154
+	Hash_Table_Inline<Hash_Table_Inline680,24172
+	Hash_Table_Inline<s32, 30, 4, 3> rndr_id_map;680,24172
+	Vulkan_API::Registered_Render_Pass deferred_rndr_pass;683,24224
+	Vulkan_API::Registered_Framebuffer fbos;685,24284
+	Vulkan_API::Registered_Graphics_Pipeline deferred_pipeline;687,24330
+	Vulkan_API::Registered_Descriptor_Set_Layout deferred_descriptor_set_layout;688,24392
+	Vulkan_API::Registered_Descriptor_Set deferred_descriptor_set;689,24471
+	Vulkan_API::Registered_Buffer ppfx_quad;691,24538
+	Render_System(694,24587
+	init_system(697,24638
+	add_renderer(705,24804
+	update(712,25034
+	init_material(762,26771
+    } rndr_sys;780,27272
+    init_deferred_render_pass(783,27301
+	enum G_Buffer_Attachment 790,27585
+	enum G_Buffer_Attachment :u32 {FINAL_ATTACHMENTFINAL_ATTACHMENT790,27585
+				       , ALBEDO_ATTACHMENT791,27635
+				       , DEPTH_ATTACHMENT792,27667
+				       , INVALID_ATTACHMENT}INVALID_ATTACHMENT793,27698
+	enum G_Buffer_Reference 842,29990
+	enum G_Buffer_Reference :u32 {FINAL_REFERENCEFINAL_REFERENCE842,29990
+				      , ALBEDO_REFERENCE843,30038
+				      , DEPTH_REFERENCE844,30068
+				      , INVALID_REFERENCE}INVALID_REFERENCE845,30097
+	enum Subpass_Stage 857,30969
+	enum Subpass_Stage :u32 {G_BUFFER_INIT,G_BUFFER_INIT857,30969
+	enum Subpass_Stage :u32 {G_BUFFER_INIT, LIGHTING,857,30969
+	enum Subpass_Stage :u32 {G_BUFFER_INIT, LIGHTING, INVALID_STAGE}INVALID_STAGE857,30969
+    init_deferred_fbos(908,33306
+	enum class G_Buffer_Attachment 912,33461
+	enum class G_Buffer_Attachment :u32 {FINAL,FINAL912,33461
+	enum class G_Buffer_Attachment :u32 {FINAL, ALBEDO,912,33461
+	enum class G_Buffer_Attachment :u32 {FINAL, ALBEDO, POSITION,912,33461
+	enum class G_Buffer_Attachment :u32 {FINAL, ALBEDO, POSITION, NORMAL,912,33461
+	enum class G_Buffer_Attachment :u32 {FINAL, ALBEDO, POSITION, NORMAL, DEPTH,912,33461
+	enum class G_Buffer_Attachment :u32 {FINAL, ALBEDO, POSITION, NORMAL, DEPTH, INVALID}INVALID912,33461
+    init_deferred_ppln(973,35690
+    init_rendering_system(1147,44557
+    add_renderer(1157,44904
+    update_renderers(1163,45075
+    init_material(1173,45433
 
-scene.cpp,361
+scene.cpp,1614
 constexpr f32 PI 10,237
-Camera::set_default(set_default13,281
-Camera::compute_projection(compute_projection27,539
-Camera::compute_view(compute_view33,632
-init_scene(39,711
-update_ubo(93,2787
-    struct Uniform_Buffer_Object99,2963
-record_cmd(135,4167
-render_frame(169,5533
-update_scene(232,8096
-handle_input(245,8374
-#define SENSITIVITY 251,8482
+struct Entity_View13,296
+    s32 id 16,427
+    enum { IT_NOT_GROUP 18,450
+	   , IS_GROUP 19,483
+global_var struct Physics_Manager22,527
+} physics;27,579
+#define MAX_ENTITIES 29,593
+typedef struct Entity31,621
+    enum { IS_NOT_GROUP 34,649
+	   , IS_GROUP 35,682
+    Constant_String id;37,719
+    glm::vec3 p,39,782
+    glm::vec3 p, real_p,39,782
+    glm::vec3 p, real_p, d/d39,782
+    glm::vec3 p, real_p, d/*not deppending on above*/, v,39,782
+    glm::vec3 p, real_p, d/*not deppending on above*/, v, real_v;39,782
+    Entity_View above;41,887
+    Entity_View index;42,911
+    enum Entity_State_Flags 44,941
+    enum Entity_State_Flags {GROUP_PHYSICS_INFO_HAS_BEEN_UPDATED_BIT GROUP_PHYSICS_INFO_HAS_BEEN_UPDATED_BIT44,941
+	    Rendering::Material_Access mtrl_access;52,1154
+	Memory_Buffer_View<Entity_View> below;56,1231
+    update(60,1292
+} Entity,69,1459
+} Entity, Entity_Group;69,1459
+global_var struct Entities71,1486
+    s32 count_singles 73,1517
+    Entity list_singles[list_singles74,1546
+    s32 count_groups 76,1593
+    Entity_Group list_groups[list_groups77,1621
+} entities;80,1715
+global_var Entity_View scene_graph;83,1773
+get_entity(86,1831
+add_entity(92,1931
+init_scene_graph(104,2216
+Camera::set_default(set_default111,2262
+Camera::compute_projection(compute_projection125,2520
+Camera::compute_view(compute_view131,2613
+init_scene(137,2692
+update_ubo(191,4768
+    struct Uniform_Buffer_Object197,4944
+record_cmd(233,6148
+render_frame(266,7419
+update_scene(329,9982
+handle_input(342,10260
+#define SENSITIVITY 348,10368
 
-vulkan.cpp,2729
-#define GLFW_INCLUDE_VULKAN5,27
-namespace Vulkan_API20,208
-    struct Object_Register_Info23,235
-	void *p;p26,299
-	u32 size;27,342
-    global_var Free_List_Allocator object_allocator;30,364
-    global_var Hash_Table_Inline<Hash_Table_Inline31,418
-    init_manager(34,559
-    register_object(45,975
-    get_object(60,1359
-    remove_object(73,1634
-    decrease_shared_count(87,1915
-    increase_shared_count(94,2073
-    namespace Memory100,2225
-	find_memory_type_according_to_requirements(104,2271
-	allocate_gpu_memory(130,3048
-    GPU::find_queue_families(find_queue_families151,3688
-    struct Instance_Create_Validation_Layer_Params194,4814
-	bool r_enable;196,4873
-	u32 o_layer_count;197,4890
-	const char **o_layer_names;o_layer_names198,4911
-    struct Instance_Create_Extension_Params201,4951
-	u32 r_extension_count;203,5003
-	const char **r_extension_names;r_extension_names204,5028
-    init_instance(209,5182
-    vulkan_debug_proc(257,6775
-    init_debug_messenger(269,7227
-    get_swapchain_support(290,8282
-    struct Physical_Device_Extensions_Params320,9784
-	u32 r_extension_count;322,9837
-	const char **r_extension_names;r_extension_names323,9862
-    check_if_physical_device_supports_extensions(327,9925
-    check_if_physical_device_is_suitable(365,11070
-    choose_gpu(397,12172
-    init_device(438,13267
-    choose_surface_format(507,15653
-    choose_surface_present_mode(530,16302
-    choose_swapchain_extent(552,16891
-    init_image(573,17582
-    init_image_view(612,18859
-    init_image_sampler(633,19603
-    begin_command_buffer(671,21072
-    allocate_command_buffers(685,21520
-    submit(702,22114
-    has_stencil_component(725,23004
-    init_single_use_command_buffer(731,23165
-    destroy_single_use_command_buffer(746,23557
-    transition_image_layout(766,24222
-    copy_buffer_into_image(855,27056
-    copy_buffer(893,28070
-    invoke_staging_buffer_for_device_local_buffer(917,28598
-    init_swapchain(957,29884
-    init_render_pass(1034,33086
-    find_supported_format(1055,34168
-    find_depth_format(1083,34955
-    init_shader(1100,35341
-    init_pipeline_layout(1118,35874
-    init_graphics_pipeline(1137,36524
-    allocate_command_pool(1181,38354
-    init_framebuffer_attachment(1194,38759
-    init_framebuffer(1229,39909
-    allocate_descriptor_sets(1269,41347
-    init_descriptor_pool(1292,42324
-    init_descriptor_set_layout(1308,42815
-    update_descriptor_sets(1321,43321
-    init_buffer(1332,43589
-    command_buffer_begin_render_pass(1359,44502
-    command_buffer_next_subpass(1383,45332
-    present(1391,45499
-    init_state(1410,46147
-    destroy_debug_utils_messenger_ext(1485,48879
-    destroy_state(1497,49264
+vulkan.cpp,2727
+#define GLFW_INCLUDE_VULKAN2,21
+namespace Vulkan_API10,171
+    struct Object_Register_Info13,198
+	void *p;p16,262
+	u32 size;17,305
+    global_var Free_List_Allocator object_allocator;20,327
+    global_var Hash_Table_Inline<Hash_Table_Inline21,381
+    init_manager(24,522
+    register_object(35,938
+    get_object(50,1322
+    remove_object(63,1597
+    decrease_shared_count(77,1878
+    increase_shared_count(84,2036
+    namespace Memory90,2188
+	find_memory_type_according_to_requirements(94,2234
+	allocate_gpu_memory(120,3011
+    GPU::find_queue_families(find_queue_families141,3651
+    struct Instance_Create_Validation_Layer_Params184,4777
+	bool r_enable;186,4836
+	u32 o_layer_count;187,4853
+	const char **o_layer_names;o_layer_names188,4874
+    struct Instance_Create_Extension_Params191,4914
+	u32 r_extension_count;193,4966
+	const char **r_extension_names;r_extension_names194,4991
+    init_instance(199,5145
+    vulkan_debug_proc(247,6738
+    init_debug_messenger(259,7190
+    get_swapchain_support(280,8245
+    struct Physical_Device_Extensions_Params310,9747
+	u32 r_extension_count;312,9800
+	const char **r_extension_names;r_extension_names313,9825
+    check_if_physical_device_supports_extensions(317,9888
+    check_if_physical_device_is_suitable(355,11033
+    choose_gpu(387,12135
+    init_device(428,13230
+    choose_surface_format(497,15616
+    choose_surface_present_mode(520,16265
+    choose_swapchain_extent(542,16854
+    init_image(563,17545
+    init_image_view(602,18822
+    init_image_sampler(623,19566
+    begin_command_buffer(661,21035
+    allocate_command_buffers(675,21483
+    submit(692,22077
+    has_stencil_component(715,22967
+    init_single_use_command_buffer(721,23128
+    destroy_single_use_command_buffer(736,23520
+    transition_image_layout(756,24185
+    copy_buffer_into_image(845,27019
+    copy_buffer(883,28033
+    invoke_staging_buffer_for_device_local_buffer(907,28561
+    init_swapchain(947,29847
+    init_render_pass(1024,32862
+    find_supported_format(1045,33944
+    find_depth_format(1073,34731
+    init_shader(1090,35117
+    init_pipeline_layout(1108,35650
+    init_graphics_pipeline(1127,36300
+    allocate_command_pool(1171,38130
+    init_framebuffer_attachment(1184,38535
+    init_framebuffer(1219,39685
+    allocate_descriptor_sets(1259,41100
+    init_descriptor_pool(1282,42066
+    init_descriptor_set_layout(1298,42557
+    update_descriptor_sets(1311,43063
+    init_buffer(1322,43331
+    command_buffer_begin_render_pass(1349,44244
+    command_buffer_next_subpass(1373,45074
+    present(1381,45241
+    init_state(1400,45889
+    destroy_debug_utils_messenger_ext(1475,48621
+    destroy_state(1487,49006
 
-core.hpp,3425
+core.hpp,3571
 #define DEBUG 11,143
 typedef int8_t s8;13,165
 typedef int16_t s16;14,185
@@ -377,6 +415,11 @@ struct Memory_Byte_Buffer458,9691
     void *ptr;ptr461,9736
 template <typename T,465,9791
 loop_through_memory(466,9834
+template <typename T> struct Dynamic_Array477,10010
+    T *ptr;ptr479,10057
+    u32 count;480,10070
+    u32 cap;481,10086
+    add(484,10112
 
 file_system.hpp,725
 enum File_Format7,166
@@ -403,6 +446,14 @@ template <typename T> struct File_Proc_Wrapper44,752
     T proc;46,803
     execute(49,840
 attach_update_proc(56,917
+
+load.hpp,171
+namespace Load5,41
+    enum Vertex_Attribute_Bits 8,62
+    enum Vertex_Attribute_Bits {POSITION POSITION8,62
+				, NORMAL 9,113
+				, UVS 10,136
+				, COLOR 11,156
 
 rendering.hpp,1394
 namespace Rendering13,584
@@ -456,188 +507,189 @@ struct Scene33,546
     glm::mat4 object_model_matrix 43,732
     glm::mat4 object_model_matrix2 44,786
 
-vulkan.hpp,6973
-namespace Vulkan_API9,134
-    struct Registered_Object_Base23,445
-	void *p;p26,532
-	Constant_String id;27,543
-	u32 size;29,567
-	Registered_Object_Base(33,626
-	~Registered_Object_Base(36,761
-    template <typename T> struct Registered_Object50,1118
-	T *p;p54,1220
-	Constant_String id;55,1228
-	u32 size;57,1252
-	destroy(60,1285
-	extract(64,1397
-	separate(67,1524
-	Registered_Object(79,1838
-	Registered_Object(80,1960
-	Registered_Object(81,2096
-	My_Type &operator=(operator=82,2216
-	My_Type &operator=(operator=83,2352
-	~Registered_Object(85,2473
-    using Registered_Graphics_Pipeline	88,2548
-    using Registered_Render_Pass	89,2636
-    using Registered_Buffer	90,2712
-    using Registered_Descriptor_Set_Layout	91,2779
-    using Registered_Descriptor_Pool	92,2867
-    using Registered_Descriptor_Set	93,2951
-    using Registered_Model	94,3033
-    using Registered_Command_Pool	95,3098
-    using Registered_Command_Buffer 96,3170
-    using Registered_Framebuffer	97,3257
-    using Registered_Image2D	98,3333
-    using Registered_Semaphore 99,3402
-    using Registered_Fence 100,3485
-    struct Queue_Families102,3570
-	complete(108,3674
-    struct Swapchain_Details114,3768
-	VkSurfaceCapabilitiesKHR capabilities;116,3805
-	u32 available_formats_count;117,3846
-	VkSurfaceFormatKHR *available_formats;available_formats118,3877
-	u32 available_present_modes_count;119,3918
-	VkPresentModeKHR *available_present_modes;available_present_modes120,3955
-    struct GPU123,4014
-	VkPhysicalDevice hardware;125,4037
-	VkDevice logical_device;126,4066
-	VkPhysicalDeviceMemoryProperties memory_properties;128,4095
-	Queue_Families queue_families;130,4151
-	VkQueue graphics_queue;131,4184
-	VkQueue present_queue;132,4210
-	Swapchain_Details swapchain_support;134,4237
-	VkFormat supported_depth_format;135,4276
-    namespace Memory141,4376
-    struct Mapped_GPU_Memory152,4648
-	u32 offset;154,4685
-	VkDeviceSize size;155,4699
-	VkDeviceMemory *memory;memory156,4720
-	void *data;data157,4746
-	begin(160,4781
-	fill(166,4901
-	end(172,5013
-    struct Buffer178,5098
-	VkBuffer buffer;180,5124
-	VkDeviceMemory memory;181,5143
-	VkDeviceSize size;182,5168
-	construct_map(185,5223
-    struct Draw_Indexed_Data191,5314
-	u32 index_count;193,5351
-	u32 instance_count;194,5370
-	u32 first_index;195,5392
-	u32 vertex_offset;196,5411
-	u32 first_instance;197,5432
-    init_draw_indexed_data_default(201,5508
-    struct Model_Index_Data212,5841
-	Registered_Buffer index_buffer;214,5877
-	u32 index_count;215,5911
-	u32 index_offset;216,5930
-	VkIndexType index_type;217,5950
-	init_draw_indexed_data(220,5998
-    command_buffer_bind_ibo(234,6351
-    command_buffer_bind_vbos(244,6663
-    command_buffer_execute_commands(257,7088
-    struct Graphics_Pipeline266,7309
-	enum Shader_Stages_Bits 268,7346
-	enum Shader_Stages_Bits : s32 { VERTEX_SHADER_BIT 268,7346
-					  , GEOMETRY_SHADER_BIT 269,7407
-					  , TESSELATION_SHADER_BIT 270,7446
-					  , FRAGMENT_SHADER_BIT 271,7488
-	s32 stages;273,7531
-	const char *base_dir_and_name;base_dir_and_name275,7571
-	Registered_Descriptor_Set_Layout descriptor_set_layout;277,7606
-	VkPipelineLayout layout;279,7667
-	VkPipeline pipeline;281,7696
-    command_buffer_push_constant(285,7764
-    struct Image2D309,8305
-	VkFormat format;316,8504
-	get_memory_requirements(319,8556
-    struct Swapchain363,9814
-	VkFormat format;365,9843
-	VkPresentModeKHR present_mode;366,9862
-	VkSwapchainKHR swapchain;367,9895
-	VkExtent2D extent;368,9923
-	Registered_Image2D images;370,9947
-	Registered_Framebuffer framebuffers;371,9976
-    struct Render_Pass374,10029
-	VkRenderPass render_pass;376,10060
-	u32 subpass_count;377,10088
-    init_attachment_description(381,10169
-    init_attachment_reference(400,10843
-    init_subpass_description(410,11089
-    init_subpass_dependency(425,11715
-    init_clear_color_color(449,12409
-    init_clear_color_depth(457,12592
-    init_render_area(465,12758
-    command_buffer_end_render_pass(486,13395
-    struct Model_Binding505,14070
-	Registered_Buffer buffer;508,14146
-	u32 binding;509,14174
-	VkVertexInputRate input_rate;510,14189
-	begin_attributes_creation(517,14341
-	push_attribute(524,14510
-	end_attributes_creation(537,14847
-    struct Model544,14992
-	u32 binding_count;547,15037
-	Model_Binding *bindings;bindings549,15096
-	u32 attribute_count;551,15144
-	VkVertexInputAttributeDescription *attributes_buffer;attributes_buffer553,15244
-	Model_Index_Data index_data;555,15302
-	Memory_Buffer_View<VkBuffer> raw_cache_for_rendering;557,15335
-	create_binding_descriptions(560,15430
-	create_vertex_input_state_info(575,15966
-	create_vbo_list(588,16484
-    command_buffer_draw_indexed(600,16762
-    command_buffer_draw(612,17082
-    command_buffer_bind_pipeline(626,17333
-    init_shader_pipeline_info(636,17637
-    init_pipeline_vertex_input_info(647,18011
-    init_attribute_description(654,18287
-    init_binding_description(670,18658
-    init_pipeline_vertex_input_info(684,18992
-    init_pipeline_input_assembly_info(700,19604
-    init_viewport(711,20035
-    init_rect_2D(726,20378
-    init_pipeline_viewport_info(735,20561
-    init_pipeline_rasterization_info(748,21019
-    init_pipeline_multisampling_info(769,21793
-    init_blend_state_attachment(784,22368
-    init_pipeline_blending_info(806,23113
-    init_pipeline_dynamic_states_info(823,23724
-    init_push_constant_range(838,24287
-    init_pipeline_depth_stencil_info(849,24555
-    free_command_buffer(896,26358
-    end_command_buffer(912,26832
-    struct Framebuffer966,28327
-	VkFramebuffer framebuffer;968,28358
-	Memory_Buffer_View<Registered_Image2D> color_attachments;971,28421
-	Registered_Image2D depth_attachment;972,28481
-    init_descriptor_set_layout_binding(991,28973
-    struct Descriptor_Set1010,29589
-	Registered_Descriptor_Set_Layout layouts;1012,29623
-	VkDescriptorSet set;1013,29667
-	init_buffer_descriptor_write(1016,29699
-	init_image_descriptor_write(1030,30232
-    command_buffer_bind_descriptor_sets(1045,30798
-    init_descriptor_set_buffer_info(1066,31424
-    init_buffer_descriptor_set_write(1076,31704
-    init_input_attachment_descriptor_set_write(1093,32247
-    init_image_descriptor_set_write(1110,32799
-    init_descriptor_set_image_info(1127,33346
-    init_descriptor_pool_size(1137,33653
-    struct Descriptor_Pool1145,33838
-	VkDescriptorPool pool;1147,33873
-    init_semaphore(1162,34227
-    init_fence(1175,34565
-    wait_fences(1190,34938
-    struct Next_Image_Return 1200,35142
-    struct Next_Image_Return {VkResult result;1200,35142
-    struct Next_Image_Return {VkResult result; u32 image_index;1200,35142
-    acquire_next_image(1202,35253
-    reset_fences(1224,35877
-    struct State1230,36040
-	VkInstance instance;1232,36065
-	VkDebugUtilsMessengerEXT debug_messenger;1233,36088
-	GPU gpu;1234,36132
-	VkSurfaceKHR surface;1235,36143
-	Swapchain swapchain;1236,36167
+vulkan.hpp,6964
+#define MAKE_VK_VIEW_TYPES(9,134
+namespace Vulkan_API11,232
+    struct Registered_Object_Base24,514
+	void *p;p27,601
+	Constant_String id;28,612
+	u32 size;30,636
+	Registered_Object_Base(34,695
+	~Registered_Object_Base(37,830
+    template <typename T> struct Registered_Object51,1177
+	T *p;p55,1279
+	Constant_String id;56,1287
+	u32 size;58,1311
+	destroy(61,1344
+	extract(65,1456
+	separate(68,1583
+	Registered_Object(80,1897
+	Registered_Object(81,2019
+	Registered_Object(82,2155
+	My_Type &operator=(operator=83,2275
+	My_Type &operator=(operator=84,2411
+	~Registered_Object(86,2532
+    using Registered_Graphics_Pipeline	89,2607
+    using Registered_Render_Pass	90,2695
+    using Registered_Buffer	91,2771
+    using Registered_Descriptor_Set_Layout	92,2838
+    using Registered_Descriptor_Pool	93,2926
+    using Registered_Descriptor_Set	94,3010
+    using Registered_Model	95,3092
+    using Registered_Command_Pool	96,3157
+    using Registered_Command_Buffer 97,3229
+    using Registered_Framebuffer	98,3316
+    using Registered_Image2D	99,3392
+    using Registered_Semaphore 100,3461
+    using Registered_Fence 101,3544
+    struct Queue_Families103,3629
+	complete(109,3733
+    struct Swapchain_Details115,3827
+	VkSurfaceCapabilitiesKHR capabilities;117,3864
+	u32 available_formats_count;118,3905
+	VkSurfaceFormatKHR *available_formats;available_formats119,3936
+	u32 available_present_modes_count;120,3977
+	VkPresentModeKHR *available_present_modes;available_present_modes121,4014
+    struct GPU124,4073
+	VkPhysicalDevice hardware;126,4096
+	VkDevice logical_device;127,4125
+	VkPhysicalDeviceMemoryProperties memory_properties;129,4154
+	Queue_Families queue_families;131,4210
+	VkQueue graphics_queue;132,4243
+	VkQueue present_queue;133,4269
+	Swapchain_Details swapchain_support;135,4296
+	VkFormat supported_depth_format;136,4335
+    namespace Memory142,4435
+    struct Mapped_GPU_Memory153,4707
+	u32 offset;155,4744
+	VkDeviceSize size;156,4758
+	VkDeviceMemory *memory;memory157,4779
+	void *data;data158,4805
+	begin(161,4840
+	fill(167,4960
+	end(173,5072
+    struct Buffer179,5157
+	VkBuffer buffer;181,5183
+	VkDeviceMemory memory;183,5205
+	VkDeviceSize size;184,5230
+	construct_map(187,5285
+    struct Draw_Indexed_Data193,5376
+	u32 index_count;195,5413
+	u32 instance_count;196,5432
+	u32 first_index;197,5454
+	u32 vertex_offset;198,5473
+	u32 first_instance;199,5494
+    init_draw_indexed_data_default(203,5570
+    struct Model_Index_Data214,5903
+	VkBuffer index_buffer;216,5939
+	u32 index_count;218,5967
+	u32 index_offset;219,5986
+	VkIndexType index_type;220,6006
+	init_draw_indexed_data(223,6054
+    command_buffer_bind_ibo(237,6407
+    command_buffer_bind_vbos(247,6709
+    command_buffer_execute_commands(260,7134
+    struct Graphics_Pipeline269,7355
+	enum Shader_Stages_Bits 271,7392
+	enum Shader_Stages_Bits : s32 { VERTEX_SHADER_BIT 271,7392
+					  , GEOMETRY_SHADER_BIT 272,7453
+					  , TESSELATION_SHADER_BIT 273,7492
+					  , FRAGMENT_SHADER_BIT 274,7534
+	s32 stages;276,7577
+	const char *base_dir_and_name;base_dir_and_name278,7593
+	VkDescriptorSetLayout descriptor_set_layout;280,7628
+	VkPipelineLayout layout;282,7678
+	VkPipeline pipeline;284,7707
+    command_buffer_push_constant(288,7775
+    struct Image2D312,8316
+	VkFormat format;319,8515
+	get_memory_requirements(322,8567
+    struct Swapchain366,9825
+	VkFormat format;368,9854
+	VkPresentModeKHR present_mode;369,9873
+	VkSwapchainKHR swapchain;370,9906
+	VkExtent2D extent;371,9934
+	Memory_Buffer_View<VkImage> imgs;373,9958
+	Memory_Buffer_View<VkImageView> views;374,9994
+    struct Render_Pass377,10049
+	VkRenderPass render_pass;379,10080
+	u32 subpass_count;380,10108
+    init_attachment_description(384,10189
+    init_attachment_reference(403,10863
+    init_subpass_description(413,11109
+    init_subpass_dependency(428,11735
+    init_clear_color_color(452,12429
+    init_clear_color_depth(460,12612
+    init_render_area(468,12778
+    command_buffer_end_render_pass(489,13415
+    struct Model_Binding508,14090
+	VkBuffer buffer;511,14166
+	u32 binding;512,14185
+	VkVertexInputRate input_rate;513,14200
+	begin_attributes_creation(520,14352
+	push_attribute(527,14521
+	end_attributes_creation(540,14858
+    struct Model547,15003
+	u32 binding_count;550,15048
+	Model_Binding *bindings;bindings552,15107
+	u32 attribute_count;554,15155
+	VkVertexInputAttributeDescription *attributes_buffer;attributes_buffer556,15255
+	Model_Index_Data index_data;558,15313
+	Memory_Buffer_View<VkBuffer> raw_cache_for_rendering;560,15346
+	create_binding_descriptions(563,15441
+	create_vertex_input_state_info(578,15977
+	create_vbo_list(591,16495
+    command_buffer_draw_indexed(603,16763
+    command_buffer_draw(615,17083
+    command_buffer_bind_pipeline(629,17334
+    init_shader_pipeline_info(639,17638
+    init_pipeline_vertex_input_info(650,18012
+    init_attribute_description(657,18288
+    init_binding_description(673,18659
+    init_pipeline_vertex_input_info(687,18993
+    init_pipeline_input_assembly_info(703,19605
+    init_viewport(714,20036
+    init_rect_2D(729,20379
+    init_pipeline_viewport_info(738,20562
+    init_pipeline_rasterization_info(751,21020
+    init_pipeline_multisampling_info(772,21794
+    init_blend_state_attachment(787,22369
+    init_pipeline_blending_info(809,23114
+    init_pipeline_dynamic_states_info(826,23725
+    init_push_constant_range(841,24288
+    init_pipeline_depth_stencil_info(852,24556
+    free_command_buffer(899,26359
+    end_command_buffer(915,26833
+    struct Framebuffer969,28328
+	VkFramebuffer framebuffer;971,28359
+	Memory_Buffer_View<VkImageView> color_attachments;974,28422
+	VkImageView depth_attachment;975,28475
+    init_descriptor_set_layout_binding(994,28960
+    struct Descriptor_Set1013,29576
+	VkDescriptorSetLayout layouts;1015,29610
+	VkDescriptorSet set;1016,29643
+	init_buffer_descriptor_write(1019,29675
+	init_image_descriptor_write(1033,30208
+    command_buffer_bind_descriptor_sets(1048,30774
+    init_descriptor_set_buffer_info(1069,31391
+    init_buffer_descriptor_set_write(1079,31671
+    init_input_attachment_descriptor_set_write(1096,32214
+    init_image_descriptor_set_write(1113,32766
+    init_descriptor_set_image_info(1130,33313
+    init_descriptor_pool_size(1140,33620
+    struct Descriptor_Pool1148,33805
+	VkDescriptorPool pool;1150,33840
+    init_semaphore(1165,34194
+    init_fence(1178,34532
+    wait_fences(1193,34905
+    struct Next_Image_Return 1203,35109
+    struct Next_Image_Return {VkResult result;1203,35109
+    struct Next_Image_Return {VkResult result; u32 image_index;1203,35109
+    acquire_next_image(1205,35220
+    reset_fences(1227,35844
+    struct State1233,36007
+	VkInstance instance;1235,36032
+	VkDebugUtilsMessengerEXT debug_messenger;1236,36055
+	GPU gpu;1237,36099
+	VkSurfaceKHR surface;1238,36110
+	Swapchain swapchain;1239,36134

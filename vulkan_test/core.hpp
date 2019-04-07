@@ -473,3 +473,16 @@ loop_through_memory(Memory_Buffer_View<T> &memory
 	predicate(i);
     }
 }
+
+template <typename T> struct Dynamic_Array
+{
+    T *ptr;
+    u32 count;
+    u32 cap;
+
+    void
+    add(const T &t)
+    {
+	
+    }
+};
