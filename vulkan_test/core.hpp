@@ -474,15 +474,6 @@ loop_through_memory(Memory_Buffer_View<T> &memory
     }
 }
 
-template <typename T> struct Dynamic_Array
-{
-    T *ptr;
-    u32 count;
-    u32 cap;
+#include <glm/glm.hpp>
 
-    void
-    add(const T &t)
-    {
-	
-    }
-};
+const glm::mat4x4 IDENTITY_MAT4X4 = glm::mat4x4(1.0f);

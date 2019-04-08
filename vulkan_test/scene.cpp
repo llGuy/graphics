@@ -1,9 +1,8 @@
-// TODO : TEST RERECORDING COMMAND BUFFERS EVERY FRAME !!! AND PUSH CONSTANTS !!!
-
 #include <chrono>
 #include "scene.hpp"
 #include <glm/glm.hpp>
 #include <GLFW/glfw3.h>
+#include <glm/gtx/quaternion.hpp>
 #include "rendering.hpp"
 #include <glm/gtx/transform.hpp>
 
@@ -15,8 +14,10 @@ typedef struct Entity_View
     // may have other data in the future in case we create separate arrays for different types of entities
     s32 id :28;
     
-    enum Is_Group { IT_NOT_GROUP = false
+    enum Is_Group { IS_NOT_GROUP = false
 		    , IS_GROUP = true } is_group :4;
+
+    Entity_View(void) : id(-1), is_group(Is_Group::IS_NOT_GROUP) {}
 } Entity_View, Entity_Group_View;
 
 #define MAX_ENTITIES 100
@@ -24,17 +25,29 @@ typedef struct Entity_View
 typedef struct Entity
 {
 
-    enum { IS_NOT_GROUP = false
-	   , IS_GROUP = true } is_group;
+    enum Is_Group { IS_NOT_GROUP = false
+		    , IS_GROUP = true } is_group{};
 
-    Constant_String id;
+    Constant_String id {""_hash};
     // position, direction, velocity
-    glm::vec3 p, real_p, d/*not deppending on above*/, v, real_v;
+    // in above entity group space
+    glm::vec3 gs_p{0.0f}, ws_d{0.0f}/*not deppending on above*/, gs_v{0.0f};
+    glm::quat gs_r{0.0f, 0.0f, 0.0f, 0.0f};
+
+    // push constant stuff for the graphics pipeline
+    struct
+    {
+	// in world space
+	glm::mat4x4 ws_t{1.0f};
+    } push_k;
+    
     // always will be a entity group - so, to update all the groups only, will climb UP the ladder
     Entity_View above;
     Entity_View index;
-    
-    enum Entity_State_Flags {GROUP_PHYSICS_INFO_HAS_BEEN_UPDATED_BIT = 1 << 0} flags;
+
+    using Entity_State_Flags = u32;
+    enum {GROUP_PHYSICS_INFO_HAS_BEEN_UPDATED_BIT = 1 << 0};
+    Entity_State_Flags flags{};
     
     union
     {
@@ -46,7 +59,8 @@ typedef struct Entity
 	};
 
 	// if this is a group
-	Memory_Buffer_View<Entity_View> below;
+	// FOR THE MOMENT NOT NEED FOR THIS - ENTITIY SCENE GRAPH MAY ONLY NEED TO BE ONE-WAY (TOWARDS THE TOP)
+	Memory_Buffer_View<Entity_View> below = {};
     };
 
     void
@@ -60,6 +74,22 @@ typedef struct Entity
     }
     
 } Entity, Entity_Group;
+
+Entity
+construct_entity(const Constant_String &name
+		 , Entity::Is_Group is_group
+		 , glm::vec3 gs_p
+		 , glm::vec3 ws_d
+		 , glm::quat gs_r)
+{
+    Entity e;
+    e.is_group = is_group;
+    e.gs_p = gs_p;
+    e.ws_d = ws_d;
+    e.gs_r = gs_r;
+    e.id = name;
+    return(e);
+}
 
 global_var struct Entities
 {
@@ -80,21 +110,34 @@ global_var Entity_View scene_graph;
 internal Entity *
 get_entity(const Constant_String &name)
 {
+    Entity_Group_View v = *entities.name_map.get(name.hash);
+    return(&entities.list_groups[v.id]);
+}
+
+internal Entity_Group *
+get_entity(Entity_Group_View v)
+{
+    return(&entities.list_groups[v.id]);
+}
+
+internal Entity *
+get_entity_group(const Constant_String &name)
+{
     Entity_View v = *entities.name_map.get(name.hash);
     return(&entities.list_singles[v.id]);
 }
 
 internal Entity *
-get_entity(Entity_View v)
+get_entity_group(Entity_View v)
 {
     return(&entities.list_singles[v.id]);
 }
 
 internal Entity_View
 add_entity(const Entity &e
-	   , Entity_Group_View group_e_belongs_to)
+	   , Entity_Group *group_e_belongs_to)
 {
-    Entity_View view = {};
+    Entity_View view;
     view.id = entities.count_singles;
     view.is_group = (Entity_View::Is_Group)e.is_group;
 
@@ -104,7 +147,34 @@ add_entity(const Entity &e
 
     auto e_ptr = get_entity(view);
 
-    e_ptr->above = group_e_belongs_to;
+    e_ptr->index = view;
+
+    if (group_e_belongs_to) e_ptr->above = group_e_belongs_to->index;
+    else e_ptr->above.id = -1;
+
+    return(view);
+}
+
+internal Entity_Group_View
+add_entity_group(const Entity_Group &e
+	   , Entity_Group *group_e_belongs_to)
+{
+    Entity_Group_View view;
+    view.id = entities.count_groups;
+    view.is_group = (Entity_View::Is_Group)e.is_group;
+
+    entities.name_map.insert(e.id.hash, view);
+    
+    entities.list_groups[entities.count_groups++] = e;
+
+    auto e_ptr = get_entity(view);
+
+    e_ptr->index = view;
+
+    if (group_e_belongs_to) e_ptr->above = group_e_belongs_to->index;
+    else e_ptr->above.id = -1;
+
+    return(view);
 }
 
 internal void
@@ -112,39 +182,74 @@ init_scene_graph(void)
 {
     // init first entity group (that will contain all the entities)
     // everything moves with god (aka the base entity)
-    Entity_Group god = {};
-    god.id = "entity.group.god"_hash;
-    // p, real-p, d, v, real-v are all nil
-    god.above = Entity_View{};
-    // god is the group with ALL of the entities / entity groups
-    god.is_group = Entity_Group::IS_GROUP;
+    Entity_Group god = construct_entity("entity.group.god"_hash
+					, Entity::Is_Group::IS_GROUP
+					, glm::vec3(10.0f)
+					, glm::vec3(0.0f)
+					, glm::quat(0.0f, 0.0f, 0.0f, 0.0f));
     
-    Entity_Group_View god_view = add_entity(god
-					    , Entity_Group_View{});
+    Entity_Group_View god_view = add_entity_group(god, nullptr);
 }
 
 internal void
-make_entity_renderable(Entity_View e
+make_entity_renderable(Entity *e_ptr
 		       , Vulkan_API::Registered_Model model
 		       , const Constant_String &e_mtrl_name)
 {
     Rendering::Material_Data mtrl_data = {};
-    /* mtrl_data.data = some data i need to set for the push constants; */
-    /* mtrl_data.data_size = some size of some data i need for push constants; */
+    mtrl_data.data = &e_ptr->push_k;
+    mtrl_data.data_size = sizeof(e_ptr->push_k);
     mtrl_data.model = model;
 
     mtrl_data.draw_info = Vulkan_API::init_draw_indexed_data_default(1, model.p->index_data.index_count);
     
-    Rendering::init_material("renderer.test_material_renderer"_hash, &mtrl_data);
+    Rendering::init_material(e_mtrl_name, &mtrl_data);
 }
 
 internal void
 make_entity_instanced_renderable(Vulkan_API::Registered_Model model
 				 , const Constant_String &e_mtrl_name)
 {
-    /* init mtrl renderer to be using instanced technology */
+    // TODO(luc) : first need to add support for instance rendering in material renderers.
 }
 
+internal void
+update_entity_group(Entity_Group *g)
+{
+    if (!(g->flags & Entity::GROUP_PHYSICS_INFO_HAS_BEEN_UPDATED_BIT))
+    {
+	// update position or whatever + including the position of above groups
+	if (g->above.id != -1) update_entity_group(get_entity(g->above));
+
+	const glm::mat4x4 *above_ws_t = (g->above.id == -1) ? &IDENTITY_MAT4X4 : &get_entity(g->above)->push_k.ws_t;
+	g->push_k.ws_t = glm::translate(g->gs_p) * glm::toMat4(g->gs_r);
+	g->push_k.ws_t = *above_ws_t * g->push_k.ws_t;
+
+	g->flags |= Entity_Group::GROUP_PHYSICS_INFO_HAS_BEEN_UPDATED_BIT;
+    }
+    else
+    {
+	// do nothing
+    }
+}
+
+internal void
+update_scene_graph(void)
+{
+    // first only update entity groups
+    for (s32 i = 0; i < entities.count_groups; ++i)
+    {
+	Entity_Group *g = &entities.list_groups[i];
+	if (g->flags & Entity_Group::GROUP_PHYSICS_INFO_HAS_BEEN_UPDATED_BIT)
+	{
+	    continue;
+	}
+	else
+	{
+	    update_entity_group(g);
+	}
+    }
+}
 
 void
 Camera::set_default(f32 w, f32 h, f32 m_x, f32 m_y)
@@ -224,6 +329,35 @@ init_scene(Scene *scene
 
     mtrl_data.data = &scene->object_model_matrix2;
     Rendering::init_material("renderer.test_material_renderer"_hash, &mtrl_data);
+
+
+    init_scene_graph();
+    // add en entity group
+    Entity_Group test_g0 = construct_entity("entity.group.test0"_hash
+					   , Entity::Is_Group::IS_GROUP
+					   , glm::vec3(0.0f, -5.0f, 0.0f)
+					   , glm::vec3(0.0f)
+					   , glm::quat(0, 0, 0, 0));
+    add_entity_group(test_g0
+		     , get_entity("entity.group.god"_hash));
+    
+
+    Entity_Group test_g1 = construct_entity("entity.group.test1"_hash
+					    , Entity::Is_Group::IS_GROUP
+					    , glm::vec3(0.0f, -5.0f, 0.0f)
+					    , glm::vec3(0.0f)
+					    , glm::quat(0, 0, 0, 0));
+    add_entity_group(test_g1
+		     , get_entity("entity.group.god"_hash));
+    
+
+    Entity_Group test_g2 = construct_entity("entity.group.test2"_hash
+					    , Entity::Is_Group::IS_GROUP
+					    , glm::vec3(0.0f, -5.0f, 0.0f)
+					    , glm::vec3(0.0f)
+					    , glm::quat(0, 0, 0, 0));
+    add_entity_group(test_g2
+		     , get_entity("entity.group.god"_hash));
 }
 
 internal void
@@ -306,6 +440,8 @@ render_frame(Rendering::Rendering_State *rendering_objects
 	     , Vulkan_API::State *vulkan_state
 	     , Scene *scene)
 {
+    update_scene_graph();
+    
     persist u32 current_frame = 0;
     persist constexpr u32 MAX_FRAMES_IN_FLIGHT = 2;
     

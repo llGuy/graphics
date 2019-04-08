@@ -147,85 +147,92 @@ namespace Rendering8,156
 	init_system(697,24638
 	add_renderer(705,24804
 	update(712,25034
-	init_material(762,26771
-    } rndr_sys;780,27272
-    init_deferred_render_pass(783,27301
-	enum G_Buffer_Attachment 790,27585
-	enum G_Buffer_Attachment :u32 {FINAL_ATTACHMENTFINAL_ATTACHMENT790,27585
-				       , ALBEDO_ATTACHMENT791,27635
-				       , DEPTH_ATTACHMENT792,27667
-				       , INVALID_ATTACHMENT}INVALID_ATTACHMENT793,27698
-	enum G_Buffer_Reference 842,29990
-	enum G_Buffer_Reference :u32 {FINAL_REFERENCEFINAL_REFERENCE842,29990
-				      , ALBEDO_REFERENCE843,30038
-				      , DEPTH_REFERENCE844,30068
-				      , INVALID_REFERENCE}INVALID_REFERENCE845,30097
-	enum Subpass_Stage 857,30969
-	enum Subpass_Stage :u32 {G_BUFFER_INIT,G_BUFFER_INIT857,30969
-	enum Subpass_Stage :u32 {G_BUFFER_INIT, LIGHTING,857,30969
-	enum Subpass_Stage :u32 {G_BUFFER_INIT, LIGHTING, INVALID_STAGE}INVALID_STAGE857,30969
-    init_deferred_fbos(908,33306
-	enum class G_Buffer_Attachment 912,33461
-	enum class G_Buffer_Attachment :u32 {FINAL,FINAL912,33461
-	enum class G_Buffer_Attachment :u32 {FINAL, ALBEDO,912,33461
-	enum class G_Buffer_Attachment :u32 {FINAL, ALBEDO, POSITION,912,33461
-	enum class G_Buffer_Attachment :u32 {FINAL, ALBEDO, POSITION, NORMAL,912,33461
-	enum class G_Buffer_Attachment :u32 {FINAL, ALBEDO, POSITION, NORMAL, DEPTH,912,33461
-	enum class G_Buffer_Attachment :u32 {FINAL, ALBEDO, POSITION, NORMAL, DEPTH, INVALID}INVALID912,33461
-    init_deferred_ppln(973,35690
-    init_rendering_system(1147,44557
-    add_renderer(1157,44904
-    update_renderers(1163,45075
-    init_material(1173,45433
+	init_material(759,26686
+    } rndr_sys;777,27187
+    init_deferred_render_pass(780,27216
+	enum G_Buffer_Attachment 787,27500
+	enum G_Buffer_Attachment :u32 {FINAL_ATTACHMENTFINAL_ATTACHMENT787,27500
+				       , ALBEDO_ATTACHMENT788,27550
+				       , DEPTH_ATTACHMENT789,27582
+				       , INVALID_ATTACHMENT}INVALID_ATTACHMENT790,27613
+	enum G_Buffer_Reference 839,29905
+	enum G_Buffer_Reference :u32 {FINAL_REFERENCEFINAL_REFERENCE839,29905
+				      , ALBEDO_REFERENCE840,29953
+				      , DEPTH_REFERENCE841,29983
+				      , INVALID_REFERENCE}INVALID_REFERENCE842,30012
+	enum Subpass_Stage 854,30884
+	enum Subpass_Stage :u32 {G_BUFFER_INIT,G_BUFFER_INIT854,30884
+	enum Subpass_Stage :u32 {G_BUFFER_INIT, LIGHTING,854,30884
+	enum Subpass_Stage :u32 {G_BUFFER_INIT, LIGHTING, INVALID_STAGE}INVALID_STAGE854,30884
+    init_deferred_fbos(905,33221
+	enum class G_Buffer_Attachment 909,33376
+	enum class G_Buffer_Attachment :u32 {FINAL,FINAL909,33376
+	enum class G_Buffer_Attachment :u32 {FINAL, ALBEDO,909,33376
+	enum class G_Buffer_Attachment :u32 {FINAL, ALBEDO, POSITION,909,33376
+	enum class G_Buffer_Attachment :u32 {FINAL, ALBEDO, POSITION, NORMAL,909,33376
+	enum class G_Buffer_Attachment :u32 {FINAL, ALBEDO, POSITION, NORMAL, DEPTH,909,33376
+	enum class G_Buffer_Attachment :u32 {FINAL, ALBEDO, POSITION, NORMAL, DEPTH, INVALID}INVALID909,33376
+    init_deferred_ppln(970,35605
+    init_rendering_system(1144,44472
+    add_renderer(1154,44819
+    update_renderers(1160,44990
+    init_material(1170,45348
 
-scene.cpp,1614
-constexpr f32 PI 10,237
-struct Entity_View13,296
-    s32 id 16,427
-    enum { IT_NOT_GROUP 18,450
-	   , IS_GROUP 19,483
-global_var struct Physics_Manager22,527
-} physics;27,579
-#define MAX_ENTITIES 29,593
-typedef struct Entity31,621
-    enum { IS_NOT_GROUP 34,649
-	   , IS_GROUP 35,682
-    Constant_String id;37,719
-    glm::vec3 p,39,782
-    glm::vec3 p, real_p,39,782
-    glm::vec3 p, real_p, d/d39,782
-    glm::vec3 p, real_p, d/*not deppending on above*/, v,39,782
-    glm::vec3 p, real_p, d/*not deppending on above*/, v, real_v;39,782
-    Entity_View above;41,887
-    Entity_View index;42,911
-    enum Entity_State_Flags 44,941
-    enum Entity_State_Flags {GROUP_PHYSICS_INFO_HAS_BEEN_UPDATED_BIT GROUP_PHYSICS_INFO_HAS_BEEN_UPDATED_BIT44,941
-	    Rendering::Material_Access mtrl_access;52,1154
-	Memory_Buffer_View<Entity_View> below;56,1231
-    update(60,1292
-} Entity,69,1459
-} Entity, Entity_Group;69,1459
-global_var struct Entities71,1486
-    s32 count_singles 73,1517
-    Entity list_singles[list_singles74,1546
-    s32 count_groups 76,1593
-    Entity_Group list_groups[list_groups77,1621
-} entities;80,1715
-global_var Entity_View scene_graph;83,1773
-get_entity(86,1831
-add_entity(92,1931
-init_scene_graph(104,2216
-Camera::set_default(set_default111,2262
-Camera::compute_projection(compute_projection125,2520
-Camera::compute_view(compute_view131,2613
-init_scene(137,2692
-update_ubo(191,4768
-    struct Uniform_Buffer_Object197,4944
-record_cmd(233,6148
-render_frame(266,7419
-update_scene(329,9982
-handle_input(342,10260
-#define SENSITIVITY 348,10368
+scene.cpp,1763
+constexpr f32 PI 9,187
+typedef struct Entity_View12,246
+    s32 id 15,385
+    enum Is_Group 17,408
+    enum Is_Group { IS_NOT_GROUP 17,408
+		    , IS_GROUP 18,450
+    Entity_View(20,492
+} Entity_View, Entity_Group_View;21,561
+#define MAX_ENTITIES 23,598
+typedef struct Entity25,626
+    enum Is_Group 28,654
+    enum Is_Group { IS_NOT_GROUP 28,654
+		    , IS_GROUP 29,696
+    } push_k;42,1090
+    Entity_View above;45,1211
+    Entity_View index;46,1235
+    using Entity_State_Flags 48,1261
+    enum {GROUP_PHYSICS_INFO_HAS_BEEN_UPDATED_BIT GROUP_PHYSICS_INFO_HAS_BEEN_UPDATED_BIT49,1298
+    Entity_State_Flags flags{flags50,1360
+	    Rendering::Material_Access mtrl_access;58,1519
+    update(66,1662
+} Entity,75,1829
+} Entity, Entity_Group;75,1829
+construct_entity(78,1864
+global_var struct Entities93,2151
+    s32 count_singles 95,2182
+    Entity list_singles[list_singles96,2211
+    s32 count_groups 98,2258
+    Entity_Group list_groups[list_groups99,2286
+    Hash_Table_Inline<Hash_Table_Inline101,2328
+} entities;104,2458
+global_var Entity_View scene_graph;107,2516
+get_entity(110,2574
+get_entity(117,2752
+get_entity_group(123,2854
+get_entity_group(130,3027
+add_entity(136,3133
+add_entity_group(158,3662
+init_scene_graph(180,4193
+make_entity_renderable(194,4630
+make_entity_instanced_renderable(209,5121
+update_entity_group(216,5349
+update_scene_graph(236,5978
+Camera::set_default(set_default254,6312
+Camera::compute_projection(compute_projection268,6570
+Camera::compute_view(compute_view274,6663
+init_scene(280,6742
+update_ubo(345,9157
+    struct Uniform_Buffer_Object351,9333
+record_cmd(387,10537
+render_frame(420,11808
+update_scene(485,14404
+handle_input(498,14682
+#define SENSITIVITY 504,14790
 
 vulkan.cpp,2727
 #define GLFW_INCLUDE_VULKAN2,21
@@ -301,7 +308,7 @@ namespace Vulkan_API10,171
     destroy_debug_utils_messenger_ext(1475,48621
     destroy_state(1487,49006
 
-core.hpp,3571
+core.hpp,3470
 #define DEBUG 11,143
 typedef int8_t s8;13,165
 typedef int16_t s16;14,185
@@ -415,11 +422,7 @@ struct Memory_Byte_Buffer458,9691
     void *ptr;ptr461,9736
 template <typename T,465,9791
 loop_through_memory(466,9834
-template <typename T> struct Dynamic_Array477,10010
-    T *ptr;ptr479,10057
-    u32 count;480,10070
-    u32 cap;481,10086
-    add(484,10112
+const glm::mat4x4 IDENTITY_MAT4X4 479,10036
 
 file_system.hpp,725
 enum File_Format7,166
@@ -481,9 +484,9 @@ namespace Rendering13,584
 	void *data;data69,2296
 	Vulkan_API::Registered_Model model;72,2333
 	Vulkan_API::Draw_Indexed_Data draw_info;73,2371
-    struct Material_Access 76,2424
-    struct Material_Access { s32 rndr_id,76,2424
-    struct Material_Access { s32 rndr_id, mtrl_id;76,2424
+    struct Material_Access 76,2423
+    struct Material_Access { s32 rndr_id,76,2423
+    struct Material_Access { s32 rndr_id, mtrl_id;76,2423
 
 scene.hpp,554
 struct Camera9,146
