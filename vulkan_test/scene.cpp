@@ -6,6 +6,9 @@
 #include "rendering.hpp"
 #include <glm/gtx/transform.hpp>
 
+#define MAX_ENTITIES_UNDER_TOP 10
+#define MAX_ENTITIES_UNDER_PLANET 150
+
 constexpr f32 PI = 3.14159265359f;
 
 // index into array
@@ -58,20 +61,12 @@ typedef struct Entity
 	    Rendering::Material_Access mtrl_access;
 	};
 
-	// if this is a group
-	// FOR THE MOMENT NOT NEED FOR THIS - ENTITIY SCENE GRAPH MAY ONLY NEED TO BE ONE-WAY (TOWARDS THE TOP)
-	Memory_Buffer_View<Entity_View> below = {};
-    };
-
-    void
-    update(void)
-    {
-	switch(is_group)
+	struct
 	{
-	case IS_NOT_GROUP: break;
-	case IS_GROUP: break; // sort out values depending on "is_group" field
+	    u32 below_count;
+	    Memory_Buffer_View<Entity_View> below;
 	};
-    }
+    };
     
 } Entity, Entity_Group;
 
@@ -110,27 +105,27 @@ global_var Entity_View scene_graph;
 internal Entity *
 get_entity(const Constant_String &name)
 {
-    Entity_Group_View v = *entities.name_map.get(name.hash);
-    return(&entities.list_groups[v.id]);
+    Entity_View v = *entities.name_map.get(name.hash);
+    return(&entities.list_singles[v.id]);
 }
 
 internal Entity_Group *
-get_entity(Entity_Group_View v)
+get_entity(Entity_View v)
 {
-    return(&entities.list_groups[v.id]);
+    return(&entities.list_singles[v.id]);
 }
 
 internal Entity *
 get_entity_group(const Constant_String &name)
 {
     Entity_View v = *entities.name_map.get(name.hash);
-    return(&entities.list_singles[v.id]);
+    return(&entities.list_groups[v.id]);
 }
 
 internal Entity *
-get_entity_group(Entity_View v)
+get_entity_group(Entity_Group_View v)
 {
-    return(&entities.list_singles[v.id]);
+    return(&entities.list_groups[v.id]);
 }
 
 internal Entity_View
@@ -149,7 +144,13 @@ add_entity(const Entity &e
 
     e_ptr->index = view;
 
-    if (group_e_belongs_to) e_ptr->above = group_e_belongs_to->index;
+    if (group_e_belongs_to)
+    {
+	assert(group_e_belongs_to->below_count <= group_e_belongs_to->below.count);
+	
+	e_ptr->above = group_e_belongs_to->index;
+	group_e_belongs_to->below[group_e_belongs_to->below_count++] = e_ptr->index;
+    }
     else e_ptr->above.id = -1;
 
     return(view);
@@ -157,7 +158,8 @@ add_entity(const Entity &e
 
 internal Entity_Group_View
 add_entity_group(const Entity_Group &e
-	   , Entity_Group *group_e_belongs_to)
+		 , Entity_Group *group_e_belongs_to
+		 , u32 group_below_max)
 {
     Entity_Group_View view;
     view.id = entities.count_groups;
@@ -167,12 +169,22 @@ add_entity_group(const Entity_Group &e
     
     entities.list_groups[entities.count_groups++] = e;
 
-    auto e_ptr = get_entity(view);
+    auto e_ptr = get_entity_group(view);
 
     e_ptr->index = view;
 
-    if (group_e_belongs_to) e_ptr->above = group_e_belongs_to->index;
+    if (group_e_belongs_to)
+    {
+	// make sure that the capacity of the below buffer wasn't met
+	assert(group_e_belongs_to->below_count <= group_e_belongs_to->below.count);
+	
+	e_ptr->above = group_e_belongs_to->index;
+	group_e_belongs_to->below.buffer[group_e_belongs_to->below_count++] = e_ptr->index;
+    }
     else e_ptr->above.id = -1;
+
+    e_ptr->below_count = 0;
+    allocate_memory_buffer(e_ptr->below, group_below_max);
 
     return(view);
 }
@@ -188,7 +200,7 @@ init_scene_graph(void)
 					, glm::vec3(0.0f)
 					, glm::quat(0.0f, 0.0f, 0.0f, 0.0f));
     
-    Entity_Group_View god_view = add_entity_group(god, nullptr);
+    Entity_Group_View god_view = add_entity_group(god, nullptr, MAX_ENTITIES_UNDER_TOP);
 }
 
 internal void
@@ -248,6 +260,12 @@ update_scene_graph(void)
 	{
 	    update_entity_group(g);
 	}
+    }
+
+    for (s32 i = 0; i < entities.count_singles; ++i)
+    {
+	Entity *e = &entities.list_singles[i];
+	e->push_k.ws_t = get_entity_group(e->above)->push_k.ws_t * glm::translate(e->gs_p) * glm::toMat4(e->gs_r);
     }
 }
 
@@ -339,25 +357,23 @@ init_scene(Scene *scene
 					   , glm::vec3(0.0f)
 					   , glm::quat(0, 0, 0, 0));
     add_entity_group(test_g0
-		     , get_entity("entity.group.god"_hash));
-    
+		     , get_entity_group("entity.group.god"_hash)
+		     , MAX_ENTITIES_UNDER_TOP);
 
-    Entity_Group test_g1 = construct_entity("entity.group.test1"_hash
-					    , Entity::Is_Group::IS_GROUP
-					    , glm::vec3(0.0f, -5.0f, 0.0f)
-					    , glm::vec3(0.0f)
-					    , glm::quat(0, 0, 0, 0));
-    add_entity_group(test_g1
-		     , get_entity("entity.group.god"_hash));
-    
+    Entity e = construct_entity("entity.test"_hash
+				, Entity::Is_Group::IS_NOT_GROUP
+				, glm::vec3(0.0f)
+				, glm::vec3(0.0f)
+				, glm::quat(0, 0, 0, 0));
 
-    Entity_Group test_g2 = construct_entity("entity.group.test2"_hash
-					    , Entity::Is_Group::IS_GROUP
-					    , glm::vec3(0.0f, -5.0f, 0.0f)
-					    , glm::vec3(0.0f)
-					    , glm::quat(0, 0, 0, 0));
-    add_entity_group(test_g2
-		     , get_entity("entity.group.god"_hash));
+    Entity_View ev = add_entity(e
+				, get_entity_group("entity.group.test0"_hash));
+
+    auto *e_ptr = get_entity(ev);
+
+    make_entity_renderable(e_ptr
+			   , Vulkan_API::get_object("vulkan_model.test_model"_hash)
+			   , "renderer.test_material_renderer"_hash);
 }
 
 internal void

@@ -47,31 +47,31 @@ end_proc_init(81,1339
 open_config_file(87,1380
 
 core.cpp,762
-#define DEBUG_FILE 12,195
-Linear_Allocator linear_allocator_global;15,228
-Stack_Allocator stack_allocator_global;16,271
-Free_List_Allocator free_list_allocator_global;17,312
-Debug_Output output_file;19,363
-Window_Data window;20,390
-internal bool running;22,413
-open_debug_file(25,454
-close_debug_file(32,584
-output_debug(38,658
-allocate_linear(55,903
-clear_linear(69,1190
-allocate_stack(75,1293
-extend_stack_top(112,2739
-pop_stack(120,2968
-init_free_list_allocator_head(146,3830
-allocate_free_list(153,4091
-deallocate_free_list(203,6127
-#define MAX_KEYS 289,9428
-#define MAX_MB 290,9450
-glfw_window_resize_proc(293,9485
-glfw_keyboard_input_proc(302,9713
-glfw_mouse_position_proc(313,10055
-glfw_mouse_button_proc(322,10281
-main(336,10628
+#define DEBUG_FILE 16,222
+Linear_Allocator linear_allocator_global;19,255
+Stack_Allocator stack_allocator_global;20,298
+Free_List_Allocator free_list_allocator_global;21,339
+Debug_Output output_file;23,390
+Window_Data window;24,417
+internal bool running;26,440
+open_debug_file(29,481
+close_debug_file(36,611
+output_debug(42,685
+allocate_linear(59,930
+clear_linear(73,1217
+allocate_stack(79,1320
+extend_stack_top(116,2766
+pop_stack(124,2995
+init_free_list_allocator_head(150,3857
+allocate_free_list(157,4118
+deallocate_free_list(207,6154
+#define MAX_KEYS 293,9455
+#define MAX_MB 294,9477
+glfw_window_resize_proc(297,9512
+glfw_keyboard_input_proc(306,9740
+glfw_mouse_position_proc(317,10082
+glfw_mouse_button_proc(326,10308
+main(340,10655
 
 file_system.cpp,247
 global_var const char *virtual_file_path virtual_file_path6,100
@@ -178,61 +178,63 @@ namespace Rendering8,156
     update_renderers(1160,44990
     init_material(1170,45348
 
-scene.cpp,1763
-constexpr f32 PI 9,187
-typedef struct Entity_View12,246
-    s32 id 15,385
-    enum Is_Group 17,408
-    enum Is_Group { IS_NOT_GROUP 17,408
-		    , IS_GROUP 18,450
-    Entity_View(20,492
-} Entity_View, Entity_Group_View;21,561
-#define MAX_ENTITIES 23,598
-typedef struct Entity25,626
-    enum Is_Group 28,654
-    enum Is_Group { IS_NOT_GROUP 28,654
-		    , IS_GROUP 29,696
-    } push_k;42,1090
-    Entity_View above;45,1211
-    Entity_View index;46,1235
-    using Entity_State_Flags 48,1261
-    enum {GROUP_PHYSICS_INFO_HAS_BEEN_UPDATED_BIT GROUP_PHYSICS_INFO_HAS_BEEN_UPDATED_BIT49,1298
-    Entity_State_Flags flags{flags50,1360
-	    Rendering::Material_Access mtrl_access;58,1519
-    update(66,1662
-} Entity,75,1829
-} Entity, Entity_Group;75,1829
-construct_entity(78,1864
-global_var struct Entities93,2151
-    s32 count_singles 95,2182
-    Entity list_singles[list_singles96,2211
-    s32 count_groups 98,2258
-    Entity_Group list_groups[list_groups99,2286
-    Hash_Table_Inline<Hash_Table_Inline101,2328
-} entities;104,2458
-global_var Entity_View scene_graph;107,2516
-get_entity(110,2574
-get_entity(117,2752
-get_entity_group(123,2854
-get_entity_group(130,3027
-add_entity(136,3133
-add_entity_group(158,3662
-init_scene_graph(180,4193
-make_entity_renderable(194,4630
-make_entity_instanced_renderable(209,5121
-update_entity_group(216,5349
-update_scene_graph(236,5978
-Camera::set_default(set_default254,6312
-Camera::compute_projection(compute_projection268,6570
-Camera::compute_view(compute_view274,6663
-init_scene(280,6742
-update_ubo(345,9157
-    struct Uniform_Buffer_Object351,9333
-record_cmd(387,10537
-render_frame(420,11808
-update_scene(485,14404
-handle_input(498,14682
-#define SENSITIVITY 504,14790
+scene.cpp,1889
+#define MAX_ENTITIES_UNDER_TOP 9,187
+#define MAX_ENTITIES_UNDER_PLANET 10,222
+constexpr f32 PI 12,263
+typedef struct Entity_View15,322
+    s32 id 18,461
+    enum Is_Group 20,484
+    enum Is_Group { IS_NOT_GROUP 20,484
+		    , IS_GROUP 21,526
+    Entity_View(23,568
+} Entity_View, Entity_Group_View;24,637
+#define MAX_ENTITIES 26,674
+typedef struct Entity28,702
+    enum Is_Group 31,730
+    enum Is_Group { IS_NOT_GROUP 31,730
+		    , IS_GROUP 32,772
+    } push_k;45,1166
+    Entity_View above;48,1287
+    Entity_View index;49,1311
+    using Entity_State_Flags 51,1337
+    enum {GROUP_PHYSICS_INFO_HAS_BEEN_UPDATED_BIT GROUP_PHYSICS_INFO_HAS_BEEN_UPDATED_BIT52,1374
+    Entity_State_Flags flags{flags53,1436
+	    Rendering::Material_Access mtrl_access;61,1595
+	    u32 below_count;66,1661
+	    Memory_Buffer_View<Entity_View> below;67,1684
+} Entity, Entity_Group;71,1748
+construct_entity(74,1783
+global_var struct Entities89,2070
+    s32 count_singles 91,2101
+    Entity list_singles[list_singles92,2130
+    s32 count_groups 94,2177
+    Entity_Group list_groups[list_groups95,2205
+    Hash_Table_Inline<Hash_Table_Inline97,2247
+} entities;100,2377
+global_var Entity_View scene_graph;103,2435
+get_entity(106,2493
+get_entity(113,2666
+get_entity_group(119,2763
+get_entity_group(126,2935
+add_entity(132,3046
+add_entity_group(160,3751
+init_scene_graph(193,4651
+make_entity_renderable(207,5112
+make_entity_instanced_renderable(222,5603
+update_entity_group(229,5831
+update_scene_graph(249,6460
+Camera::set_default(set_default273,7014
+Camera::compute_projection(compute_projection287,7272
+Camera::compute_view(compute_view293,7365
+init_scene(299,7444
+update_ubo(380,10347
+    struct Uniform_Buffer_Object386,10523
+record_cmd(422,11727
+render_frame(455,12998
+update_scene(520,15594
+handle_input(533,15872
+#define SENSITIVITY 539,15980
 
 vulkan.cpp,2727
 #define GLFW_INCLUDE_VULKAN2,21

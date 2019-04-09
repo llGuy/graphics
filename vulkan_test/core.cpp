@@ -1,3 +1,7 @@
+#include <iostream>
+
+
+
 #include <GLFW/glfw3.h>
 #include <vulkan/vulkan.h>
 
@@ -413,7 +417,7 @@ main(s32 argc
 	OUTPUT_DEBUG_LOG("stack allocator start address is : %p\n", stack_allocator_global.current);
 	OUTPUT_DEBUG_LOG("stack allocator allocated %d bytes\n", (u32)((u8 *)stack_allocator_global.current - (u8 *)stack_allocator_global.start));
 	
-	OUTPUT_DEBUG_LOG("finished session : FPS : %f\n", 1, fps);
+	OUTPUT_DEBUG_LOG("finished session : FPS : %f\n", fps);
 
 	printf("%f\n", fps);
 	
