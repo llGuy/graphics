@@ -1,3 +1,5 @@
+// TODO: model loading - mesh rendering - sky (realistic) - hit box rendering
+
 #include <chrono>
 #include "scene.hpp"
 #include <glm/glm.hpp>
@@ -5,6 +7,7 @@
 #include <glm/gtx/quaternion.hpp>
 #include "rendering.hpp"
 #include <glm/gtx/transform.hpp>
+#include "load.hpp"
 
 #define MAX_ENTITIES_UNDER_TOP 10
 #define MAX_ENTITIES_UNDER_PLANET 150
@@ -27,7 +30,6 @@ typedef struct Entity_View
 
 typedef struct Entity
 {
-
     enum Is_Group { IS_NOT_GROUP = false
 		    , IS_GROUP = true } is_group{};
 
@@ -67,7 +69,6 @@ typedef struct Entity
 	    Memory_Buffer_View<Entity_View> below;
 	};
     };
-    
 } Entity, Entity_Group;
 
 Entity
@@ -193,14 +194,14 @@ internal void
 init_scene_graph(void)
 {
     // init first entity group (that will contain all the entities)
-    // everything moves with god (aka the base entity)
-    Entity_Group god = construct_entity("entity.group.god"_hash
+    // everything moves with top (aka the base entitygroup)
+    Entity_Group top = construct_entity("entity.group.top"_hash
 					, Entity::Is_Group::IS_GROUP
 					, glm::vec3(10.0f)
 					, glm::vec3(0.0f)
 					, glm::quat(0.0f, 0.0f, 0.0f, 0.0f));
     
-    Entity_Group_View god_view = add_entity_group(god, nullptr, MAX_ENTITIES_UNDER_TOP);
+    Entity_Group_View top_view = add_entity_group(top, nullptr, MAX_ENTITIES_UNDER_TOP);
 }
 
 internal void
@@ -357,7 +358,7 @@ init_scene(Scene *scene
 					   , glm::vec3(0.0f)
 					   , glm::quat(0, 0, 0, 0));
     add_entity_group(test_g0
-		     , get_entity_group("entity.group.god"_hash)
+		     , get_entity_group("entity.group.top"_hash)
 		     , MAX_ENTITIES_UNDER_TOP);
 
     Entity e = construct_entity("entity.test"_hash
@@ -371,8 +372,15 @@ init_scene(Scene *scene
 
     auto *e_ptr = get_entity(ev);
 
+    Vulkan_API::Registered_Model sphere = Vulkan_API::register_object("vulkan_model.sphere"_hash
+								      , sizeof(Vulkan_API::Model));
+    load_model_from_obj("models/vertical_plane.obj"
+			, sphere.p
+			, "sphere"
+			, &vk->gpu);
+    
     make_entity_renderable(e_ptr
-			   , Vulkan_API::get_object("vulkan_model.test_model"_hash)
+			   , sphere
 			   , "renderer.test_material_renderer"_hash);
 }
 

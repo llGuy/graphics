@@ -466,9 +466,7 @@ template <typename T, typename Pred> void
 loop_through_memory(Memory_Buffer_View<T> &memory
 		    , Pred &&predicate)
 {
-    for (u32 i = 0
-	     ; i < memory.count
-	     ; ++i)
+    for (u32 i = 0; i < memory.count; ++i)
     {
 	predicate(i);
     }

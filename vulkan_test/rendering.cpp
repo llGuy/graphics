@@ -7,7 +7,7 @@
 
 namespace Rendering
 {
-
+    
     internal void
     init_model_info(void)
     {
@@ -72,6 +72,7 @@ namespace Rendering
 
 	// init assembly info
 	VkPipelineInputAssemblyStateCreateInfo assembly_info = {};
+
 	Vulkan_API::init_pipeline_input_assembly_info(0, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_FALSE, &assembly_info);
 
 	// init viewport info
@@ -566,6 +567,11 @@ namespace Rendering
 	Vulkan_API::Draw_Indexed_Data draw_info;
     };
 
+    /*
+      NEED A WAY TO SORT : 
+      - MATERIAL WITH THE SAME MODELS (organizing the bindings of the ibos and vbos!!!)
+      - THEN NEED TO MAKE SURE THAT EACH MATERIAL RENDERER HANDLES AN ARRAY OF TEXTURES (in which the user can push textures that various objects will have to bind) - so that binding textures is just a push constant
+     */
     struct Renderer // renders a material type
     {
 	// shader, pipieline states...
@@ -623,7 +629,8 @@ namespace Rendering
 	    Vulkan_API::begin_command_buffer(&rndr_cmdbuf, 0, nullptr);
 	    
 	    switch(mthd)
-	    {	
+	    {
+		// inline means NOT instanced
 	    case Render_Method::INLINE:
 		{
 		    Vulkan_API::command_buffer_bind_pipeline(ppln.p, &rndr_cmdbuf);

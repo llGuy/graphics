@@ -1486,8 +1486,7 @@ namespace Vulkan_API
     void
     destroy_state(State *state)
     {
-	vkQueueWaitIdle(state->gpu.present_queue);
-	vkQueueWaitIdle(state->gpu.graphics_queue);
+	vkDeviceWaitIdle(state->gpu.logical_device);
 
 	vkDestroySurfaceKHR(state->instance, state->surface, nullptr);
 	

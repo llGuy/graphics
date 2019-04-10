@@ -7,130 +7,264 @@
 
 #include "load.hpp"
 
-namespace Load
+void
+process_vertex(std::vector<std::string> const & vertex_data,
+	       std::vector<u32> & indices, std::vector<glm::vec2> const & raw_textures,
+	       std::vector<glm::vec3> const & raw_normals,
+	       std::vector<glm::vec2> & textures, std::vector<glm::vec3> & normals
+	       , u32 & triangle_vertex)
 {
-    void
-    process_vertex(std::vector<std::string> const & vertex_data,
-		   std::vector<u32> & indices, std::vector<glm::vec2> const & raw_textures,
-		   std::vector<glm::vec3> const & raw_normals,
-		   std::vector<glm::vec2> & textures, std::vector<glm::vec3> & normals)
-    {
-	s32 current_vertex = std::stoi(vertex_data[0]) - 1;
-	indices.push_back(current_vertex);
+    s32 current_vertex = std::stoi(vertex_data[0]) - 1;
+    indices.push_back(current_vertex);
 
-	if (raw_textures.size() > 0)
-	{
-	    glm::vec2 current_tex = raw_textures[std::stoi(vertex_data[1]) - 1];
-	    textures[current_vertex] = current_tex;
-	}
-
-	if (raw_normals.size() > 0)
-	{
-	    glm::vec3 current_normal = raw_normals[std::stoi(vertex_data[2]) - 1];
-	    f32 normal_y = current_normal.y;
-	    f32 normal_z = current_normal.z;
-	    //current_normal.y = -normal_y;
-	    //current_normal.z = normal_z;
-	    //current_normal.y *= -1;
-	    normals[current_vertex] = current_normal;
-	}
-    }
-    
-    std::vector<std::string>
-    split(std::string const & str, char const splitter)
+    if (raw_textures.size() > 0)
     {
-	std::vector<std::string> words;
-	std::string current;
-	std::istringstream iss(str);
-	while (std::getline(iss, current, splitter)) words.push_back(current);
-
-	return words;
-    }
-    
-    void
-    break_face_line(std::vector<std::string> const & face_line_words,
-		    std::vector<u32> & indices, std::vector<glm::vec2> const & raw_textures,
-		    std::vector<glm::vec3> const & raw_normals,
-		    std::vector<glm::vec2> & textures, std::vector<glm::vec3> & normals)
-    {
-	std::array<std::vector<std::string>, 3> face_indices;
-	for (u32 i = 0; i < 3; ++i)
-	{
-	    face_indices[i] = split(face_line_words[i + 1], '/');
-	    process_vertex(face_indices[i], indices, raw_textures, raw_normals, textures, normals);
-	}
+	glm::vec2 current_tex = raw_textures[std::stoi(vertex_data[1]) - 1];
+	textures[current_vertex] = current_tex;
     }
 
-    void
-    create_model(std::vector<glm::vec3> & vertices
-		 , std::vector<glm::vec3> & normals
-		 , std::vector<glm::vec2> & texture_coords
-		 , std::vector<u32> & indices
-		 , Vulkan_API::Model *model
-		 , const char *mdl_name)
+    if (raw_normals.size() > 0)
     {
-	
-    } 
-    
-    void
-    load_model_from_obj(Vulkan_API::Model *dst
-			, const char *filename
-			, const char *mdl_name)
-    {
-	std::ifstream file(filename);
+	glm::vec3 current_normal = raw_normals[std::stoi(vertex_data[2]) - 1];
+	f32 normal_y = current_normal.y;
+	f32 normal_z = current_normal.z;
 
-	std::vector<glm::vec3> normals;
-	std::vector<glm::vec3> vertices;
-	std::vector<glm::vec2> texture_coords;
-
-	/* won't be in the  correct order */
-	std::vector<glm::vec2> raw_texture_coords;
-	std::vector<glm::vec3> raw_normals;
-	std::vector<u32> indices;
-
-	std::string line;
-	while (std::getline(file, line))
-	{
-	    std::vector<std::string> words = split(line, ' ');
-
-	    if (words[0] == "v")
-	    {
-		glm::vec3 vertex;
-		for (u32 i = 0; i < 3; ++i) vertex[i] = std::stof(words[i + 1]);
-		vertices.push_back(vertex);
-	    }
-	    else if (words[0] == "vt")
-	    {
-		glm::vec2 texture_coord;
-		for (u32 i = 0; i < 2; ++i) texture_coord[i] = std::stof(words[i + 1]);
-		raw_texture_coords.push_back(glm::vec2(texture_coord.x, 1.0f - texture_coord.y));
-	    }
-	    else if (words[0] == "vn")
-	    {
-		glm::vec3 normal;
-		for (u32 i = 0; i < 3; ++i) normal[i] = std::stof(words[i + 1]);
-		raw_normals.push_back(normal);
-	    }
-	    else if (words[0] == "f")
-	    {
-		normals.resize(vertices.size());
-		texture_coords.resize(vertices.size());
-
-		break_face_line(words, indices, raw_texture_coords, raw_normals, texture_coords, normals);
-
-		break;
-	    }
-	}
-
-	while (std::getline(file, line))
-	{
-	    std::vector<std::string> words = split(line, ' ');
-	    if (words[0] == "f")
-	    {
-		break_face_line(words, indices, raw_texture_coords, raw_normals, texture_coords, normals);
-	    }
-	}
-
-	create_model(vertices, normals, texture_coords, indices, dst, mdl_name);
+	normals[current_vertex] = current_normal;
     }
+
+    triangle_vertex = current_vertex;
 }
+    
+std::vector<std::string>
+split(std::string const & str, char const splitter)
+{
+    std::vector<std::string> words;
+    std::string current;
+    std::istringstream iss(str);
+    while (std::getline(iss, current, splitter)) words.push_back(current);
+
+    return words;
+}
+    
+void
+break_face_line(const std::vector<std::string> &face_line_words,
+		std::vector<u32> &indices, const std::vector<glm::vec2> &raw_textures,
+		std::vector<glm::vec3> const &raw_normals,
+		std::vector<glm::vec2> &textures, std::vector<glm::vec3> &normals,
+		std::vector<glm::vec3> &tangents, std::vector<f32> &tangent_amounts,
+		std::vector<glm::vec3> &vertices)
+{
+    std::array<std::vector<std::string>, 3> face_indices;
+
+    std::array<u32, 3> triangle_vertices;
+
+    for (u32 i = 0; i < 3; ++i)
+    {
+	face_indices[i] = split(face_line_words[i + 1], '/');
+	process_vertex(face_indices[i], indices, raw_textures, raw_normals, textures, normals, triangle_vertices[i]);
+    }
+
+    glm::vec3 delta_pos1 = vertices[triangle_vertices[1]] - vertices[triangle_vertices[0]];
+    glm::vec3 delta_pos2 = vertices[triangle_vertices[2]] - vertices[triangle_vertices[0]];
+
+    glm::vec2 delta_uv1 = textures[triangle_vertices[1]] - textures[triangle_vertices[0]];
+    glm::vec2 delta_uv2 = textures[triangle_vertices[2]] - textures[triangle_vertices[0]];
+
+    f32 r = 1.0f / (delta_uv1.x * delta_uv2.y - delta_uv1.y * delta_uv2.x);
+    delta_pos1 *= delta_uv2.y;
+    delta_pos2 *= delta_uv1.y;
+    glm::vec3 tangent = delta_pos1 - delta_pos2;
+    tangent *= r;
+
+    tangents[triangle_vertices[0]] = tangent;
+    tangents[triangle_vertices[1]] = tangent;
+    tangents[triangle_vertices[2]] = tangent;
+
+    ++tangent_amounts[triangle_vertices[0]];
+    ++tangent_amounts[triangle_vertices[1]];
+    ++tangent_amounts[triangle_vertices[2]];
+}
+
+void
+create_model(std::vector<glm::vec3> &vertices
+	     , std::vector<glm::vec3> &normals
+	     , std::vector<glm::vec2> &texture_coords
+	     , std::vector<u32> &indices
+	     , std::vector<glm::vec3> &tangents
+	     , Vulkan_API::Model *object
+	     , const std::string &name
+	     , Vulkan_API::GPU *gpu)
+{
+    enum :u32 {POSITION, NORMAL, UVS, TANGENT};
+    
+    persist constexpr u32 BINDING_AND_ATTRIBUTE_COUNT = 3;
+    
+    object->attribute_count = BINDING_AND_ATTRIBUTE_COUNT;
+    object->attributes_buffer = (VkVertexInputAttributeDescription *)allocate_free_list(sizeof(VkVertexInputAttributeDescription) * object->attribute_count
+											, Alignment(1));
+
+    object->binding_count = BINDING_AND_ATTRIBUTE_COUNT;
+    object->bindings = (Vulkan_API::Model_Binding *)allocate_free_list(sizeof(Vulkan_API::Model_Binding) * object->binding_count
+								       , Alignment(1));
+
+    Vulkan_API::Model_Binding *bindings = object->bindings;
+    bindings[POSITION].begin_attributes_creation(object->attributes_buffer);
+    bindings[POSITION].push_attribute(POSITION, VK_FORMAT_R32G32B32_SFLOAT, sizeof(glm::vec3));
+    bindings[POSITION].end_attributes_creation();
+
+    bindings[NORMAL].begin_attributes_creation(object->attributes_buffer);
+    bindings[NORMAL].push_attribute(NORMAL, VK_FORMAT_R32G32B32_SFLOAT, sizeof(glm::vec3));
+    bindings[NORMAL].end_attributes_creation();
+
+    bindings[UVS].begin_attributes_creation(object->attributes_buffer);
+    bindings[UVS].push_attribute(UVS, VK_FORMAT_R32G32_SFLOAT, sizeof(glm::vec2));
+    bindings[UVS].end_attributes_creation();
+    /*
+    bindings[TANGENT].begin_attributes_creation(object->attributes_buffer);
+    bindings[TANGENT].push_attribute(TANGENT, VK_FORMAT_R32G32B32_SFLOAT, sizeof(glm::vec3));
+    bindings[TANGENT].end_attributes_creation();*/
+
+    std::string buffer_name = "buffer." + name + ".buffers";
+
+    Vulkan_API::Registered_Buffer buffers = Vulkan_API::register_object(init_const_str(buffer_name.c_str(), buffer_name.length())
+									, sizeof(Vulkan_API::Buffer) * BINDING_AND_ATTRIBUTE_COUNT);
+
+    Vulkan_API::Registered_Command_Pool command_pool = Vulkan_API::get_object("command_pool.graphics_command_pool"_hash);
+	
+    Vulkan_API::invoke_staging_buffer_for_device_local_buffer(Memory_Byte_Buffer{sizeof(glm::vec3) * (u32)vertices.size(), vertices.data()}
+								  , command_pool.p
+								  , &buffers.p[POSITION]
+								  , gpu);
+    bindings[POSITION].buffer = buffers.p[POSITION].buffer;
+    
+    Vulkan_API::invoke_staging_buffer_for_device_local_buffer(Memory_Byte_Buffer{sizeof(glm::vec3) * (u32)normals.size(), normals.data()}
+								  , command_pool.p
+								  , &buffers.p[NORMAL]
+								  , gpu);
+    bindings[NORMAL].buffer = buffers.p[NORMAL].buffer;
+    
+    Vulkan_API::invoke_staging_buffer_for_device_local_buffer(Memory_Byte_Buffer{sizeof(glm::vec2) * (u32)texture_coords.size(), texture_coords.data()}
+								  , command_pool.p
+								  , &buffers.p[UVS]
+								  , gpu);
+    bindings[UVS].buffer = buffers.p[UVS].buffer;
+    
+    /*	Vulkan_API::invoke_staging_buffer_for_device_local_buffer(Memory_Byte_Buffer{sizeof(glm::vec3) * (u32)tangents.size(), tangents.data()}
+	, command_pool.p
+	, &buffers.p[TANGENT]
+	, gpu);
+	bindings[TANGENT].buffer = buffers.p[TANGENT].buffer;*/
+    
+    object->index_data.index_type = VK_INDEX_TYPE_UINT32;
+    object->index_data.index_offset = 0;
+    object->index_data.index_count = indices.size();
+    
+    std::string ibo_name = "buffer." + name + ".ibo";
+    Vulkan_API::Registered_Buffer ibo = Vulkan_API::register_object(init_const_str(ibo_name.c_str(), ibo_name.length())
+								    , sizeof(Vulkan_API::Buffer));
+    
+    Vulkan_API::invoke_staging_buffer_for_device_local_buffer(Memory_Byte_Buffer{(u32)indices.size() * sizeof(u32), indices.data()}
+								  , command_pool.p
+								  , ibo.p
+								  , gpu);
+    
+    object->index_data.index_buffer = ibo.p->buffer;
+    
+    object->create_vbo_list();
+}
+    
+void
+load_model_from_obj(const char *filename
+		    , Vulkan_API::Model *dst
+		    , const char *model_name
+		    , Vulkan_API::GPU *gpu)
+{
+    std::ifstream file(filename);
+
+    std::vector<glm::vec3> normals;
+    std::vector<glm::vec3> vertices;
+    std::vector<glm::vec2> texture_coords;
+    std::vector<glm::vec3> tangents;
+    std::vector<f32> tangent_amounts;
+
+    /* won't be in the  correct order */
+    std::vector<glm::vec2> raw_texture_coords;
+    std::vector<glm::vec3> raw_normals;
+    std::vector<u32> indices;
+
+    std::string line;
+    while (std::getline(file, line))
+    {
+	std::vector<std::string> words = split(line, ' ');
+
+	if (words[0] == "v")
+	{
+	    glm::vec3 vertex;
+	    for (u32 i = 0; i < 3; ++i) vertex[i] = std::stof(words[i + 1]);
+	    vertices.push_back(vertex);
+	}
+	else if (words[0] == "vt")
+	{
+	    glm::vec2 texture_coord;
+	    for (u32 i = 0; i < 2; ++i) texture_coord[i] = std::stof(words[i + 1]);
+	    raw_texture_coords.push_back(glm::vec2(texture_coord.x, 1.0f - texture_coord.y));
+	}
+	else if (words[0] == "vn")
+	{
+	    glm::vec3 normal;
+	    for (u32 i = 0; i < 3; ++i) normal[i] = std::stof(words[i + 1]);
+	    raw_normals.push_back(normal);
+	}
+	else if (words[0] == "f")
+	{
+	    tangents.resize(vertices.size());
+	    tangent_amounts.resize(vertices.size());
+	    normals.resize(vertices.size());
+	    texture_coords.resize(vertices.size());
+
+	    break_face_line(words
+			    , indices
+			    , raw_texture_coords
+			    , raw_normals
+			    , texture_coords
+			    , normals
+			    , tangents
+			    , tangent_amounts
+			    , vertices);
+
+	    break;
+	}
+    }
+
+    while (std::getline(file, line))
+    {
+	std::vector<std::string> words = split(line, ' ');
+	if (words[0] == "f")
+	{
+	    break_face_line(words
+			    , indices
+			    , raw_texture_coords
+			    , raw_normals
+			    , texture_coords
+			    , normals
+			    , tangents
+			    , tangent_amounts
+			    , vertices);
+	}
+    }
+
+    for (u32 i = 0; i < tangents.size(); ++i)
+    {
+	tangents[i] /= tangent_amounts[i];
+    }
+
+    create_model(vertices
+		 , normals
+		 , texture_coords
+		 , indices
+		 , tangents
+		 , dst
+		 , model_name
+		 , gpu);
+}
+    
