@@ -14,13 +14,23 @@ load_model_from_obj(const char *filename
 		    , const char *model_name
 		    , Vulkan_API::GPU *gpu);
 
-struct Terrain_Mesh_Height_Data
+struct Terrain_Mesh_Instance
 {
-    
+    f32 *ys;
+
+    Vulkan_API::Model model;
+    Vulkan_API::Buffer ys_gpu;
 };
 
+// function only loads the prototype information for each terrain mesh
 void
 load_3D_terrain_mesh(u32 width_x
 		     , u32 depth_z
 		     , f32 random_displacement_factor
 		     , Vulkan_API::GPU *gpu);
+
+Terrain_Mesh_Instance
+load_3D_terrain_mesh_instance(u32 width_x
+			      , u32 depth_z
+			      , Vulkan_API::Model *prototype
+			      , Vulkan_API::GPU *gpu);

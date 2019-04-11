@@ -82,7 +82,7 @@ read_image(39,1021
 read_file_data(62,1663
 destroy_file_data(74,1932
 
-load.cpp,334
+load.cpp,1212
 process_vertex(11,151
 split(39,1036
 break_face_line(50,1301
@@ -93,6 +93,19 @@ create_model(89,2870
     enum :u32 {POSITION, NORMAL, UVS,98,3185
     enum :u32 {POSITION, NORMAL, UVS, TANGENT}TANGENT98,3185
 load_model_from_obj(177,6933
+get_terrain_index(272,9191
+load_3D_terrain_mesh(278,9281
+    enum :u32 u32336,11905
+    enum :u32 {GROUND_BASE_XY_VALUES_BND GROUND_BASE_XY_VALUES_BND336,11905
+    enum :u32 {GROUND_BASE_XY_VALUES_BND = 0, HEIGHT_BND 336,11905
+    enum :u32 {GROUND_BASE_XY_VALUES_BND = 0, HEIGHT_BND = 1, GROUND_BASE_XY_VALUES_ATT 336,11905
+    enum :u32 {GROUND_BASE_XY_VALUES_BND = 0, HEIGHT_BND = 1, GROUND_BASE_XY_VALUES_ATT = 0, HEIGHT_ATT 336,11905
+load_3D_terrain_mesh_instance(351,13063
+    enum :u32 u32368,13819
+    enum :u32 {GROUND_BASE_XY_VALUES_BND GROUND_BASE_XY_VALUES_BND368,13819
+    enum :u32 {GROUND_BASE_XY_VALUES_BND = 0, HEIGHT_BND 368,13819
+    enum :u32 {GROUND_BASE_XY_VALUES_BND = 0, HEIGHT_BND = 1, GROUND_BASE_XY_VALUES_ATT 368,13819
+    enum :u32 {GROUND_BASE_XY_VALUES_BND = 0, HEIGHT_BND = 1, GROUND_BASE_XY_VALUES_ATT = 0, HEIGHT_ATT 368,13819
 
 rendering.cpp,3902
 namespace Rendering8,156
@@ -102,85 +115,85 @@ namespace Rendering8,156
 	struct Vertex { glm::vec3 pos; glm::vec3 color;26,905
 	struct Vertex { glm::vec3 pos; glm::vec3 color; glm::vec2 uvs;26,905
     init_graphics_pipeline(42,1467
-    init_descriptor_set_layout(173,7409
-    init_command_pool(191,8193
-    init_object_texture(202,8567
-    init_vbo(288,11571
-	struct Vertex 290,11614
-	struct Vertex { glm::vec3 pos,290,11614
-	struct Vertex { glm::vec3 pos, color;290,11614
-	struct Vertex { glm::vec3 pos, color; glm::vec2 uvs;290,11614
-    persist u32 mesh_indices[mesh_indices329,12955
-    init_ibo(351,13187
-    init_ubos(374,14070
-	struct Uniform_Buffer_Object378,14203
-    struct Uniform_Buffer_Object408,15038
-    init_descriptor_pool(421,15237
-    init_descriptor_sets(436,15985
-    internal constexpr u32 MAX_FRAMES_IN_FLIGHT 491,18367
-    init_sync(494,18443
-    init_rendering_state(511,19269
-    struct Material560,20849
-	Vulkan_API::Registered_Model model;566,21009
-	Vulkan_API::Draw_Indexed_Data draw_info;567,21047
-    struct Renderer 575,21452
-	Vulkan_API::Registered_Graphics_Pipeline ppln;578,21540
-	Memory_Buffer_View<VkDescriptorSet> sets;579,21589
-	VkShaderStageFlags mtrl_unique_data_stage_dst;580,21633
-	Memory_Buffer_View<Material> mtrls;582,21685
-	u32 mtrl_count;584,21726
-	enum Render_Method 586,21746
-	enum Render_Method { INLINE,586,21746
-	enum Render_Method { INLINE, INSTANCED 586,21746
-	enum Render_Method { INLINE, INSTANCED } mthd;586,21746
-	VkCommandBuffer rndr_cmdbuf;589,21909
-	init(592,21950
-	update(627,22981
-    global_var struct Render_System680,24382
-	Memory_Buffer_View<Renderer> rndrs;685,24502
-	u32 rndr_count;686,24540
-	Hash_Table_Inline<Hash_Table_Inline687,24558
-	Hash_Table_Inline<s32, 30, 4, 3> rndr_id_map;687,24558
-	Vulkan_API::Registered_Render_Pass deferred_rndr_pass;690,24610
-	Vulkan_API::Registered_Framebuffer fbos;692,24670
-	Vulkan_API::Registered_Graphics_Pipeline deferred_pipeline;694,24716
-	Vulkan_API::Registered_Descriptor_Set_Layout deferred_descriptor_set_layout;695,24778
-	Vulkan_API::Registered_Descriptor_Set deferred_descriptor_set;696,24857
-	Vulkan_API::Registered_Buffer ppfx_quad;698,24924
-	Render_System(701,24973
-	init_system(704,25024
-	add_renderer(712,25190
-	update(719,25420
-	init_material(766,27072
-    } rndr_sys;784,27573
-    init_deferred_render_pass(787,27602
-	enum G_Buffer_Attachment 794,27886
-	enum G_Buffer_Attachment :u32 {FINAL_ATTACHMENTFINAL_ATTACHMENT794,27886
-				       , ALBEDO_ATTACHMENT795,27936
-				       , DEPTH_ATTACHMENT796,27968
-				       , INVALID_ATTACHMENT}INVALID_ATTACHMENT797,27999
-	enum G_Buffer_Reference 846,30291
-	enum G_Buffer_Reference :u32 {FINAL_REFERENCEFINAL_REFERENCE846,30291
-				      , ALBEDO_REFERENCE847,30339
-				      , DEPTH_REFERENCE848,30369
-				      , INVALID_REFERENCE}INVALID_REFERENCE849,30398
-	enum Subpass_Stage 861,31270
-	enum Subpass_Stage :u32 {G_BUFFER_INIT,G_BUFFER_INIT861,31270
-	enum Subpass_Stage :u32 {G_BUFFER_INIT, LIGHTING,861,31270
-	enum Subpass_Stage :u32 {G_BUFFER_INIT, LIGHTING, INVALID_STAGE}INVALID_STAGE861,31270
-    init_deferred_fbos(912,33607
-	enum class G_Buffer_Attachment 916,33762
-	enum class G_Buffer_Attachment :u32 {FINAL,FINAL916,33762
-	enum class G_Buffer_Attachment :u32 {FINAL, ALBEDO,916,33762
-	enum class G_Buffer_Attachment :u32 {FINAL, ALBEDO, POSITION,916,33762
-	enum class G_Buffer_Attachment :u32 {FINAL, ALBEDO, POSITION, NORMAL,916,33762
-	enum class G_Buffer_Attachment :u32 {FINAL, ALBEDO, POSITION, NORMAL, DEPTH,916,33762
-	enum class G_Buffer_Attachment :u32 {FINAL, ALBEDO, POSITION, NORMAL, DEPTH, INVALID}INVALID916,33762
-    init_deferred_ppln(977,35991
-    init_rendering_system(1151,44858
-    add_renderer(1161,45205
-    update_renderers(1167,45376
-    init_material(1177,45734
+    init_descriptor_set_layout(173,7413
+    init_command_pool(191,8197
+    init_object_texture(202,8571
+    init_vbo(288,11575
+	struct Vertex 290,11618
+	struct Vertex { glm::vec3 pos,290,11618
+	struct Vertex { glm::vec3 pos, color;290,11618
+	struct Vertex { glm::vec3 pos, color; glm::vec2 uvs;290,11618
+    persist u32 mesh_indices[mesh_indices329,12959
+    init_ibo(351,13191
+    init_ubos(374,14074
+	struct Uniform_Buffer_Object378,14207
+    struct Uniform_Buffer_Object408,15042
+    init_descriptor_pool(421,15241
+    init_descriptor_sets(436,15989
+    internal constexpr u32 MAX_FRAMES_IN_FLIGHT 491,18371
+    init_sync(494,18447
+    init_rendering_state(511,19273
+    struct Material560,20853
+	Vulkan_API::Registered_Model model;566,21013
+	Vulkan_API::Draw_Indexed_Data draw_info;567,21051
+    struct Renderer 575,21456
+	Vulkan_API::Registered_Graphics_Pipeline ppln;578,21544
+	Memory_Buffer_View<VkDescriptorSet> sets;579,21593
+	VkShaderStageFlags mtrl_unique_data_stage_dst;580,21637
+	Memory_Buffer_View<Material> mtrls;582,21689
+	u32 mtrl_count;584,21730
+	enum Render_Method 586,21750
+	enum Render_Method { INLINE,586,21750
+	enum Render_Method { INLINE, INSTANCED 586,21750
+	enum Render_Method { INLINE, INSTANCED } mthd;586,21750
+	VkCommandBuffer rndr_cmdbuf;589,21913
+	init(592,21954
+	update(627,22985
+    global_var struct Render_System680,24386
+	Memory_Buffer_View<Renderer> rndrs;685,24506
+	u32 rndr_count;686,24544
+	Hash_Table_Inline<Hash_Table_Inline687,24562
+	Hash_Table_Inline<s32, 30, 4, 3> rndr_id_map;687,24562
+	Vulkan_API::Registered_Render_Pass deferred_rndr_pass;690,24614
+	Vulkan_API::Registered_Framebuffer fbos;692,24674
+	Vulkan_API::Registered_Graphics_Pipeline deferred_pipeline;694,24720
+	Vulkan_API::Registered_Descriptor_Set_Layout deferred_descriptor_set_layout;695,24782
+	Vulkan_API::Registered_Descriptor_Set deferred_descriptor_set;696,24861
+	Vulkan_API::Registered_Buffer ppfx_quad;698,24928
+	Render_System(701,24977
+	init_system(704,25028
+	add_renderer(712,25194
+	update(719,25424
+	init_material(766,27076
+    } rndr_sys;784,27577
+    init_deferred_render_pass(787,27606
+	enum G_Buffer_Attachment 794,27890
+	enum G_Buffer_Attachment :u32 {FINAL_ATTACHMENTFINAL_ATTACHMENT794,27890
+				       , ALBEDO_ATTACHMENT795,27940
+				       , DEPTH_ATTACHMENT796,27972
+				       , INVALID_ATTACHMENT}INVALID_ATTACHMENT797,28003
+	enum G_Buffer_Reference 846,30295
+	enum G_Buffer_Reference :u32 {FINAL_REFERENCEFINAL_REFERENCE846,30295
+				      , ALBEDO_REFERENCE847,30343
+				      , DEPTH_REFERENCE848,30373
+				      , INVALID_REFERENCE}INVALID_REFERENCE849,30402
+	enum Subpass_Stage 861,31274
+	enum Subpass_Stage :u32 {G_BUFFER_INIT,G_BUFFER_INIT861,31274
+	enum Subpass_Stage :u32 {G_BUFFER_INIT, LIGHTING,861,31274
+	enum Subpass_Stage :u32 {G_BUFFER_INIT, LIGHTING, INVALID_STAGE}INVALID_STAGE861,31274
+    init_deferred_fbos(912,33611
+	enum class G_Buffer_Attachment 916,33766
+	enum class G_Buffer_Attachment :u32 {FINAL,FINAL916,33766
+	enum class G_Buffer_Attachment :u32 {FINAL, ALBEDO,916,33766
+	enum class G_Buffer_Attachment :u32 {FINAL, ALBEDO, POSITION,916,33766
+	enum class G_Buffer_Attachment :u32 {FINAL, ALBEDO, POSITION, NORMAL,916,33766
+	enum class G_Buffer_Attachment :u32 {FINAL, ALBEDO, POSITION, NORMAL, DEPTH,916,33766
+	enum class G_Buffer_Attachment :u32 {FINAL, ALBEDO, POSITION, NORMAL, DEPTH, INVALID}INVALID916,33766
+    init_deferred_ppln(977,35995
+    init_rendering_system(1151,44862
+    add_renderer(1161,45209
+    update_renderers(1167,45380
+    init_material(1177,45738
 
 scene.cpp,1890
 #define MAX_ENTITIES_UNDER_TOP 12,289
@@ -456,12 +469,16 @@ template <typename T> struct File_Proc_Wrapper44,752
     execute(49,840
 attach_update_proc(56,917
 
-load.hpp,150
+load.hpp,283
 enum Vertex_Attribute_Bits 6,76
 enum Vertex_Attribute_Bits {POSITION POSITION6,76
 			    , NORMAL 7,123
 			    , UVS 8,149
 			    , COLOR 9,172
+struct Terrain_Mesh_Instance17,351
+    f32 *ys;ys19,384
+    Vulkan_API::Model model;21,400
+    Vulkan_API::Buffer ys_gpu;22,430
 
 rendering.hpp,1394
 namespace Rendering13,584
@@ -515,7 +532,7 @@ struct Scene33,546
     glm::mat4 object_model_matrix 43,732
     glm::mat4 object_model_matrix2 44,786
 
-vulkan.hpp,6964
+vulkan.hpp,7008
 #define MAKE_VK_VIEW_TYPES(9,134
 namespace Vulkan_API11,232
     struct Registered_Object_Base24,514
@@ -531,173 +548,175 @@ namespace Vulkan_API11,232
 	destroy(61,1344
 	extract(65,1456
 	separate(68,1583
-	Registered_Object(80,1897
-	Registered_Object(81,2019
-	Registered_Object(82,2155
-	My_Type &operator=(operator=83,2275
-	My_Type &operator=(operator=84,2411
-	~Registered_Object(86,2532
-    using Registered_Graphics_Pipeline	89,2607
-    using Registered_Render_Pass	90,2695
-    using Registered_Buffer	91,2771
-    using Registered_Descriptor_Set_Layout	92,2838
-    using Registered_Descriptor_Pool	93,2926
-    using Registered_Descriptor_Set	94,3010
-    using Registered_Model	95,3092
-    using Registered_Command_Pool	96,3157
-    using Registered_Command_Buffer 97,3229
-    using Registered_Framebuffer	98,3316
-    using Registered_Image2D	99,3392
-    using Registered_Semaphore 100,3461
-    using Registered_Fence 101,3544
-    struct Queue_Families103,3629
-	complete(109,3733
-    struct Swapchain_Details115,3827
-	VkSurfaceCapabilitiesKHR capabilities;117,3864
-	u32 available_formats_count;118,3905
-	VkSurfaceFormatKHR *available_formats;available_formats119,3936
-	u32 available_present_modes_count;120,3977
-	VkPresentModeKHR *available_present_modes;available_present_modes121,4014
-    struct GPU124,4073
-	VkPhysicalDevice hardware;126,4096
-	VkDevice logical_device;127,4125
-	VkPhysicalDeviceMemoryProperties memory_properties;129,4154
-	Queue_Families queue_families;131,4210
-	VkQueue graphics_queue;132,4243
-	VkQueue present_queue;133,4269
-	Swapchain_Details swapchain_support;135,4296
-	VkFormat supported_depth_format;136,4335
-    namespace Memory142,4435
-    struct Mapped_GPU_Memory153,4707
-	u32 offset;155,4744
-	VkDeviceSize size;156,4758
-	VkDeviceMemory *memory;memory157,4779
-	void *data;data158,4805
-	begin(161,4840
-	fill(167,4960
-	end(173,5072
-    struct Buffer179,5157
-	VkBuffer buffer;181,5183
-	VkDeviceMemory memory;183,5205
-	VkDeviceSize size;184,5230
-	construct_map(187,5285
-    struct Draw_Indexed_Data193,5376
-	u32 index_count;195,5413
-	u32 instance_count;196,5432
-	u32 first_index;197,5454
-	u32 vertex_offset;198,5473
-	u32 first_instance;199,5494
-    init_draw_indexed_data_default(203,5570
-    struct Model_Index_Data214,5903
-	VkBuffer index_buffer;216,5939
-	u32 index_count;218,5967
-	u32 index_offset;219,5986
-	VkIndexType index_type;220,6006
-	init_draw_indexed_data(223,6054
-    command_buffer_bind_ibo(237,6407
-    command_buffer_bind_vbos(247,6709
-    command_buffer_execute_commands(260,7134
-    struct Graphics_Pipeline269,7355
-	enum Shader_Stages_Bits 271,7392
-	enum Shader_Stages_Bits : s32 { VERTEX_SHADER_BIT 271,7392
-					  , GEOMETRY_SHADER_BIT 272,7453
-					  , TESSELATION_SHADER_BIT 273,7492
-					  , FRAGMENT_SHADER_BIT 274,7534
-	s32 stages;276,7577
-	const char *base_dir_and_name;base_dir_and_name278,7593
-	VkDescriptorSetLayout descriptor_set_layout;280,7628
-	VkPipelineLayout layout;282,7678
-	VkPipeline pipeline;284,7707
-    command_buffer_push_constant(288,7775
-    struct Image2D312,8316
-	VkFormat format;319,8515
-	get_memory_requirements(322,8567
-    struct Swapchain366,9825
-	VkFormat format;368,9854
-	VkPresentModeKHR present_mode;369,9873
-	VkSwapchainKHR swapchain;370,9906
-	VkExtent2D extent;371,9934
-	Memory_Buffer_View<VkImage> imgs;373,9958
-	Memory_Buffer_View<VkImageView> views;374,9994
-    struct Render_Pass377,10049
-	VkRenderPass render_pass;379,10080
-	u32 subpass_count;380,10108
-    init_attachment_description(384,10189
-    init_attachment_reference(403,10863
-    init_subpass_description(413,11109
-    init_subpass_dependency(428,11735
-    init_clear_color_color(452,12429
-    init_clear_color_depth(460,12612
-    init_render_area(468,12778
-    command_buffer_end_render_pass(489,13415
-    struct Model_Binding508,14090
-	VkBuffer buffer;511,14166
-	u32 binding;512,14185
-	VkVertexInputRate input_rate;513,14200
-	begin_attributes_creation(520,14352
-	push_attribute(527,14521
-	end_attributes_creation(540,14858
-    struct Model547,15003
-	u32 binding_count;550,15048
-	Model_Binding *bindings;bindings552,15107
-	u32 attribute_count;554,15155
-	VkVertexInputAttributeDescription *attributes_buffer;attributes_buffer556,15255
-	Model_Index_Data index_data;558,15313
-	Memory_Buffer_View<VkBuffer> raw_cache_for_rendering;560,15346
-	create_binding_descriptions(563,15441
-	create_vertex_input_state_info(578,15977
-	create_vbo_list(591,16495
-    command_buffer_draw_indexed(603,16763
-    command_buffer_draw(615,17083
-    command_buffer_bind_pipeline(629,17334
-    init_shader_pipeline_info(639,17638
-    init_pipeline_vertex_input_info(650,18012
-    init_attribute_description(657,18288
-    init_binding_description(673,18659
-    init_pipeline_vertex_input_info(687,18993
-    init_pipeline_input_assembly_info(703,19605
-    init_viewport(714,20036
-    init_rect_2D(729,20379
-    init_pipeline_viewport_info(738,20562
-    init_pipeline_rasterization_info(751,21020
-    init_pipeline_multisampling_info(772,21794
-    init_blend_state_attachment(787,22369
-    init_pipeline_blending_info(809,23114
-    init_pipeline_dynamic_states_info(826,23725
-    init_push_constant_range(841,24288
-    init_pipeline_depth_stencil_info(852,24556
-    free_command_buffer(899,26359
-    end_command_buffer(915,26833
-    struct Framebuffer969,28328
-	VkFramebuffer framebuffer;971,28359
-	Memory_Buffer_View<VkImageView> color_attachments;974,28422
-	VkImageView depth_attachment;975,28475
-    init_descriptor_set_layout_binding(994,28960
-    struct Descriptor_Set1013,29576
-	VkDescriptorSetLayout layouts;1015,29610
-	VkDescriptorSet set;1016,29643
-	init_buffer_descriptor_write(1019,29675
-	init_image_descriptor_write(1033,30208
-    command_buffer_bind_descriptor_sets(1048,30774
-    init_descriptor_set_buffer_info(1069,31391
-    init_buffer_descriptor_set_write(1079,31671
-    init_input_attachment_descriptor_set_write(1096,32214
-    init_image_descriptor_set_write(1113,32766
-    init_descriptor_set_image_info(1130,33313
-    init_descriptor_pool_size(1140,33620
-    struct Descriptor_Pool1148,33805
-	VkDescriptorPool pool;1150,33840
-    init_semaphore(1165,34194
-    init_fence(1178,34532
-    wait_fences(1193,34905
-    struct Next_Image_Return 1203,35109
-    struct Next_Image_Return {VkResult result;1203,35109
-    struct Next_Image_Return {VkResult result; u32 image_index;1203,35109
-    acquire_next_image(1205,35220
-    reset_fences(1227,35844
-    struct State1233,36007
-	VkInstance instance;1235,36032
-	VkDebugUtilsMessengerEXT debug_messenger;1236,36055
-	GPU gpu;1237,36099
-	VkSurfaceKHR surface;1238,36110
-	Swapchain swapchain;1239,36134
+	operator->(79,1801
+	Registered_Object(83,1949
+	Registered_Object(84,2071
+	Registered_Object(85,2207
+	My_Type &operator=(operator=86,2327
+	My_Type &operator=(operator=87,2463
+	~Registered_Object(89,2584
+    using Registered_Graphics_Pipeline	92,2659
+    using Registered_Render_Pass	93,2747
+    using Registered_Buffer	94,2823
+    using Registered_Descriptor_Set_Layout	95,2890
+    using Registered_Descriptor_Pool	96,2978
+    using Registered_Descriptor_Set	97,3062
+    using Registered_Model	98,3144
+    using Registered_Command_Pool	99,3209
+    using Registered_Command_Buffer 100,3281
+    using Registered_Framebuffer	101,3368
+    using Registered_Image2D	102,3444
+    using Registered_Semaphore 103,3513
+    using Registered_Fence 104,3596
+    struct Queue_Families106,3681
+	complete(112,3785
+    struct Swapchain_Details118,3879
+	VkSurfaceCapabilitiesKHR capabilities;120,3916
+	u32 available_formats_count;121,3957
+	VkSurfaceFormatKHR *available_formats;available_formats122,3988
+	u32 available_present_modes_count;123,4029
+	VkPresentModeKHR *available_present_modes;available_present_modes124,4066
+    struct GPU127,4125
+	VkPhysicalDevice hardware;129,4148
+	VkDevice logical_device;130,4177
+	VkPhysicalDeviceMemoryProperties memory_properties;132,4206
+	Queue_Families queue_families;134,4262
+	VkQueue graphics_queue;135,4295
+	VkQueue present_queue;136,4321
+	Swapchain_Details swapchain_support;138,4348
+	VkFormat supported_depth_format;139,4387
+    namespace Memory145,4487
+    struct Mapped_GPU_Memory156,4759
+	u32 offset;158,4796
+	VkDeviceSize size;159,4810
+	VkDeviceMemory *memory;memory160,4831
+	void *data;data161,4857
+	begin(164,4892
+	fill(170,5012
+	end(176,5124
+    struct Buffer182,5209
+	VkBuffer buffer;184,5235
+	VkDeviceMemory memory;186,5257
+	VkDeviceSize size;187,5282
+	construct_map(190,5337
+    struct Draw_Indexed_Data196,5428
+	u32 index_count;198,5465
+	u32 instance_count;199,5484
+	u32 first_index;200,5506
+	u32 vertex_offset;201,5525
+	u32 first_instance;202,5546
+    init_draw_indexed_data_default(206,5622
+    struct Model_Index_Data217,5955
+	VkBuffer index_buffer;219,5991
+	u32 index_count;221,6019
+	u32 index_offset;222,6038
+	VkIndexType index_type;223,6058
+	init_draw_indexed_data(226,6106
+    command_buffer_bind_ibo(240,6459
+    command_buffer_bind_vbos(250,6761
+    command_buffer_execute_commands(263,7186
+    struct Graphics_Pipeline272,7407
+	enum Shader_Stages_Bits 274,7444
+	enum Shader_Stages_Bits : s32 { VERTEX_SHADER_BIT 274,7444
+					  , GEOMETRY_SHADER_BIT 275,7505
+					  , TESSELATION_SHADER_BIT 276,7544
+					  , FRAGMENT_SHADER_BIT 277,7586
+	s32 stages;279,7629
+	const char *base_dir_and_name;base_dir_and_name281,7645
+	VkDescriptorSetLayout descriptor_set_layout;283,7680
+	VkPipelineLayout layout;285,7730
+	VkPipeline pipeline;287,7759
+    command_buffer_push_constant(291,7827
+    struct Image2D315,8368
+	VkFormat format;322,8567
+	get_memory_requirements(325,8619
+    struct Swapchain369,9877
+	VkFormat format;371,9906
+	VkPresentModeKHR present_mode;372,9925
+	VkSwapchainKHR swapchain;373,9958
+	VkExtent2D extent;374,9986
+	Memory_Buffer_View<VkImage> imgs;376,10010
+	Memory_Buffer_View<VkImageView> views;377,10046
+    struct Render_Pass380,10101
+	VkRenderPass render_pass;382,10132
+	u32 subpass_count;383,10160
+    init_attachment_description(387,10241
+    init_attachment_reference(406,10915
+    init_subpass_description(416,11161
+    init_subpass_dependency(431,11787
+    init_clear_color_color(455,12481
+    init_clear_color_depth(463,12664
+    init_render_area(471,12830
+    command_buffer_end_render_pass(492,13467
+    struct Model_Binding511,14142
+	VkBuffer buffer;514,14218
+	u32 binding;515,14237
+	VkVertexInputRate input_rate;516,14252
+	begin_attributes_creation(523,14404
+	push_attribute(530,14573
+	end_attributes_creation(543,14910
+    struct Model550,15055
+	u32 binding_count;553,15100
+	Model_Binding *bindings;bindings555,15159
+	u32 attribute_count;557,15207
+	VkVertexInputAttributeDescription *attributes_buffer;attributes_buffer559,15307
+	Model_Index_Data index_data;561,15365
+	Memory_Buffer_View<VkBuffer> raw_cache_for_rendering;563,15398
+	create_binding_descriptions(566,15493
+	create_vertex_input_state_info(581,16029
+	create_vbo_list(594,16547
+	copy(605,16780
+    command_buffer_draw_indexed(620,17493
+    command_buffer_draw(632,17813
+    command_buffer_bind_pipeline(646,18064
+    init_shader_pipeline_info(656,18368
+    init_pipeline_vertex_input_info(667,18742
+    init_attribute_description(674,19018
+    init_binding_description(690,19389
+    init_pipeline_vertex_input_info(704,19723
+    init_pipeline_input_assembly_info(720,20335
+    init_viewport(731,20766
+    init_rect_2D(746,21109
+    init_pipeline_viewport_info(755,21292
+    init_pipeline_rasterization_info(768,21750
+    init_pipeline_multisampling_info(789,22524
+    init_blend_state_attachment(804,23099
+    init_pipeline_blending_info(826,23844
+    init_pipeline_dynamic_states_info(843,24455
+    init_push_constant_range(858,25018
+    init_pipeline_depth_stencil_info(869,25286
+    free_command_buffer(916,27089
+    end_command_buffer(932,27563
+    struct Framebuffer986,29058
+	VkFramebuffer framebuffer;988,29089
+	Memory_Buffer_View<VkImageView> color_attachments;991,29152
+	VkImageView depth_attachment;992,29205
+    init_descriptor_set_layout_binding(1011,29690
+    struct Descriptor_Set1030,30306
+	VkDescriptorSetLayout layouts;1032,30340
+	VkDescriptorSet set;1033,30373
+	init_buffer_descriptor_write(1036,30405
+	init_image_descriptor_write(1050,30938
+    command_buffer_bind_descriptor_sets(1065,31504
+    init_descriptor_set_buffer_info(1086,32121
+    init_buffer_descriptor_set_write(1096,32401
+    init_input_attachment_descriptor_set_write(1113,32944
+    init_image_descriptor_set_write(1130,33496
+    init_descriptor_set_image_info(1147,34043
+    init_descriptor_pool_size(1157,34350
+    struct Descriptor_Pool1165,34535
+	VkDescriptorPool pool;1167,34570
+    init_semaphore(1182,34924
+    init_fence(1195,35262
+    wait_fences(1210,35635
+    struct Next_Image_Return 1220,35839
+    struct Next_Image_Return {VkResult result;1220,35839
+    struct Next_Image_Return {VkResult result; u32 image_index;1220,35839
+    acquire_next_image(1222,35950
+    reset_fences(1244,36574
+    struct State1250,36737
+	VkInstance instance;1252,36762
+	VkDebugUtilsMessengerEXT debug_messenger;1253,36785
+	GPU gpu;1254,36829
+	VkSurfaceKHR surface;1255,36840
+	Swapchain swapchain;1256,36864

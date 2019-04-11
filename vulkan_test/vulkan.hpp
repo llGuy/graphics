@@ -74,6 +74,9 @@ namespace Vulkan_API
 
 	    return(view);
  	}
+
+	FORCEINLINE T *
+	operator->(void) {return(p);}
 	
 	Registered_Object(void) = default;
 	Registered_Object(void *p, const Constant_String &id, u32 size) = delete;
@@ -596,6 +599,20 @@ namespace Vulkan_API
 	    {
 		raw_cache_for_rendering[i] = bindings[i].buffer;
 	    }
+	}
+
+	Model
+	copy(void)
+	{
+	    Model ret = {};
+	    ret.binding_count = this->binding_count;
+	    ret.attribute_count = this->attribute_count;
+	    ret.index_data = this->index_data;
+	    ret.bindings = (Model_Binding *)allocate_free_list(sizeof(Model_Binding) * ret.binding_count);
+	    memcpy(ret.bindings, this->bindings, sizeof(Model_Binding) * ret.binding_count);
+	    ret.attributes_buffer = (VkVertexInputAttributeDescription *)allocate_free_list(sizeof(VkVertexInputAttributeDescription) * ret.attribute_count);
+	    memcpy(ret.attributes_buffer, this->attributes_buffer, ret.attribute_count * sizeof(VkVertexInputAttributeDescription));
+	    return(ret);
 	}
     };
     

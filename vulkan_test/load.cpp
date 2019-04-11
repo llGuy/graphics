@@ -278,12 +278,15 @@ void
 load_3D_terrain_mesh(u32 width_x
 		     , u32 depth_z
 		     , f32 random_displacement_factor
+		     , Vulkan_API::Model *terrain_mesh_base_model_info
+		     , Vulkan_API::Buffer *mesh_buffer_vbo
+		     , Vulkan_API::Buffer *mesh_buffer_ibo
 		     , Vulkan_API::GPU *gpu)
 {
     assert(width_x & 0X1 && depth_z & 0X1);
     
     f32 *vtx = (f32 *)allocate_stack(sizeof(f32) * 2 * width_x * depth_z);
-    u32 *idx = (u32 *)allocate_stack(sizeof(u32) * 8 * (((width_x - 1) * (depth_z - 1)) / 2));
+    u32 *idx = (u32 *)allocate_stack(sizeof(u32) * 10 * (((width_x - 1) * (depth_z - 1)) / 2));
     
     for (u32 z = 0; z < depth_z; ++z)
     {
@@ -302,6 +305,7 @@ load_3D_terrain_mesh(u32 width_x
     {
         for (u32 x = 1; x < width_x - 1; x += 2)
 	{
+	    idx[crnt_idx++] = get_terrain_index(x, z, depth_z);
 	    idx[crnt_idx++] = get_terrain_index(x - 1, z - 1, depth_z);
 	    idx[crnt_idx++] = get_terrain_index(x - 1, z, depth_z);
 	    idx[crnt_idx++] = get_terrain_index(x - 1, z + 1, depth_z);
@@ -310,23 +314,60 @@ load_3D_terrain_mesh(u32 width_x
 	    idx[crnt_idx++] = get_terrain_index(x + 1, z, depth_z);
 	    idx[crnt_idx++] = get_terrain_index(x + 1, z - 1, depth_z);
 	    idx[crnt_idx++] = get_terrain_index(x, z - 1, depth_z);
+	    idx[crnt_idx++] = 0xFFFFFFFF;
 	}
     }
     
     // load data into buffers
     Vulkan_API::Registered_Command_Pool command_pool = Vulkan_API::get_object("command_pool.graphics_command_pool"_hash);
-    Vulkan_API::Registered_Buffer mesh_buffer_vbo = Vulkan_API::register_object("buffer.mesh_ground_vbo"_hash, sizeof(Vulkan_API::Buffer));
     Vulkan_API::invoke_staging_buffer_for_device_local_buffer(Memory_Byte_Buffer{sizeof(f32) * 2 * width_x * depth_z, vtx}
 							      , command_pool.p
-							      , mesh_buffer_vbo.p
+							      , mesh_buffer_vbo
 							      , gpu);
-    Vulkan_API::Registered_Buffer mesh_buffer_ibo = Vulkan_API::register_object("buffer.mesh_ground_ibo"_hash, sizeof(Vulkan_API::Buffer));
     Vulkan_API::invoke_staging_buffer_for_device_local_buffer(Memory_Byte_Buffer{sizeof(u32) * 8 * (((width_x - 1) * (depth_z - 1)) / 2), vtx}
 							      , command_pool.p
-							      , mesh_buffer_ibo.p
+							      , mesh_buffer_ibo
 							      , gpu);
+
+    terrain_mesh_base_model_info->attribute_count = 3;
+    terrain_mesh_base_model_info->attributes_buffer = (VkVertexInputAttributeDescription *)allocate_free_list(sizeof(VkVertexInputAttributeDescription) * terrain_mesh_base_model_info->attribute_count);
+    terrain_mesh_base_model_info->binding_count = 2;
+    terrain_mesh_base_model_info->bindings = (Vulkan_API::Model_Binding *)allocate_free_list(sizeof(Vulkan_API::Model_Binding) * terrain_mesh_base_model_info->binding_count);
+    enum :u32 {GROUND_BASE_XY_VALUES_BND = 0, HEIGHT_BND = 1, GROUND_BASE_XY_VALUES_ATT = 0, HEIGHT_ATT = 1};
+    // buffer that holds only the x-z values of each vertex - the reason is so that we can create multiple terrain meshes without copying the x-z values each time
+    terrain_mesh_base_model_info->bindings[GROUND_BASE_XY_VALUES_BND].begin_attributes_creation(terrain_mesh_base_model_info->attributes_buffer);
+    terrain_mesh_base_model_info->bindings[GROUND_BASE_XY_VALUES_BND].push_attribute(GROUND_BASE_XY_VALUES_ATT, VK_FORMAT_R32G32_SFLOAT, sizeof(f32) * 2);
+    terrain_mesh_base_model_info->bindings[GROUND_BASE_XY_VALUES_BND].end_attributes_creation();
+    // buffer contains the y-values of each mesh and the colors of each mesh
+    terrain_mesh_base_model_info->bindings[HEIGHT_BND].begin_attributes_creation(terrain_mesh_base_model_info->attributes_buffer);
+    terrain_mesh_base_model_info->bindings[HEIGHT_BND].push_attribute(HEIGHT_ATT, VK_FORMAT_R32_SFLOAT, sizeof(f32));
+    terrain_mesh_base_model_info->bindings[HEIGHT_BND].end_attributes_creation();
     
     pop_stack();
     pop_stack();
 }
+
+Terrain_Mesh_Instance
+load_3D_terrain_mesh_instance(u32 width_x
+			      , u32 depth_z
+			      , Vulkan_API::Model *prototype
+			      , Vulkan_API::Buffer *ys_buffer
+			      , Vulkan_API::GPU *gpu)
+{
+    Terrain_Mesh_Instance ret = {};
+    ret.model = prototype->copy();
+    ret.ys = (f32 *)allocate_free_list(sizeof(f32) * width_x * depth_z);
+    memset(ret.ys, 0, sizeof(f32) * width_x * depth_z);
     
+    Vulkan_API::Registered_Command_Pool command_pool = Vulkan_API::get_object("command_pool.graphics_command_pool"_hash);    
+    Vulkan_API::invoke_staging_buffer_for_device_local_buffer(Memory_Byte_Buffer{sizeof(f32) * width_x * depth_z, ret.ys}
+							      , command_pool.p
+							      , ys_buffer
+							      , gpu);
+    ret.ys_gpu = *ys_buffer;
+    enum :u32 {GROUND_BASE_XY_VALUES_BND = 0, HEIGHT_BND = 1, GROUND_BASE_XY_VALUES_ATT = 0, HEIGHT_ATT = 1};
+    ret.model.bindings[HEIGHT_BND].buffer = ret.ys_gpu.buffer;
+
+    ret.model.create_vbo_list();
+    return(ret);
+}
