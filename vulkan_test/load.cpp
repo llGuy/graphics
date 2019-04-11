@@ -267,4 +267,66 @@ load_model_from_obj(const char *filename
 		 , model_name
 		 , gpu);
 }
+
+internal u32
+get_terrain_index(u32 x, u32 z, u32 depth_z)
+{
+    return(x + z * depth_z);
+}
+
+void
+load_3D_terrain_mesh(u32 width_x
+		     , u32 depth_z
+		     , f32 random_displacement_factor
+		     , Vulkan_API::GPU *gpu)
+{
+    assert(width_x & 0X1 && depth_z & 0X1);
+    
+    f32 *vtx = (f32 *)allocate_stack(sizeof(f32) * 2 * width_x * depth_z);
+    u32 *idx = (u32 *)allocate_stack(sizeof(u32) * 8 * (((width_x - 1) * (depth_z - 1)) / 2));
+    
+    for (u32 z = 0; z < depth_z; ++z)
+    {
+	for (u32 x = 0; x < width_x; ++x)
+	{
+	    // TODO : apply displacement factor to make terrain less perfect
+	    u32 index = (x + depth_z * z) * 2;
+	    vtx[index] = (f32)x;
+	    vtx[index + 1] = (f32)z;
+	}	
+    }
+
+    u32 crnt_idx = 0;
+    
+    for (u32 z = 1; z < depth_z - 1; z += 2)
+    {
+        for (u32 x = 1; x < width_x - 1; x += 2)
+	{
+	    idx[crnt_idx++] = get_terrain_index(x - 1, z - 1, depth_z);
+	    idx[crnt_idx++] = get_terrain_index(x - 1, z, depth_z);
+	    idx[crnt_idx++] = get_terrain_index(x - 1, z + 1, depth_z);
+	    idx[crnt_idx++] = get_terrain_index(x, z + 1, depth_z);
+	    idx[crnt_idx++] = get_terrain_index(x + 1, z + 1, depth_z);
+	    idx[crnt_idx++] = get_terrain_index(x + 1, z, depth_z);
+	    idx[crnt_idx++] = get_terrain_index(x + 1, z - 1, depth_z);
+	    idx[crnt_idx++] = get_terrain_index(x, z - 1, depth_z);
+	}
+    }
+    
+    // load data into buffers
+    Vulkan_API::Registered_Command_Pool command_pool = Vulkan_API::get_object("command_pool.graphics_command_pool"_hash);
+    Vulkan_API::Registered_Buffer mesh_buffer_vbo = Vulkan_API::register_object("buffer.mesh_ground_vbo"_hash, sizeof(Vulkan_API::Buffer));
+    Vulkan_API::invoke_staging_buffer_for_device_local_buffer(Memory_Byte_Buffer{sizeof(f32) * 2 * width_x * depth_z, vtx}
+							      , command_pool.p
+							      , mesh_buffer_vbo.p
+							      , gpu);
+    Vulkan_API::Registered_Buffer mesh_buffer_ibo = Vulkan_API::register_object("buffer.mesh_ground_ibo"_hash, sizeof(Vulkan_API::Buffer));
+    Vulkan_API::invoke_staging_buffer_for_device_local_buffer(Memory_Byte_Buffer{sizeof(u32) * 8 * (((width_x - 1) * (depth_z - 1)) / 2), vtx}
+							      , command_pool.p
+							      , mesh_buffer_ibo.p
+							      , gpu);
+    
+    pop_stack();
+    pop_stack();
+}
     
