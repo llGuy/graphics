@@ -1,6 +1,3 @@
-// IMPLEMENT LINEAR ALLOCATOR ALREADY
-
-
 #pragma once
 
 #include <cassert>

@@ -34,3 +34,8 @@ load_3D_terrain_mesh_instance(u32 width_x
 			      , u32 depth_z
 			      , Vulkan_API::Model *prototype
 			      , Vulkan_API::GPU *gpu);
+
+void
+load_3D_terrain_mesh_graphics_pipeline(Vulkan_API::Graphics_Pipeline *dst
+				       , Vulkan_API::Model *terrain_prototype
+				       , Vulkan_API::GPU *gpu);

@@ -1,4 +1,5 @@
 #include <chrono>
+#include <nlohmann/json.hpp>
 #include "vulkan.hpp"
 #include <glm/glm.hpp>
 #include "rendering.hpp"
@@ -549,8 +550,7 @@ namespace Rendering
 	cache->render_finished_semaphores = Vulkan_API::get_object("semaphore.render_finished"_hash);
 	cache->test_model = Vulkan_API::get_object("vulkan_model.test_model"_hash);
     }
-
-
+    
 
 
 
@@ -722,8 +722,8 @@ namespace Rendering
 	       , const Memory_Buffer_View<VkDescriptorSet> &additional_sets
 	       , Vulkan_API::Registered_Render_Pass rndr_pass)
 	{
-	    VkClearValue clears[] {Vulkan_API::init_clear_color_color(0, 0, 0, 0)
-		    , Vulkan_API::init_clear_color_color(0, 0, 0, 0)
+	    VkClearValue clears[] {Vulkan_API::init_clear_color_color(0, 0.4, 0.7, 0)
+		    , Vulkan_API::init_clear_color_color(0, 0.4, 0.7, 0)
 		    , Vulkan_API::init_clear_color_depth(1.0f, 0)};
 	    
 	    Vulkan_API::command_buffer_begin_render_pass(deferred_rndr_pass.p

@@ -1,0 +1,28 @@
+{
+    "graphics_pipeline.terrain_mesh": {
+	"stages": {
+	    "v": "shaders/SPV/terrain.vert.spv",
+	    "f": "shaders/SPV/terrain.frag.spv"
+	},
+	"assemble": {
+	    "topology": "triangle_fan",
+	    "restart": true
+	},
+	"raster": {
+	    "poly_mode": "fill",
+	    "cull": "none"
+	},
+	"pipeline_layout": {
+	    "descriptor_set_layout": "descriptor_set_layout.test_descriptor_set_layout",
+	    "push_constant": {
+		"stage_flags": ["v"],
+		"size": "mat4x4",
+		"offset": 0
+	    }
+	},
+	"vertex_input": "vulkan_model.terrain_mesh_prototype",
+	"blend": ["disable"],
+	"depth": true,
+	"render_pass": "render_pass.deferred_render_pass"
+    }
+}

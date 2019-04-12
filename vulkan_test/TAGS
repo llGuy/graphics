@@ -1,51 +1,4 @@
 
-config.cpp,1401
-enum class Token_Type 7,213
-enum class Token_Type { KEYWORD7,213
-			, CONSTANT8,246
-			, ENTRY_ID9,261
-			, OPERATOR10,276
-			, NOT_DETERMINED_YET}NOT_DETERMINED_YET11,291
-enum class Constant_Type 13,320
-enum class Constant_Type { NAME 13,320
-			   , NUMBER 14,354
-enum Operator_Type 16,399
-enum Operator_Type :s8 { COLON=16,399
-			 , EQUAL=17,435
-			 , COMMA=18,452
-			 , OPEN_SQUARE=19,469
-			 , CLOSE_SQUARE=20,492
-			 , DOLLAR=21,516
-			 , OPEN_BRACK=22,534
-			 , CLOSE_BRACK=23,556
-struct Token25,584
-    const char *tk_bgn;tk_bgn27,601
-    s32 tk_len;28,639
-    Token_Type type 29,656
-struct Attribute32,717
-    Token *id;id34,738
-    Memory_Buffer_View<Token *> data;35,754
-struct Entry38,799
-    Token *id;id40,816
-    Memory_Buffer_View<Attribute> atrbs;41,832
-struct Config_Attribute_Proc44,880
-    void *proc;proc46,913
-    const char *str;str47,930
-    s32 str_len;48,952
-    void *usr_data;usr_data50,972
-struct MAC_Definition53,999
-    Token *MAC_id;MAC_id55,1025
-    Memory_Buffer_View<Token *> params;56,1045
-struct Config_Parser59,1092
-    const char *cfgs;cfgs61,1117
-    Hash_Table_Inline<Hash_Table_Inline63,1142
-    Hash_Table_Inline<MAC_Definition, 7, 3, 3> *mac_lkup_tbl;mac_lkup_tbl63,1142
-    Memory_Buffer_View<Token> tks;65,1211
-begin_proc_init(69,1259
-push_proc(75,1302
-end_proc_init(81,1339
-open_config_file(87,1380
-
 core.cpp,762
 #define DEBUG_FILE 16,222
 Linear_Allocator linear_allocator_global;19,255
@@ -82,118 +35,120 @@ read_image(39,1021
 read_file_data(62,1663
 destroy_file_data(74,1932
 
-load.cpp,1212
-process_vertex(11,151
-split(39,1036
-break_face_line(50,1301
-create_model(89,2870
-    enum :u32 u3298,3185
-    enum :u32 {POSITION,POSITION98,3185
-    enum :u32 {POSITION, NORMAL,98,3185
-    enum :u32 {POSITION, NORMAL, UVS,98,3185
-    enum :u32 {POSITION, NORMAL, UVS, TANGENT}TANGENT98,3185
-load_model_from_obj(177,6933
-get_terrain_index(272,9191
-load_3D_terrain_mesh(278,9281
-    enum :u32 u32336,11905
-    enum :u32 {GROUND_BASE_XY_VALUES_BND GROUND_BASE_XY_VALUES_BND336,11905
-    enum :u32 {GROUND_BASE_XY_VALUES_BND = 0, HEIGHT_BND 336,11905
-    enum :u32 {GROUND_BASE_XY_VALUES_BND = 0, HEIGHT_BND = 1, GROUND_BASE_XY_VALUES_ATT 336,11905
-    enum :u32 {GROUND_BASE_XY_VALUES_BND = 0, HEIGHT_BND = 1, GROUND_BASE_XY_VALUES_ATT = 0, HEIGHT_ATT 336,11905
-load_3D_terrain_mesh_instance(351,13063
-    enum :u32 u32368,13819
-    enum :u32 {GROUND_BASE_XY_VALUES_BND GROUND_BASE_XY_VALUES_BND368,13819
-    enum :u32 {GROUND_BASE_XY_VALUES_BND = 0, HEIGHT_BND 368,13819
-    enum :u32 {GROUND_BASE_XY_VALUES_BND = 0, HEIGHT_BND = 1, GROUND_BASE_XY_VALUES_ATT 368,13819
-    enum :u32 {GROUND_BASE_XY_VALUES_BND = 0, HEIGHT_BND = 1, GROUND_BASE_XY_VALUES_ATT = 0, HEIGHT_ATT 368,13819
+load.cpp,1298
+process_vertex(12,181
+split(40,1066
+break_face_line(51,1331
+create_model(90,2900
+    enum :u32 u3299,3215
+    enum :u32 {POSITION,POSITION99,3215
+    enum :u32 {POSITION, NORMAL,99,3215
+    enum :u32 {POSITION, NORMAL, UVS,99,3215
+    enum :u32 {POSITION, NORMAL, UVS, TANGENT}TANGENT99,3215
+load_model_from_obj(178,6963
+get_terrain_index(273,9221
+load_3D_terrain_mesh(279,9311
+    enum :u32 u32337,11935
+    enum :u32 {GROUND_BASE_XY_VALUES_BND GROUND_BASE_XY_VALUES_BND337,11935
+    enum :u32 {GROUND_BASE_XY_VALUES_BND = 0, HEIGHT_BND 337,11935
+    enum :u32 {GROUND_BASE_XY_VALUES_BND = 0, HEIGHT_BND = 1, GROUND_BASE_XY_VALUES_ATT 337,11935
+    enum :u32 {GROUND_BASE_XY_VALUES_BND = 0, HEIGHT_BND = 1, GROUND_BASE_XY_VALUES_ATT = 0, HEIGHT_ATT 337,11935
+load_3D_terrain_mesh_instance(352,13093
+    enum :u32 u32369,13849
+    enum :u32 {GROUND_BASE_XY_VALUES_BND GROUND_BASE_XY_VALUES_BND369,13849
+    enum :u32 {GROUND_BASE_XY_VALUES_BND = 0, HEIGHT_BND 369,13849
+    enum :u32 {GROUND_BASE_XY_VALUES_BND = 0, HEIGHT_BND = 1, GROUND_BASE_XY_VALUES_ATT 369,13849
+    enum :u32 {GROUND_BASE_XY_VALUES_BND = 0, HEIGHT_BND = 1, GROUND_BASE_XY_VALUES_ATT = 0, HEIGHT_ATT 369,13849
+load_3D_terrain_mesh_graphics_pipeline(377,14089
+load_pipelines_from_json(510,20145
 
 rendering.cpp,3902
-namespace Rendering8,156
-    init_model_info(12,205
-	struct Vertex 26,905
-	struct Vertex { glm::vec3 pos;26,905
-	struct Vertex { glm::vec3 pos; glm::vec3 color;26,905
-	struct Vertex { glm::vec3 pos; glm::vec3 color; glm::vec2 uvs;26,905
-    init_graphics_pipeline(42,1467
-    init_descriptor_set_layout(173,7413
-    init_command_pool(191,8197
-    init_object_texture(202,8571
-    init_vbo(288,11575
-	struct Vertex 290,11618
-	struct Vertex { glm::vec3 pos,290,11618
-	struct Vertex { glm::vec3 pos, color;290,11618
-	struct Vertex { glm::vec3 pos, color; glm::vec2 uvs;290,11618
-    persist u32 mesh_indices[mesh_indices329,12959
-    init_ibo(351,13191
-    init_ubos(374,14074
-	struct Uniform_Buffer_Object378,14207
-    struct Uniform_Buffer_Object408,15042
-    init_descriptor_pool(421,15241
-    init_descriptor_sets(436,15989
-    internal constexpr u32 MAX_FRAMES_IN_FLIGHT 491,18371
-    init_sync(494,18447
-    init_rendering_state(511,19273
-    struct Material560,20853
-	Vulkan_API::Registered_Model model;566,21013
-	Vulkan_API::Draw_Indexed_Data draw_info;567,21051
-    struct Renderer 575,21456
-	Vulkan_API::Registered_Graphics_Pipeline ppln;578,21544
-	Memory_Buffer_View<VkDescriptorSet> sets;579,21593
-	VkShaderStageFlags mtrl_unique_data_stage_dst;580,21637
-	Memory_Buffer_View<Material> mtrls;582,21689
-	u32 mtrl_count;584,21730
-	enum Render_Method 586,21750
-	enum Render_Method { INLINE,586,21750
-	enum Render_Method { INLINE, INSTANCED 586,21750
-	enum Render_Method { INLINE, INSTANCED } mthd;586,21750
-	VkCommandBuffer rndr_cmdbuf;589,21913
-	init(592,21954
-	update(627,22985
-    global_var struct Render_System680,24386
-	Memory_Buffer_View<Renderer> rndrs;685,24506
-	u32 rndr_count;686,24544
-	Hash_Table_Inline<Hash_Table_Inline687,24562
-	Hash_Table_Inline<s32, 30, 4, 3> rndr_id_map;687,24562
-	Vulkan_API::Registered_Render_Pass deferred_rndr_pass;690,24614
-	Vulkan_API::Registered_Framebuffer fbos;692,24674
-	Vulkan_API::Registered_Graphics_Pipeline deferred_pipeline;694,24720
-	Vulkan_API::Registered_Descriptor_Set_Layout deferred_descriptor_set_layout;695,24782
-	Vulkan_API::Registered_Descriptor_Set deferred_descriptor_set;696,24861
-	Vulkan_API::Registered_Buffer ppfx_quad;698,24928
-	Render_System(701,24977
-	init_system(704,25028
-	add_renderer(712,25194
-	update(719,25424
-	init_material(766,27076
-    } rndr_sys;784,27577
-    init_deferred_render_pass(787,27606
-	enum G_Buffer_Attachment 794,27890
-	enum G_Buffer_Attachment :u32 {FINAL_ATTACHMENTFINAL_ATTACHMENT794,27890
-				       , ALBEDO_ATTACHMENT795,27940
-				       , DEPTH_ATTACHMENT796,27972
-				       , INVALID_ATTACHMENT}INVALID_ATTACHMENT797,28003
-	enum G_Buffer_Reference 846,30295
-	enum G_Buffer_Reference :u32 {FINAL_REFERENCEFINAL_REFERENCE846,30295
-				      , ALBEDO_REFERENCE847,30343
-				      , DEPTH_REFERENCE848,30373
-				      , INVALID_REFERENCE}INVALID_REFERENCE849,30402
-	enum Subpass_Stage 861,31274
-	enum Subpass_Stage :u32 {G_BUFFER_INIT,G_BUFFER_INIT861,31274
-	enum Subpass_Stage :u32 {G_BUFFER_INIT, LIGHTING,861,31274
-	enum Subpass_Stage :u32 {G_BUFFER_INIT, LIGHTING, INVALID_STAGE}INVALID_STAGE861,31274
-    init_deferred_fbos(912,33611
-	enum class G_Buffer_Attachment 916,33766
-	enum class G_Buffer_Attachment :u32 {FINAL,FINAL916,33766
-	enum class G_Buffer_Attachment :u32 {FINAL, ALBEDO,916,33766
-	enum class G_Buffer_Attachment :u32 {FINAL, ALBEDO, POSITION,916,33766
-	enum class G_Buffer_Attachment :u32 {FINAL, ALBEDO, POSITION, NORMAL,916,33766
-	enum class G_Buffer_Attachment :u32 {FINAL, ALBEDO, POSITION, NORMAL, DEPTH,916,33766
-	enum class G_Buffer_Attachment :u32 {FINAL, ALBEDO, POSITION, NORMAL, DEPTH, INVALID}INVALID916,33766
-    init_deferred_ppln(977,35995
-    init_rendering_system(1151,44862
-    add_renderer(1161,45209
-    update_renderers(1167,45380
-    init_material(1177,45738
+namespace Rendering9,186
+    init_model_info(13,235
+	struct Vertex 27,935
+	struct Vertex { glm::vec3 pos;27,935
+	struct Vertex { glm::vec3 pos; glm::vec3 color;27,935
+	struct Vertex { glm::vec3 pos; glm::vec3 color; glm::vec2 uvs;27,935
+    init_graphics_pipeline(43,1497
+    init_descriptor_set_layout(174,7443
+    init_command_pool(192,8227
+    init_object_texture(203,8601
+    init_vbo(289,11605
+	struct Vertex 291,11648
+	struct Vertex { glm::vec3 pos,291,11648
+	struct Vertex { glm::vec3 pos, color;291,11648
+	struct Vertex { glm::vec3 pos, color; glm::vec2 uvs;291,11648
+    persist u32 mesh_indices[mesh_indices330,12989
+    init_ibo(352,13221
+    init_ubos(375,14104
+	struct Uniform_Buffer_Object379,14237
+    struct Uniform_Buffer_Object409,15072
+    init_descriptor_pool(422,15271
+    init_descriptor_sets(437,16019
+    internal constexpr u32 MAX_FRAMES_IN_FLIGHT 492,18401
+    init_sync(495,18477
+    init_rendering_state(512,19303
+    struct Material560,20885
+	Vulkan_API::Registered_Model model;566,21045
+	Vulkan_API::Draw_Indexed_Data draw_info;567,21083
+    struct Renderer 575,21488
+	Vulkan_API::Registered_Graphics_Pipeline ppln;578,21576
+	Memory_Buffer_View<VkDescriptorSet> sets;579,21625
+	VkShaderStageFlags mtrl_unique_data_stage_dst;580,21669
+	Memory_Buffer_View<Material> mtrls;582,21721
+	u32 mtrl_count;584,21762
+	enum Render_Method 586,21782
+	enum Render_Method { INLINE,586,21782
+	enum Render_Method { INLINE, INSTANCED 586,21782
+	enum Render_Method { INLINE, INSTANCED } mthd;586,21782
+	VkCommandBuffer rndr_cmdbuf;589,21945
+	init(592,21986
+	update(627,23017
+    global_var struct Render_System680,24418
+	Memory_Buffer_View<Renderer> rndrs;685,24538
+	u32 rndr_count;686,24576
+	Hash_Table_Inline<Hash_Table_Inline687,24594
+	Hash_Table_Inline<s32, 30, 4, 3> rndr_id_map;687,24594
+	Vulkan_API::Registered_Render_Pass deferred_rndr_pass;690,24646
+	Vulkan_API::Registered_Framebuffer fbos;692,24706
+	Vulkan_API::Registered_Graphics_Pipeline deferred_pipeline;694,24752
+	Vulkan_API::Registered_Descriptor_Set_Layout deferred_descriptor_set_layout;695,24814
+	Vulkan_API::Registered_Descriptor_Set deferred_descriptor_set;696,24893
+	Vulkan_API::Registered_Buffer ppfx_quad;698,24960
+	Render_System(701,25009
+	init_system(704,25060
+	add_renderer(712,25226
+	update(719,25456
+	init_material(766,27116
+    } rndr_sys;784,27617
+    init_deferred_render_pass(787,27646
+	enum G_Buffer_Attachment 794,27930
+	enum G_Buffer_Attachment :u32 {FINAL_ATTACHMENTFINAL_ATTACHMENT794,27930
+				       , ALBEDO_ATTACHMENT795,27980
+				       , DEPTH_ATTACHMENT796,28012
+				       , INVALID_ATTACHMENT}INVALID_ATTACHMENT797,28043
+	enum G_Buffer_Reference 846,30335
+	enum G_Buffer_Reference :u32 {FINAL_REFERENCEFINAL_REFERENCE846,30335
+				      , ALBEDO_REFERENCE847,30383
+				      , DEPTH_REFERENCE848,30413
+				      , INVALID_REFERENCE}INVALID_REFERENCE849,30442
+	enum Subpass_Stage 861,31314
+	enum Subpass_Stage :u32 {G_BUFFER_INIT,G_BUFFER_INIT861,31314
+	enum Subpass_Stage :u32 {G_BUFFER_INIT, LIGHTING,861,31314
+	enum Subpass_Stage :u32 {G_BUFFER_INIT, LIGHTING, INVALID_STAGE}INVALID_STAGE861,31314
+    init_deferred_fbos(912,33651
+	enum class G_Buffer_Attachment 916,33806
+	enum class G_Buffer_Attachment :u32 {FINAL,FINAL916,33806
+	enum class G_Buffer_Attachment :u32 {FINAL, ALBEDO,916,33806
+	enum class G_Buffer_Attachment :u32 {FINAL, ALBEDO, POSITION,916,33806
+	enum class G_Buffer_Attachment :u32 {FINAL, ALBEDO, POSITION, NORMAL,916,33806
+	enum class G_Buffer_Attachment :u32 {FINAL, ALBEDO, POSITION, NORMAL, DEPTH,916,33806
+	enum class G_Buffer_Attachment :u32 {FINAL, ALBEDO, POSITION, NORMAL, DEPTH, INVALID}INVALID916,33806
+    init_deferred_ppln(977,36035
+    init_rendering_system(1151,44902
+    add_renderer(1161,45249
+    update_renderers(1167,45420
+    init_material(1177,45778
 
 scene.cpp,1890
 #define MAX_ENTITIES_UNDER_TOP 12,289
@@ -327,121 +282,121 @@ namespace Vulkan_API10,171
     destroy_debug_utils_messenger_ext(1475,48621
     destroy_state(1487,49006
 
-core.hpp,3470
-#define DEBUG 11,143
-typedef int8_t s8;13,165
-typedef int16_t s16;14,185
-typedef int32_t s32;15,207
-typedef int64_t s64;16,229
-typedef uint8_t u8;18,253
-typedef uint16_t u16;19,274
-typedef uint32_t u32;20,297
-typedef uint64_t u64;21,320
-typedef float f32;23,345
-typedef double f64;24,365
-typedef u8 byte;26,388
-#define FORCEINLINE 29,425
-#define FORCEINLINE 31,460
-#define MAX(34,505
-#define MIN(35,550
-#define VK_CHECK(37,597
-#define OUTPUT_DEBUG_LOG(48,883
-#define persist 53,1071
-#define internal 54,1095
-#define global_var 55,1120
-struct Memory_Buffer_View58,1172
-    u32 count;60,1202
-    T *buffer;buffer61,1218
-    zero(64,1246
-left_shift(83,1498
-extern struct Debug_Output88,1545
-    FILE *fp;fp90,1576
-} output_file;91,1591
-struct Window_Data97,1665
-    s32 w,99,1688
-    s32 w, h;99,1688
-    struct GLFWwindow *window;window100,1703
-    f32 dt 101,1735
-    Memory_Buffer_View<bool> key_map;103,1757
-    Memory_Buffer_View<bool> mb_map;104,1796
-    s32 m_x 106,1836
-    s32 m_y 107,1854
-    bool m_moved 109,1874
-    bool window_resized 110,1901
-using Alignment 113,1941
-extern struct Linear_Allocator115,1966
-    void *start start117,2001
-    void *current current118,2029
-    u32 capacity;120,2061
-} linear_allocator_global;121,2080
-struct Stack_Allocation_Header132,2349
-    const char *allocation_name;allocation_name135,2399
-    u32 size;138,2451
-    void *prev;prev139,2466
-extern struct Stack_Allocator142,2489
-    void *start start144,2523
-    void *current current145,2551
-    u32 allocation_count 147,2587
-    u32 capacity;148,2618
-} stack_allocator_global;149,2637
-struct Free_Block_Header166,3149
-    Free_Block_Header *next_free_block next_free_block168,3178
-    u32 free_block_size 169,3229
-struct Free_List_Allocation_Header172,3265
-    u32 size;174,3304
-    const char *name;name176,3330
-extern struct Free_List_Allocator180,3367
-    Free_Block_Header *free_block_head;free_block_head182,3405
-    void *start;start184,3452
-    u32 available_bytes;185,3470
-    u32 allocation_count 187,3498
-} free_list_allocator_global;188,3529
-struct File_Contents200,3862
-    u32 size;202,3887
-    byte *content;content203,3902
-read_file(207,3952
-get_alignment_adjust(234,4549
-destroy(246,4852
-kilobytes(258,4997
-megabytes(264,5070
-struct Bitset_32273,5181
-    u32 bitset 275,5202
-    pop_count(278,5241
-    set1(288,5394
-    set0(294,5475
-    get(300,5559
-struct Constant_String306,5632
-    const char* str;308,5659
-    u32 size;309,5681
-    u32 hash;310,5696
-    operator==(operator==313,5730
-compile_hash(317,5849
-operator""_hasoperator""_ha323,6040
-init_const_str(329,6213
-template <typename T335,6374
-	  , u32 Bucket_Count336,6396
-	  , u32 Bucket_Size337,6419
-	  , u32 Bucket_Search_Count> struct Hash_Table_Inline338,6441
-    enum { UNINITIALIZED_HASH 340,6500
-    enum { ITEM_POUR_LIMIT 341,6547
-    struct Item343,6605
-    struct Bucket349,6689
-    const char *map_debug_name;map_debug_name355,6787
-    Bucket buckets[buckets356,6820
-    Hash_Table_Inline(358,6862
-    insert(361,6941
-    remove(390,7851
-    get(413,8395
-null_buffer(439,9110
-single_buffer(442,9240
-allocate_memory_buffer(445,9342
-allocate_memory_buffer_tmp(452,9530
-struct Memory_Byte_Buffer458,9691
-    u32 size;460,9721
-    void *ptr;ptr461,9736
-template <typename T,465,9791
-loop_through_memory(466,9834
-const glm::mat4x4 IDENTITY_MAT4X4 477,10020
+core.hpp,3466
+#define DEBUG 8,100
+typedef int8_t s8;10,122
+typedef int16_t s16;11,142
+typedef int32_t s32;12,164
+typedef int64_t s64;13,186
+typedef uint8_t u8;15,210
+typedef uint16_t u16;16,231
+typedef uint32_t u32;17,254
+typedef uint64_t u64;18,277
+typedef float f32;20,302
+typedef double f64;21,322
+typedef u8 byte;23,345
+#define FORCEINLINE 26,382
+#define FORCEINLINE 28,417
+#define MAX(31,462
+#define MIN(32,507
+#define VK_CHECK(34,554
+#define OUTPUT_DEBUG_LOG(45,840
+#define persist 50,1028
+#define internal 51,1052
+#define global_var 52,1077
+struct Memory_Buffer_View55,1129
+    u32 count;57,1159
+    T *buffer;buffer58,1175
+    zero(61,1203
+left_shift(80,1455
+extern struct Debug_Output85,1502
+    FILE *fp;fp87,1533
+} output_file;88,1548
+struct Window_Data94,1622
+    s32 w,96,1645
+    s32 w, h;96,1645
+    struct GLFWwindow *window;window97,1660
+    f32 dt 98,1692
+    Memory_Buffer_View<bool> key_map;100,1714
+    Memory_Buffer_View<bool> mb_map;101,1753
+    s32 m_x 103,1793
+    s32 m_y 104,1811
+    bool m_moved 106,1831
+    bool window_resized 107,1858
+using Alignment 110,1898
+extern struct Linear_Allocator112,1923
+    void *start start114,1958
+    void *current current115,1986
+    u32 capacity;117,2018
+} linear_allocator_global;118,2037
+struct Stack_Allocation_Header129,2306
+    const char *allocation_name;allocation_name132,2356
+    u32 size;135,2408
+    void *prev;prev136,2423
+extern struct Stack_Allocator139,2446
+    void *start start141,2480
+    void *current current142,2508
+    u32 allocation_count 144,2544
+    u32 capacity;145,2575
+} stack_allocator_global;146,2594
+struct Free_Block_Header163,3106
+    Free_Block_Header *next_free_block next_free_block165,3135
+    u32 free_block_size 166,3186
+struct Free_List_Allocation_Header169,3222
+    u32 size;171,3261
+    const char *name;name173,3287
+extern struct Free_List_Allocator177,3324
+    Free_Block_Header *free_block_head;free_block_head179,3362
+    void *start;start181,3409
+    u32 available_bytes;182,3427
+    u32 allocation_count 184,3455
+} free_list_allocator_global;185,3486
+struct File_Contents197,3819
+    u32 size;199,3844
+    byte *content;content200,3859
+read_file(204,3909
+get_alignment_adjust(231,4506
+destroy(243,4809
+kilobytes(255,4954
+megabytes(261,5027
+struct Bitset_32270,5138
+    u32 bitset 272,5159
+    pop_count(275,5198
+    set1(285,5351
+    set0(291,5432
+    get(297,5516
+struct Constant_String303,5589
+    const char* str;305,5616
+    u32 size;306,5638
+    u32 hash;307,5653
+    operator==(operator==310,5687
+compile_hash(314,5806
+operator""_hasoperator""_ha320,5997
+init_const_str(326,6170
+template <typename T332,6331
+	  , u32 Bucket_Count333,6353
+	  , u32 Bucket_Size334,6376
+	  , u32 Bucket_Search_Count> struct Hash_Table_Inline335,6398
+    enum { UNINITIALIZED_HASH 337,6457
+    enum { ITEM_POUR_LIMIT 338,6504
+    struct Item340,6562
+    struct Bucket346,6646
+    const char *map_debug_name;map_debug_name352,6744
+    Bucket buckets[buckets353,6777
+    Hash_Table_Inline(355,6819
+    insert(358,6898
+    remove(387,7808
+    get(410,8352
+null_buffer(436,9067
+single_buffer(439,9197
+allocate_memory_buffer(442,9299
+allocate_memory_buffer_tmp(449,9487
+struct Memory_Byte_Buffer455,9648
+    u32 size;457,9678
+    void *ptr;ptr458,9693
+template <typename T,462,9748
+loop_through_memory(463,9791
+const glm::mat4x4 IDENTITY_MAT4X4 474,9977
 
 file_system.hpp,725
 enum File_Format7,166
@@ -720,3 +675,5 @@ namespace Vulkan_API11,232
 	GPU gpu;1254,36829
 	VkSurfaceKHR surface;1255,36840
 	Swapchain swapchain;1256,36864
+
+config.cpp,0

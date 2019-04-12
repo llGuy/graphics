@@ -1,3 +1,4 @@
+#include <nlohmann/json.hpp>
 #include <array>
 #include <vector>
 #include <string>
@@ -370,4 +371,182 @@ load_3D_terrain_mesh_instance(u32 width_x
 
     ret.model.create_vbo_list();
     return(ret);
+}
+
+void
+load_3D_terrain_mesh_graphics_pipeline(Vulkan_API::Graphics_Pipeline *dst
+				       , Vulkan_API::Model *terrain_prototype
+				       , VkDescriptorSetLayout *layout
+				       , Vulkan_API::GPU *gpu)
+{
+    // use the same graphics pipeline layout as the test pipeline for now
+    /*    dst->stages = Vulkan_API::Graphics_Pipeline::Shader_Stages_Bits::VERTEX_SHADER_BIT
+	| Vulkan_API::Graphics_Pipeline::Shader_Stages_Bits::FRAGMENT_SHADER_BIT;
+    dst->base_dir_and_name = "../vulkan/shaders/";
+    Vulkan_API::Registered_Descriptor_Set_Layout l = Vulkan_API::get_object("descriptor_set_layout.test_descriptor_set_layout"_hash);
+    dst->descriptor_set_layout = *l.p;
+	
+    // create shaders
+    File_Contents vsh_bytecode = read_file("shaders/SPV/triangle.vert.spv");
+    File_Contents fsh_bytecode = read_file("shaders/SPV/triangle.frag.spv");
+	
+    VkShaderModule vsh_module;
+    Vulkan_API::init_shader(VK_SHADER_STAGE_VERTEX_BIT, vsh_bytecode.size, vsh_bytecode.content, gpu, &vsh_module);
+	
+    VkShaderModule fsh_module;
+    Vulkan_API::init_shader(VK_SHADER_STAGE_FRAGMENT_BIT, fsh_bytecode.size, fsh_bytecode.content, gpu, &fsh_module);
+
+    VkPipelineShaderStageCreateInfo module_infos[2] = {};
+    Vulkan_API::init_shader_pipeline_info(&vsh_module, VK_SHADER_STAGE_VERTEX_BIT, &module_infos[0]);
+    Vulkan_API::init_shader_pipeline_info(&fsh_module, VK_SHADER_STAGE_FRAGMENT_BIT, &module_infos[1]);
+
+    // init vertex input stuff
+    Vulkan_API::Registered_Model model = Vulkan_API::get_object("vulkan_model.test_model"_hash);
+    VkPipelineVertexInputStateCreateInfo vertex_input_info = {};
+    Vulkan_API::init_pipeline_vertex_input_info(model.p, &vertex_input_info);
+
+    // init assembly info
+    VkPipelineInputAssemblyStateCreateInfo assembly_info = {};
+
+    Vulkan_API::init_pipeline_input_assembly_info(0, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_FALSE, &assembly_info);
+
+    // init viewport info
+    VkViewport viewport = {};
+
+    Vulkan_API::init_viewport(swapchain->extent.width, swapchain->extent.height, 0.0f, 1.0f, &viewport);
+    VkRect2D scissor = {};
+    Vulkan_API::init_rect_2D(VkOffset2D{}, swapchain->extent, &scissor);
+
+    VkPipelineViewportStateCreateInfo viewport_info = {};
+    Memory_Buffer_View<VkViewport> viewports = {1, &viewport};
+    Memory_Buffer_View<VkRect2D>   scissors = {1, &scissor};
+    Vulkan_API::init_pipeline_viewport_info(&viewports, &scissors, &viewport_info);
+
+    // init rasterization info
+    VkPipelineRasterizationStateCreateInfo rasterization_info = {};
+    Vulkan_API::init_pipeline_rasterization_info(VK_POLYGON_MODE_FILL, VK_CULL_MODE_BACK_BIT, 1.0f, 0, &rasterization_info);
+
+    // init multisample info
+    VkPipelineMultisampleStateCreateInfo multisample_info = {};
+    Vulkan_API::init_pipeline_multisampling_info(VK_SAMPLE_COUNT_1_BIT, 0, &multisample_info);
+
+    // init blending info
+    VkPipelineColorBlendAttachmentState blend_attachments[2] = {};
+    Vulkan_API::init_blend_state_attachment(VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT
+					    , VK_FALSE
+					    , VK_BLEND_FACTOR_ONE
+					    , VK_BLEND_FACTOR_ZERO
+					    , VK_BLEND_OP_ADD
+					    , VK_BLEND_FACTOR_ONE
+					    , VK_BLEND_FACTOR_ZERO
+					    , VK_BLEND_OP_ADD
+					    , &blend_attachments[0]);
+
+    VkPipelineColorBlendAttachmentState blend_attachment1 = {};
+    Vulkan_API::init_blend_state_attachment(VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT
+					    , VK_FALSE
+					    , VK_BLEND_FACTOR_ONE
+					    , VK_BLEND_FACTOR_ZERO
+					    , VK_BLEND_OP_ADD
+					    , VK_BLEND_FACTOR_ONE
+					    , VK_BLEND_FACTOR_ZERO
+					    , VK_BLEND_OP_ADD
+					    , &blend_attachments[1]);
+	
+    VkPipelineColorBlendStateCreateInfo blending_info = {};
+    Memory_Buffer_View<VkPipelineColorBlendAttachmentState> blend_attachments_b = {2, blend_attachments};
+    Vulkan_API::init_pipeline_blending_info(VK_FALSE, VK_LOGIC_OP_COPY, &blend_attachments_b, &blending_info);
+
+    // init dynamic states info
+    VkDynamicState dynamic_states[]
+    {
+	VK_DYNAMIC_STATE_VIEWPORT,
+	    VK_DYNAMIC_STATE_LINE_WIDTH
+	    };
+    Memory_Buffer_View<VkDynamicState> dynamic_states_ptr = {2, dynamic_states};
+    VkPipelineDynamicStateCreateInfo dynamic_info = {};
+    Vulkan_API::init_pipeline_dynamic_states_info(&dynamic_states_ptr, &dynamic_info);
+
+    // init pipeline layout
+    VkDescriptorSetLayout descriptor_set_layout = dst->descriptor_set_layout;
+    Memory_Buffer_View<VkDescriptorSetLayout> layouts = {1, &descriptor_set_layout};
+
+    VkPushConstantRange push_k_rng  = {};
+    Vulkan_API::init_push_constant_range(VK_SHADER_STAGE_VERTEX_BIT
+					 , sizeof(glm::mat4)
+					 , 0
+					 , &push_k_rng);
+    Memory_Buffer_View<VkPushConstantRange> ranges = {1, &push_k_rng};
+    Vulkan_API::init_pipeline_layout(&layouts, &ranges, gpu, &dst->layout);
+
+    // init depth stencil info
+    VkPipelineDepthStencilStateCreateInfo depth_stencil_info = {};
+    Vulkan_API::init_pipeline_depth_stencil_info(VK_TRUE, VK_TRUE, 0.0f, 1.0f, VK_FALSE, &depth_stencil_info);
+
+    // init pipeline object
+    Vulkan_API::Registered_Render_Pass render_pass = Vulkan_API::get_object("render_pass.deferred_render_pass"_hash);
+    Memory_Buffer_View<VkPipelineShaderStageCreateInfo> modules = {2, module_infos};
+    Vulkan_API::init_graphics_pipeline(&modules
+				       , &vertex_input_info
+				       , &assembly_info
+				       , &viewport_info
+				       , &rasterization_info
+				       , &multisample_info
+				       , &blending_info
+				       , nullptr
+				       , &depth_stencil_info
+				       , &dst->layout
+				       , render_pass.p
+				       , 0
+				       , gpu
+				       , &dst->pipeline);
+
+    vkDestroyShaderModule(gpu->logical_device, vsh_module, nullptr);
+    vkDestroyShaderModule(gpu->logical_device, fsh_module, nullptr);
+    */
+}
+
+internal void
+load_pipelines_from_json(Vulkan_API::GPU *gpu)
+{
+    persist const char *json_file_name = "config/pipelines.json";
+    File_Contents contents = read_file(json_file_name);
+    nlohmann::json j = nlohmann::json::parse(contents.content);
+    for (nlohmann::json::iterator i = j.begin(); i != j.end(); ++i)
+    {
+	// get name
+	std::string key = i.key();
+
+	auto stages = i.value().find("stages");
+	u32 stg_count = 0;
+	persist constexpr u32 MAX_STAGES_COUNT = 5;
+	persist VkShaderModule module_buffer[MAX_STAGES_COUNT] = {};
+	persist VkPipelineShaderStageCreateInfo shader_infos[MAX_STAGES_COUNT] = {};
+	memset(module_buffer, 0, sizeof(module_buffer));
+	memset(shader_infos, 0, sizeof(shader_infos));
+	for (nlohmann::json::iterator stg = stages.value().begin(); stg != stages.value().end(); ++stg)
+	{
+	    std::string k = stg.key();
+	    VkShaderStageFlagBits vk_stage_flags = {};
+	    switch(k[0])
+	    {
+	    case 'v': {vk_stage_flags = VK_SHADER_STAGE_VERTEX_BIT; break;}
+	    case 'f': {vk_stage_flags = VK_SHADER_STAGE_FRAGMENT_BIT; break;}
+	    case 'g': case 't': {break;}
+	    };
+	    File_Contents bytecode = read_file(std::string(stg.value()).c_str());
+	    Vulkan_API::init_shader(vk_stage_flags, bytecode.size, bytecode.content, gpu, &module_buffer[stg_count]);
+	    Vulkan_API::init_shader_pipeline_info(&module_buffer[stg_count], vk_stage_flags, &shader_infos[stg_count]);
+	    ++stg_count;
+	}
+	VkPipelineInputAssemblyStateCreateInfo assembly_info = {};
+	auto assemble = i.value().find("assemble");
+	VkPrimitiveTopology top;
+	std::string top_str = assemble.value().find("topology").value();
+	if (top_str == "triangle_fan") top = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN;
+	else if (top_str == "triangle_list") top = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+	Vulkan_API::init_pipeline_input_assembly_info(0, top, bool(i.value().find("restart").value()), &assembly_info);
+
+	
+    }
 }
