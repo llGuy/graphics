@@ -39,3 +39,7 @@ void
 load_3D_terrain_mesh_graphics_pipeline(Vulkan_API::Graphics_Pipeline *dst
 				       , Vulkan_API::Model *terrain_prototype
 				       , Vulkan_API::GPU *gpu);
+
+void
+load_pipelines_from_json(Vulkan_API::GPU *gpu
+			 , Vulkan_API::Swapchain *swapchain);

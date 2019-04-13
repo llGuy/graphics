@@ -382,6 +382,11 @@ init_scene(Scene *scene
     make_entity_renderable(e_ptr
 			   , sphere
 			   , "renderer.test_material_renderer"_hash);
+
+
+
+    load_pipelines_from_json(&vk->gpu
+			     , &vk->swapchain);
 }
 
 internal void

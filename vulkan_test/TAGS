@@ -60,7 +60,7 @@ load_3D_terrain_mesh_instance(352,13093
     enum :u32 {GROUND_BASE_XY_VALUES_BND = 0, HEIGHT_BND = 1, GROUND_BASE_XY_VALUES_ATT 369,13849
     enum :u32 {GROUND_BASE_XY_VALUES_BND = 0, HEIGHT_BND = 1, GROUND_BASE_XY_VALUES_ATT = 0, HEIGHT_ATT 369,13849
 load_3D_terrain_mesh_graphics_pipeline(377,14089
-load_pipelines_from_json(510,20145
+load_pipelines_from_json(510,20136
 
 rendering.cpp,3902
 namespace Rendering9,186
@@ -200,13 +200,13 @@ Camera::set_default(set_default274,7113
 Camera::compute_projection(compute_projection288,7371
 Camera::compute_view(compute_view294,7464
 init_scene(300,7543
-update_ubo(388,10647
-    struct Uniform_Buffer_Object394,10823
-record_cmd(430,12027
-render_frame(463,13298
-update_scene(528,15894
-handle_input(541,16172
-#define SENSITIVITY 547,16280
+update_ubo(393,10720
+    struct Uniform_Buffer_Object399,10896
+record_cmd(435,12100
+render_frame(468,13371
+update_scene(533,15967
+handle_input(546,16245
+#define SENSITIVITY 552,16353
 
 vulkan.cpp,2727
 #define GLFW_INCLUDE_VULKAN2,21

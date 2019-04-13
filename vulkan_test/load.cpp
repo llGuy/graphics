@@ -506,8 +506,9 @@ load_3D_terrain_mesh_graphics_pipeline(Vulkan_API::Graphics_Pipeline *dst
     */
 }
 
-internal void
-load_pipelines_from_json(Vulkan_API::GPU *gpu)
+void
+load_pipelines_from_json(Vulkan_API::GPU *gpu
+			 , Vulkan_API::Swapchain *swapchain)
 {
     persist const char *json_file_name = "config/pipelines.json";
     File_Contents contents = read_file(json_file_name);
@@ -516,6 +517,8 @@ load_pipelines_from_json(Vulkan_API::GPU *gpu)
     {
 	// get name
 	std::string key = i.key();
+	Vulkan_API::Registered_Graphics_Pipeline new_ppln = Vulkan_API::register_object(init_const_str(key.c_str(), key.length())
+											, sizeof(Vulkan_API::Graphics_Pipeline));
 
 	auto stages = i.value().find("stages");
 	u32 stg_count = 0;
@@ -543,10 +546,125 @@ load_pipelines_from_json(Vulkan_API::GPU *gpu)
 	auto assemble = i.value().find("assemble");
 	VkPrimitiveTopology top;
 	std::string top_str = assemble.value().find("topology").value();
-	if (top_str == "triangle_fan") top = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN;
-	else if (top_str == "triangle_list") top = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-	Vulkan_API::init_pipeline_input_assembly_info(0, top, bool(i.value().find("restart").value()), &assembly_info);
+	switch(top_str[0])
+	{
+	case 'f': {top = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN; break;}
+	case 'l': {top = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST; break;}
+	case 's': {top = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP; break;} 
+	}
+	Vulkan_API::init_pipeline_input_assembly_info(0, top, bool(assemble.value().find("restart").value()), &assembly_info);
 
+	VkPipelineRasterizationStateCreateInfo rasterization_info = {};
+	VkPolygonMode p_mode;
+	VkCullModeFlagBits c_mode;
+	auto raster_info = i.value().find("raster");
+	std::string p_mode_str = raster_info.value().find("poly_mode").value();
+	std::string c_mode_str = raster_info.value().find("cull").value();
+	switch(p_mode_str[0])
+	{
+	case 'f': {p_mode = VK_POLYGON_MODE_FILL; break;};
+	}
+	switch(c_mode_str[0])
+	{
+	case 'n': {c_mode = VK_CULL_MODE_NONE; break;}
+	case 'b': {c_mode = VK_CULL_MODE_BACK_BIT; break;}
+	}
+	Vulkan_API::init_pipeline_rasterization_info(p_mode, c_mode, 1.0f, 0, &rasterization_info);
+
+	auto blend_stuff = i.value().find("blend");
+	std::vector<std::string> blend_values = blend_stuff.value();
+	std::vector<VkPipelineColorBlendAttachmentState> states;
+	states.resize(blend_values.size());
+	for (u32 b = 0; b < states.size(); ++b)
+	{
+	    if (blend_values[b] == "disable")
+	    {
+		Vulkan_API::init_blend_state_attachment(VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT
+							, VK_FALSE
+							, VK_BLEND_FACTOR_ONE
+							, VK_BLEND_FACTOR_ZERO
+							, VK_BLEND_OP_ADD
+							, VK_BLEND_FACTOR_ONE
+							, VK_BLEND_FACTOR_ZERO
+							, VK_BLEND_OP_ADD
+							, &states[b]);
+	    }
+	    // other types of blend...
+	}
+	VkPipelineColorBlendStateCreateInfo blending_info = {};
+	Memory_Buffer_View<VkPipelineColorBlendAttachmentState> mbf_states {(u32)states.size(), states.data()};
+	Vulkan_API::init_pipeline_blending_info(VK_FALSE, VK_LOGIC_OP_COPY, &mbf_states, &blending_info);
+
+	auto ppln_lyt =  i.value().find("pipeline_layout");
+	std::string set_lyt = ppln_lyt.value().find("descriptor_set_layout").value();
+	Vulkan_API::Registered_Descriptor_Set_Layout descriptor_set_layout = Vulkan_API::get_object(init_const_str(set_lyt.c_str(), set_lyt.length()));
+	new_ppln->descriptor_set_layout = *descriptor_set_layout.p;
+	auto push_k = ppln_lyt.value().find("push_constant");
+	VkShaderStageFlags push_k_flags = 0;
+	std::string push_k_stage_flags_str = push_k.value().find("stage_flags").value();
+	for (u32 l = 0; l < push_k_stage_flags_str.length(); ++l)
+	{
+	    switch(push_k_stage_flags_str[l])
+	    {
+	    case 'v': {push_k_flags |= VK_SHADER_STAGE_VERTEX_BIT; break;}
+	    case 'f': {push_k_flags |= VK_SHADER_STAGE_FRAGMENT_BIT; break;}
+	    case 'g': {push_k_flags |= VK_SHADER_STAGE_GEOMETRY_BIT; break;}
+	    }
+	}
+	u32 push_k_offset = push_k.value().find("offset").value();
+	u32 push_k_size = push_k.value().find("size").value();
+	VkPushConstantRange k_rng = {};
+	Vulkan_API::init_push_constant_range(push_k_flags, push_k_size, push_k_offset, &k_rng);
+	Memory_Buffer_View<VkPushConstantRange> ranges = {1, &k_rng};
+	Memory_Buffer_View<VkDescriptorSetLayout> layouts = {1, &new_ppln->descriptor_set_layout};
+	Vulkan_API::init_pipeline_layout(&layouts, &ranges, gpu, &new_ppln->layout);
+
+	std::string vtx_inp_model = i.value().find("vertex_input").value();
+	Vulkan_API::Registered_Model model = Vulkan_API::get_object(init_const_str(vtx_inp_model.c_str(), vtx_inp_model.length()));
+	VkPipelineVertexInputStateCreateInfo vertex_input_info = {};
+	Vulkan_API::init_pipeline_vertex_input_info(model.p, &vertex_input_info);
+
+	VkPipelineDepthStencilStateCreateInfo depth_stencil_info = {};
+	bool enable_depth = i.value().find("depth").value();
+	Vulkan_API::init_pipeline_depth_stencil_info(enable_depth, enable_depth, 0.0f, 1.0f, VK_FALSE, &depth_stencil_info);
+
+	std::vector<u32> extent = i.value().find("viewport").value();
+	u32 width = swapchain->extent.width, height = swapchain->extent.height;
+	// use swapchain extent
+	if (extent[0] != 0 && extent[1] != 0) {width = extent[0]; height = extent[1];}
+	VkViewport viewport = {};
+	Vulkan_API::init_viewport(width, height, 0.0f, 1.0f, &viewport);
+	VkRect2D scissor = {};
+	Vulkan_API::init_rect_2D(VkOffset2D{}, VkExtent2D{width, height}, &scissor);
+
+	VkPipelineViewportStateCreateInfo viewport_info = {};
+	Memory_Buffer_View<VkViewport> viewports = {1, &viewport};
+	Memory_Buffer_View<VkRect2D>   scissors = {1, &scissor};
+	Vulkan_API::init_pipeline_viewport_info(&viewports, &scissors, &viewport_info);
 	
+	// ===== for now, just set to these default values
+	VkPipelineMultisampleStateCreateInfo multisample_info = {};
+	Vulkan_API::init_pipeline_multisampling_info(VK_SAMPLE_COUNT_1_BIT, 0, &multisample_info);
+	// =====
+	
+	Memory_Buffer_View<VkPipelineShaderStageCreateInfo> modules = {stg_count, shader_infos};
+	auto render_pass_info = i.value().find("render_pass");
+	std::string render_pass_name = render_pass_info.value().find("name").value();
+	Vulkan_API::Registered_Render_Pass render_pass = Vulkan_API::get_object(init_const_str(render_pass_name.c_str(), render_pass_name.length()));
+	u32 subpass = render_pass_info.value().find("subpass").value();
+	Vulkan_API::init_graphics_pipeline(&modules
+					   , &vertex_input_info
+					   , &assembly_info
+					   , &viewport_info
+					   , &rasterization_info
+					   , &multisample_info
+					   , &blending_info
+					   , nullptr
+					   , &depth_stencil_info
+					   , &new_ppln.p->layout
+					   , render_pass.p
+					   , subpass
+					   , gpu
+					   , &new_ppln.p->pipeline);
     }
 }
