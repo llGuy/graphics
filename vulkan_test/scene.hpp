@@ -39,9 +39,6 @@ struct Scene
     VkSemaphore rndr_finished;
     VkSemaphore img_ready;
     VkFence cpu_wait;
-
-    glm::mat4 object_model_matrix = glm::mat4(1.0f);
-    glm::mat4 object_model_matrix2 = glm::translate(glm::vec3(0.0f, 5.0f, 0.0f));
 };
 
 void

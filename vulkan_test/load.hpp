@@ -40,6 +40,11 @@ load_3D_terrain_mesh_graphics_pipeline(Vulkan_API::Graphics_Pipeline *dst
 				       , Vulkan_API::Model *terrain_prototype
 				       , Vulkan_API::GPU *gpu);
 
+// later will use proprietary binary file format
 void
 load_pipelines_from_json(Vulkan_API::GPU *gpu
 			 , Vulkan_API::Swapchain *swapchain);
+
+void
+load_renderers_from_json(Vulkan_API::GPU *gpu
+			 , VkCommandPool *command_pool);

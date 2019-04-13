@@ -506,6 +506,7 @@ load_3D_terrain_mesh_graphics_pipeline(Vulkan_API::Graphics_Pipeline *dst
     */
 }
 
+// later on will use proprietary binary file format
 void
 load_pipelines_from_json(Vulkan_API::GPU *gpu
 			 , Vulkan_API::Swapchain *swapchain)
@@ -668,3 +669,44 @@ load_pipelines_from_json(Vulkan_API::GPU *gpu
 					   , &new_ppln.p->pipeline);
     }
 }
+
+#include "rendering.hpp"
+
+void
+load_renderers_from_json(Vulkan_API::GPU *gpu
+			 , VkCommandPool *command_pool)
+{
+    persist const char *rndr_json_filename = "config/rndr.json";
+    File_Contents f = read_file(rndr_json_filename);
+    nlohmann::json json = nlohmann::json::parse(f.content);
+    for (nlohmann::json::iterator i = json.begin(); i != json.end(); ++i)
+    {
+	std::string rndr_name = i.key();
+
+	Rendering::Renderer_Init_Data d = {};
+	d.rndr_id = init_const_str(rndr_name.c_str(), rndr_name.length());
+	d.mtrl_max = i.value().find("max").value();
+	
+	std::string ppln_name = i.value().find("graphics_pipeline").value();
+	d.ppln_id = init_const_str(ppln_name.c_str(), ppln_name.length());
+	
+	std::string push_k_dst_str = i.value().find("push_data_dst").value();
+	for (u32 c = 0; c < push_k_dst_str.length(); ++c)
+	{
+	    switch(push_k_dst_str[c])
+	    {
+	    case 'v': {d.mtrl_unique_data_stage_dst |= VK_SHADER_STAGE_VERTEX_BIT; break;}
+	    case 'f': {d.mtrl_unique_data_stage_dst |= VK_SHADER_STAGE_FRAGMENT_BIT; break;}
+	    case 'g': {d.mtrl_unique_data_stage_dst |= VK_SHADER_STAGE_GEOMETRY_BIT; break;}
+	    }
+	}
+	std::vector<std::string> descriptor_set_names = i.value().find("descriptor_sets").value();
+	allocate_memory_buffer(d.descriptor_sets, descriptor_set_names.size());
+	for (u32 n = 0; n < descriptor_set_names.size(); ++n)
+	{
+	    d.descriptor_sets[n] = init_const_str(descriptor_set_names[n].c_str(), descriptor_set_names[n].length());
+	}
+
+	Rendering::add_renderer(&d, command_pool, gpu);
+    }
+}	

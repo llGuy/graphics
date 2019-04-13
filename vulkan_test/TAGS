@@ -35,7 +35,7 @@ read_image(39,1021
 read_file_data(62,1663
 destroy_file_data(74,1932
 
-load.cpp,1298
+load.cpp,1334
 process_vertex(12,181
 split(40,1066
 break_face_line(51,1331
@@ -60,7 +60,8 @@ load_3D_terrain_mesh_instance(352,13093
     enum :u32 {GROUND_BASE_XY_VALUES_BND = 0, HEIGHT_BND = 1, GROUND_BASE_XY_VALUES_ATT 369,13849
     enum :u32 {GROUND_BASE_XY_VALUES_BND = 0, HEIGHT_BND = 1, GROUND_BASE_XY_VALUES_ATT = 0, HEIGHT_ATT 369,13849
 load_3D_terrain_mesh_graphics_pipeline(377,14089
-load_pipelines_from_json(510,20136
+load_pipelines_from_json(511,20189
+load_renderers_from_json(676,27702
 
 rendering.cpp,3902
 namespace Rendering9,186
@@ -121,36 +122,36 @@ namespace Rendering9,186
 	update(719,25456
 	init_material(766,27116
     } rndr_sys;784,27617
-    init_deferred_render_pass(787,27646
-	enum G_Buffer_Attachment 794,27930
-	enum G_Buffer_Attachment :u32 {FINAL_ATTACHMENTFINAL_ATTACHMENT794,27930
-				       , ALBEDO_ATTACHMENT795,27980
-				       , DEPTH_ATTACHMENT796,28012
-				       , INVALID_ATTACHMENT}INVALID_ATTACHMENT797,28043
-	enum G_Buffer_Reference 846,30335
-	enum G_Buffer_Reference :u32 {FINAL_REFERENCEFINAL_REFERENCE846,30335
-				      , ALBEDO_REFERENCE847,30383
-				      , DEPTH_REFERENCE848,30413
-				      , INVALID_REFERENCE}INVALID_REFERENCE849,30442
-	enum Subpass_Stage 861,31314
-	enum Subpass_Stage :u32 {G_BUFFER_INIT,G_BUFFER_INIT861,31314
-	enum Subpass_Stage :u32 {G_BUFFER_INIT, LIGHTING,861,31314
-	enum Subpass_Stage :u32 {G_BUFFER_INIT, LIGHTING, INVALID_STAGE}INVALID_STAGE861,31314
-    init_deferred_fbos(912,33651
-	enum class G_Buffer_Attachment 916,33806
-	enum class G_Buffer_Attachment :u32 {FINAL,FINAL916,33806
-	enum class G_Buffer_Attachment :u32 {FINAL, ALBEDO,916,33806
-	enum class G_Buffer_Attachment :u32 {FINAL, ALBEDO, POSITION,916,33806
-	enum class G_Buffer_Attachment :u32 {FINAL, ALBEDO, POSITION, NORMAL,916,33806
-	enum class G_Buffer_Attachment :u32 {FINAL, ALBEDO, POSITION, NORMAL, DEPTH,916,33806
-	enum class G_Buffer_Attachment :u32 {FINAL, ALBEDO, POSITION, NORMAL, DEPTH, INVALID}INVALID916,33806
-    init_deferred_ppln(977,36035
-    init_rendering_system(1151,44902
-    add_renderer(1161,45249
-    update_renderers(1167,45420
-    init_material(1177,45778
+    init_deferred_render_pass(787,27650
+	enum G_Buffer_Attachment 794,27934
+	enum G_Buffer_Attachment :u32 {FINAL_ATTACHMENTFINAL_ATTACHMENT794,27934
+				       , ALBEDO_ATTACHMENT795,27984
+				       , DEPTH_ATTACHMENT796,28016
+				       , INVALID_ATTACHMENT}INVALID_ATTACHMENT797,28047
+	enum G_Buffer_Reference 846,30339
+	enum G_Buffer_Reference :u32 {FINAL_REFERENCEFINAL_REFERENCE846,30339
+				      , ALBEDO_REFERENCE847,30387
+				      , DEPTH_REFERENCE848,30417
+				      , INVALID_REFERENCE}INVALID_REFERENCE849,30446
+	enum Subpass_Stage 861,31318
+	enum Subpass_Stage :u32 {G_BUFFER_INIT,G_BUFFER_INIT861,31318
+	enum Subpass_Stage :u32 {G_BUFFER_INIT, LIGHTING,861,31318
+	enum Subpass_Stage :u32 {G_BUFFER_INIT, LIGHTING, INVALID_STAGE}INVALID_STAGE861,31318
+    init_deferred_fbos(912,33655
+	enum class G_Buffer_Attachment 916,33810
+	enum class G_Buffer_Attachment :u32 {FINAL,FINAL916,33810
+	enum class G_Buffer_Attachment :u32 {FINAL, ALBEDO,916,33810
+	enum class G_Buffer_Attachment :u32 {FINAL, ALBEDO, POSITION,916,33810
+	enum class G_Buffer_Attachment :u32 {FINAL, ALBEDO, POSITION, NORMAL,916,33810
+	enum class G_Buffer_Attachment :u32 {FINAL, ALBEDO, POSITION, NORMAL, DEPTH,916,33810
+	enum class G_Buffer_Attachment :u32 {FINAL, ALBEDO, POSITION, NORMAL, DEPTH, INVALID}INVALID916,33810
+    init_deferred_ppln(977,36039
+    init_rendering_system(1151,44906
+    add_renderer(1161,45253
+    update_renderers(1167,45424
+    init_material(1177,45782
 
-scene.cpp,1890
+scene.cpp,1920
 #define MAX_ENTITIES_UNDER_TOP 12,289
 #define MAX_ENTITIES_UNDER_PLANET 13,324
 constexpr f32 PI 15,365
@@ -166,47 +167,48 @@ typedef struct Entity31,804
     enum Is_Group 33,830
     enum Is_Group { IS_NOT_GROUP 33,830
 		    , IS_GROUP 34,872
-    } push_k;47,1266
-    Entity_View above;50,1387
-    Entity_View index;51,1411
-    using Entity_State_Flags 53,1437
-    enum {GROUP_PHYSICS_INFO_HAS_BEEN_UPDATED_BIT GROUP_PHYSICS_INFO_HAS_BEEN_UPDATED_BIT54,1474
-    Entity_State_Flags flags{flags55,1536
-	    Rendering::Material_Access mtrl_access;63,1695
-	    u32 below_count;68,1761
-	    Memory_Buffer_View<Entity_View> below;69,1784
-} Entity, Entity_Group;72,1842
-construct_entity(75,1877
-global_var struct Entities90,2164
-    s32 count_singles 92,2195
-    Entity list_singles[list_singles93,2224
-    s32 count_groups 95,2271
-    Entity_Group list_groups[list_groups96,2299
-    Hash_Table_Inline<Hash_Table_Inline98,2341
-} entities;101,2471
-global_var Entity_View scene_graph;104,2529
-get_entity(107,2587
-get_entity(114,2760
-get_entity_group(120,2857
-get_entity_group(127,3029
-add_entity(133,3140
-add_entity_group(161,3845
-init_scene_graph(194,4745
-make_entity_renderable(208,5211
-make_entity_instanced_renderable(223,5702
-update_entity_group(230,5930
-update_scene_graph(250,6559
-Camera::set_default(set_default274,7113
-Camera::compute_projection(compute_projection288,7371
-Camera::compute_view(compute_view294,7464
-init_scene(300,7543
-update_ubo(393,10720
-    struct Uniform_Buffer_Object399,10896
-record_cmd(435,12100
-render_frame(468,13371
-update_scene(533,15967
-handle_input(546,16245
-#define SENSITIVITY 552,16353
+    } push_k;47,1239
+    Entity_View above;50,1360
+    Entity_View index;51,1384
+    using Entity_State_Flags 53,1410
+    enum {GROUP_PHYSICS_INFO_HAS_BEEN_UPDATED_BIT GROUP_PHYSICS_INFO_HAS_BEEN_UPDATED_BIT54,1447
+    Entity_State_Flags flags{flags55,1509
+	    Rendering::Material_Access mtrl_access;63,1668
+	    u32 below_count;68,1734
+	    Memory_Buffer_View<Entity_View> below;69,1757
+} Entity, Entity_Group;72,1815
+construct_entity(75,1850
+global_var struct Entities90,2137
+    s32 count_singles 92,2168
+    Entity list_singles[list_singles93,2197
+    s32 count_groups 95,2244
+    Entity_Group list_groups[list_groups96,2272
+    Hash_Table_Inline<Hash_Table_Inline98,2314
+} entities;101,2444
+global_var Entity_View scene_graph;104,2502
+get_entity(107,2560
+get_entity(114,2733
+get_entity_group(120,2830
+get_entity_group(127,3002
+add_entity(133,3113
+add_entity_group(161,3818
+init_scene_graph(194,4718
+make_entity_renderable(208,5184
+make_entity_instanced_renderable(223,5675
+update_entity_group(230,5903
+update_scene_graph(250,6535
+Camera::set_default(set_default274,7092
+Camera::compute_projection(compute_projection288,7350
+Camera::compute_view(compute_view294,7443
+init_scene(300,7522
+update_ubo(403,10918
+    struct Uniform_Buffer_Object409,11094
+record_cmd(445,12298
+internal f32 angle 477,13554
+render_frame(480,13599
+update_scene(550,16369
+handle_input(563,16647
+#define SENSITIVITY 569,16755
 
 vulkan.cpp,2727
 #define GLFW_INCLUDE_VULKAN2,21
@@ -465,7 +467,7 @@ namespace Rendering13,584
     struct Material_Access { s32 rndr_id,76,2423
     struct Material_Access { s32 rndr_id, mtrl_id;76,2423
 
-scene.hpp,554
+scene.hpp,469
 struct Camera9,146
     glm::vec2 mp;11,164
     glm::vec3 p;12,183
@@ -484,8 +486,6 @@ struct Scene33,546
     VkSemaphore rndr_finished;39,647
     VkSemaphore img_ready;40,679
     VkFence cpu_wait;41,707
-    glm::mat4 object_model_matrix 43,732
-    glm::mat4 object_model_matrix2 44,786
 
 vulkan.hpp,7008
 #define MAKE_VK_VIEW_TYPES(9,134

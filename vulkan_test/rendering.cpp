@@ -782,7 +782,7 @@ namespace Rendering
 	    return(Material_Access{rndr_index, mtrl_index});
 	}
     } rndr_sys;
-
+    
     void
     init_deferred_render_pass(Vulkan_API::GPU *gpu
 			      , Vulkan_API::Swapchain *swapchain)

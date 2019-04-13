@@ -4,10 +4,10 @@
 #include "scene.hpp"
 #include <glm/glm.hpp>
 #include <GLFW/glfw3.h>
-#include <glm/gtx/quaternion.hpp>
 #include "rendering.hpp"
 #include <glm/gtx/transform.hpp>
 #include "load.hpp"
+#include <glm/gtc/quaternion.hpp>
 
 #define MAX_ENTITIES_UNDER_TOP 10
 #define MAX_ENTITIES_UNDER_PLANET 150
@@ -36,7 +36,7 @@ typedef struct Entity
     Constant_String id {""_hash};
     // position, direction, velocity
     // in above entity group space
-    glm::vec3 gs_p{0.0f}, ws_d{0.0f}/*not deppending on above*/, gs_v{0.0f};
+    glm::vec3 gs_p{0.0f}, ws_d{0.0f}, gs_v{0.0f};
     glm::quat gs_r{0.0f, 0.0f, 0.0f, 0.0f};
 
     // push constant stuff for the graphics pipeline
@@ -235,7 +235,7 @@ update_entity_group(Entity_Group *g)
 	if (g->above.id != -1) update_entity_group(get_entity(g->above));
 
 	const glm::mat4x4 *above_ws_t = (g->above.id == -1) ? &IDENTITY_MAT4X4 : &get_entity(g->above)->push_k.ws_t;
-	g->push_k.ws_t = glm::translate(g->gs_p) * glm::toMat4(g->gs_r);
+	g->push_k.ws_t = glm::translate(g->gs_p) * glm::mat4_cast(g->gs_r);
 	g->push_k.ws_t = *above_ws_t * g->push_k.ws_t;
 
 	g->flags |= Entity_Group::GROUP_PHYSICS_INFO_HAS_BEEN_UPDATED_BIT;
@@ -266,7 +266,7 @@ update_scene_graph(void)
     for (s32 i = 0; i < entities.count_singles; ++i)
     {
 	Entity *e = &entities.list_singles[i];
-	e->push_k.ws_t = get_entity_group(e->above)->push_k.ws_t * glm::translate(e->gs_p) * glm::toMat4(e->gs_r);
+	e->push_k.ws_t = get_entity_group(e->above)->push_k.ws_t * glm::translate(e->gs_p) * glm::mat4_cast(e->gs_r);
     }
 }
 
@@ -335,33 +335,23 @@ init_scene(Scene *scene
 
     Rendering::add_renderer(&rndr_d, &scene->cmdpool, &vk->gpu);
 
-    Rendering::Material_Data mtrl_data = {};
-    mtrl_data.data = &scene->object_model_matrix;
-    mtrl_data.data_size = sizeof(scene->object_model_matrix);
-    Vulkan_API::Registered_Model model = Vulkan_API::get_object("vulkan_model.test_model"_hash);
-    mtrl_data.model = model;
-
-    mtrl_data.draw_info = Vulkan_API::init_draw_indexed_data_default(1, model.p->index_data.index_count);
 
     
-    Rendering::init_material("renderer.test_material_renderer"_hash, &mtrl_data);
-
-    mtrl_data.data = &scene->object_model_matrix2;
-    Rendering::init_material("renderer.test_material_renderer"_hash, &mtrl_data);
-
-
+    load_renderers_from_json(&vk->gpu, &scene->cmdpool);
+    
     init_scene_graph();
     // add en entity group
     Entity_Group test_g0 = construct_entity("entity.group.test0"_hash
 					   , Entity::Is_Group::IS_GROUP
-					   , glm::vec3(0.0f, -5.0f, 0.0f)
+					   , glm::vec3(0.0f, 0.0f, 0.0f)
 					   , glm::vec3(0.0f)
 					   , glm::quat(0, 0, 0, 0));
     add_entity_group(test_g0
 		     , get_entity_group("entity.group.top"_hash)
 		     , MAX_ENTITIES_UNDER_TOP);
 
-    Entity e = construct_entity("entity.test"_hash
+    // concrete representation of group test0
+    Entity e = construct_entity("entity.bound_group_test0"_hash
 				, Entity::Is_Group::IS_NOT_GROUP
 				, glm::vec3(0.0f)
 				, glm::vec3(0.0f)
@@ -372,16 +362,36 @@ init_scene(Scene *scene
 
     auto *e_ptr = get_entity(ev);
 
-    Vulkan_API::Registered_Model sphere = Vulkan_API::register_object("vulkan_model.sphere"_hash
-								      , sizeof(Vulkan_API::Model));
-    load_model_from_obj("models/vertical_plane.obj"
-			, sphere.p
-			, "sphere"
-			, &vk->gpu);
-    
     make_entity_renderable(e_ptr
-			   , sphere
-			   , "renderer.test_material_renderer"_hash);
+			   , Vulkan_API::get_object("vulkan_model.test_model"_hash)
+			   , "renderer.other_material_renderer"_hash);
+
+    // create entity group that rotates around group test0
+    Entity_Group rotate = construct_entity("entity.group.rotate"_hash
+					   , Entity::Is_Group::IS_GROUP
+					   , glm::vec3(0.0f)
+					   , glm::vec3(0.0f)
+					   , glm::quat(glm::vec3(0.0f))); // quat is going to change every frame
+
+    add_entity_group(rotate
+		     , get_entity_group("entity.group.test0"_hash)
+		     , MAX_ENTITIES_UNDER_TOP);
+
+    // add rotating entity
+    Entity r = construct_entity("entity.rotating"_hash
+				, Entity::Is_Group::IS_NOT_GROUP
+				, glm::vec3(0.0f, 10.0f, 0.0f)
+				, glm::vec3(0.0f)
+				, glm::quat(0, 0, 0, 0));
+
+    Entity_View rv = add_entity(r
+				, get_entity_group("entity.group.rotate"_hash));
+
+    auto *r_ptr = get_entity(rv);
+
+    make_entity_renderable(r_ptr
+			   , Vulkan_API::get_object("vulkan_model.test_model"_hash)
+			   , "renderer.other_material_renderer"_hash);
 
 
 
@@ -464,11 +474,18 @@ record_cmd(Rendering::Rendering_State *rnd_objs
     Vulkan_API::end_command_buffer(cmdbuf);
 }
 
+internal f32 angle = 0.0f;
+
 internal void
 render_frame(Rendering::Rendering_State *rendering_objects
 	     , Vulkan_API::State *vulkan_state
 	     , Scene *scene)
 {
+    // rotate group
+    angle += 0.01;
+    Entity_Group *rg = get_entity_group("entity.group.rotate"_hash);
+    rg->gs_r = glm::quat(glm::vec3(angle, 0.0f, 0.0f));
+    
     update_scene_graph();
     
     persist u32 current_frame = 0;
