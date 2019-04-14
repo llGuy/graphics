@@ -197,18 +197,18 @@ make_entity_renderable(208,5184
 make_entity_instanced_renderable(223,5675
 update_entity_group(230,5903
 update_scene_graph(250,6535
-Camera::set_default(set_default274,7092
-Camera::compute_projection(compute_projection288,7350
-Camera::compute_view(compute_view294,7443
-init_scene(300,7522
-update_ubo(403,10918
-    struct Uniform_Buffer_Object409,11094
-record_cmd(445,12298
-internal f32 angle 477,13554
-render_frame(480,13599
-update_scene(550,16369
-handle_input(563,16647
-#define SENSITIVITY 569,16755
+Camera::set_default(set_default280,7223
+Camera::compute_projection(compute_projection294,7481
+Camera::compute_view(compute_view300,7574
+init_scene(306,7653
+update_ubo(409,11049
+    struct Uniform_Buffer_Object415,11225
+record_cmd(451,12429
+internal f32 angle 483,13685
+render_frame(486,13730
+update_scene(562,16578
+handle_input(575,16856
+#define SENSITIVITY 581,16964
 
 vulkan.cpp,2727
 #define GLFW_INCLUDE_VULKAN2,21

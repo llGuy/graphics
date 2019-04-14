@@ -268,6 +268,12 @@ update_scene_graph(void)
 	Entity *e = &entities.list_singles[i];
 	e->push_k.ws_t = get_entity_group(e->above)->push_k.ws_t * glm::translate(e->gs_p) * glm::mat4_cast(e->gs_r);
     }
+
+    for (s32 i = 0; i < entities.count_groups; ++i)
+    {
+	Entity_Group *g = &entities.list_groups[i];
+	g->flags = 0;
+    }
 }
 
 void
@@ -482,9 +488,15 @@ render_frame(Rendering::Rendering_State *rendering_objects
 	     , Scene *scene)
 {
     // rotate group
-    angle += 0.01;
+    angle += 0.01f;
+    if (angle > 359.0f)
+    {
+	angle = 0.0f;
+    }
+
     Entity_Group *rg = get_entity_group("entity.group.rotate"_hash);
-    rg->gs_r = glm::quat(glm::vec3(angle, 0.0f, 0.0f));
+    
+    rg->gs_r = glm::quat(glm::radians(glm::vec3(angle, 0.0f, 0.0f)));
     
     update_scene_graph();
     
