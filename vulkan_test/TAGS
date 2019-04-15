@@ -35,33 +35,37 @@ read_image(39,1021
 read_file_data(62,1663
 destroy_file_data(74,1932
 
-load.cpp,1334
-process_vertex(12,181
-split(40,1066
-break_face_line(51,1331
-create_model(90,2900
-    enum :u32 u3299,3215
-    enum :u32 {POSITION,POSITION99,3215
-    enum :u32 {POSITION, NORMAL,99,3215
-    enum :u32 {POSITION, NORMAL, UVS,99,3215
-    enum :u32 {POSITION, NORMAL, UVS, TANGENT}TANGENT99,3215
-load_model_from_obj(178,6963
-get_terrain_index(273,9221
-load_3D_terrain_mesh(279,9311
-    enum :u32 u32337,11935
-    enum :u32 {GROUND_BASE_XY_VALUES_BND GROUND_BASE_XY_VALUES_BND337,11935
-    enum :u32 {GROUND_BASE_XY_VALUES_BND = 0, HEIGHT_BND 337,11935
-    enum :u32 {GROUND_BASE_XY_VALUES_BND = 0, HEIGHT_BND = 1, GROUND_BASE_XY_VALUES_ATT 337,11935
-    enum :u32 {GROUND_BASE_XY_VALUES_BND = 0, HEIGHT_BND = 1, GROUND_BASE_XY_VALUES_ATT = 0, HEIGHT_ATT 337,11935
-load_3D_terrain_mesh_instance(352,13093
-    enum :u32 u32369,13849
-    enum :u32 {GROUND_BASE_XY_VALUES_BND GROUND_BASE_XY_VALUES_BND369,13849
-    enum :u32 {GROUND_BASE_XY_VALUES_BND = 0, HEIGHT_BND 369,13849
-    enum :u32 {GROUND_BASE_XY_VALUES_BND = 0, HEIGHT_BND = 1, GROUND_BASE_XY_VALUES_ATT 369,13849
-    enum :u32 {GROUND_BASE_XY_VALUES_BND = 0, HEIGHT_BND = 1, GROUND_BASE_XY_VALUES_ATT = 0, HEIGHT_ATT 369,13849
-load_3D_terrain_mesh_graphics_pipeline(377,14089
-load_pipelines_from_json(511,20189
-load_renderers_from_json(676,27702
+load.cpp,1551
+process_vertex(13,183
+split(41,1068
+break_face_line(52,1333
+create_model(91,2902
+    enum :u32 u32100,3217
+    enum :u32 {POSITION,POSITION100,3217
+    enum :u32 {POSITION, NORMAL,100,3217
+    enum :u32 {POSITION, NORMAL, UVS,100,3217
+    enum :u32 {POSITION, NORMAL, UVS, TANGENT}TANGENT100,3217
+load_model_from_obj(179,6965
+get_terrain_index(274,9223
+load_3D_terrain_mesh(280,9313
+    enum :u32 u32338,11937
+    enum :u32 {GROUND_BASE_XY_VALUES_BND GROUND_BASE_XY_VALUES_BND338,11937
+    enum :u32 {GROUND_BASE_XY_VALUES_BND = 0, HEIGHT_BND 338,11937
+    enum :u32 {GROUND_BASE_XY_VALUES_BND = 0, HEIGHT_BND = 1, GROUND_BASE_XY_VALUES_ATT 338,11937
+    enum :u32 {GROUND_BASE_XY_VALUES_BND = 0, HEIGHT_BND = 1, GROUND_BASE_XY_VALUES_ATT = 0, HEIGHT_ATT 338,11937
+load_3D_terrain_mesh_instance(353,13095
+    enum :u32 u32370,13851
+    enum :u32 {GROUND_BASE_XY_VALUES_BND GROUND_BASE_XY_VALUES_BND370,13851
+    enum :u32 {GROUND_BASE_XY_VALUES_BND = 0, HEIGHT_BND 370,13851
+    enum :u32 {GROUND_BASE_XY_VALUES_BND = 0, HEIGHT_BND = 1, GROUND_BASE_XY_VALUES_ATT 370,13851
+    enum :u32 {GROUND_BASE_XY_VALUES_BND = 0, HEIGHT_BND = 1, GROUND_BASE_XY_VALUES_ATT = 0, HEIGHT_ATT 370,13851
+load_3D_terrain_mesh_graphics_pipeline(378,14091
+load_pipelines_from_json(512,20191
+load_renderers_from_json(677,27704
+load_framebuffers_from_json(716,29244
+	struct Attachment 728,29827
+	struct Attachment {Vulkan_API::Registered_Image2D img;728,29827
+	struct Attachment {Vulkan_API::Registered_Image2D img; u32 index;728,29827
 
 rendering.cpp,3902
 namespace Rendering9,186
@@ -195,20 +199,20 @@ add_entity_group(161,3818
 init_scene_graph(194,4718
 make_entity_renderable(208,5184
 make_entity_instanced_renderable(223,5675
-update_entity_group(230,5903
-update_scene_graph(250,6535
-Camera::set_default(set_default280,7223
-Camera::compute_projection(compute_projection294,7481
-Camera::compute_view(compute_view300,7574
-init_scene(306,7653
-update_ubo(409,11049
-    struct Uniform_Buffer_Object415,11225
-record_cmd(451,12429
-internal f32 angle 483,13685
-render_frame(486,13730
-update_scene(562,16578
-handle_input(575,16856
-#define SENSITIVITY 581,16964
+update_entity_group(231,5955
+update_scene_graph(251,6599
+Camera::set_default(set_default282,7323
+Camera::compute_projection(compute_projection296,7581
+Camera::compute_view(compute_view302,7674
+init_scene(308,7753
+update_ubo(438,12054
+    struct Uniform_Buffer_Object444,12230
+record_cmd(480,13434
+internal f32 angle 512,14690
+render_frame(515,14735
+update_scene(595,17746
+handle_input(608,18024
+#define SENSITIVITY 614,18132
 
 vulkan.cpp,2727
 #define GLFW_INCLUDE_VULKAN2,21

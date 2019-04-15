@@ -226,15 +226,16 @@ make_entity_instanced_renderable(Vulkan_API::Registered_Model model
     // TODO(luc) : first need to add support for instance rendering in material renderers.
 }
 
+// problem : rotation doesn't incorporate position
 internal void
 update_entity_group(Entity_Group *g)
 {
     if (!(g->flags & Entity::GROUP_PHYSICS_INFO_HAS_BEEN_UPDATED_BIT))
     {
 	// update position or whatever + including the position of above groups
-	if (g->above.id != -1) update_entity_group(get_entity(g->above));
+	if (g->above.id != -1) update_entity_group(get_entity_group(g->above));
 
-	const glm::mat4x4 *above_ws_t = (g->above.id == -1) ? &IDENTITY_MAT4X4 : &get_entity(g->above)->push_k.ws_t;
+	const glm::mat4x4 *above_ws_t = (g->above.id == -1) ? &IDENTITY_MAT4X4 : &get_entity_group(g->above)->push_k.ws_t;
 	g->push_k.ws_t = glm::translate(g->gs_p) * glm::mat4_cast(g->gs_r);
 	g->push_k.ws_t = *above_ws_t * g->push_k.ws_t;
 
@@ -273,6 +274,7 @@ update_scene_graph(void)
     {
 	Entity_Group *g = &entities.list_groups[i];
 	g->flags = 0;
+	g->push_k.ws_t = glm::mat4(1.0f);
     }
 }
 
@@ -386,7 +388,7 @@ init_scene(Scene *scene
     // add rotating entity
     Entity r = construct_entity("entity.rotating"_hash
 				, Entity::Is_Group::IS_NOT_GROUP
-				, glm::vec3(0.0f, 10.0f, 0.0f)
+				, glm::vec3(0.0f, 30.0f, 0.0f)
 				, glm::vec3(0.0f)
 				, glm::quat(0, 0, 0, 0));
 
@@ -399,10 +401,37 @@ init_scene(Scene *scene
 			   , Vulkan_API::get_object("vulkan_model.test_model"_hash)
 			   , "renderer.other_material_renderer"_hash);
 
+    Entity_Group rg2 = construct_entity("entity.group.rotate2"_hash
+					, Entity::Is_Group::IS_GROUP
+					, glm::vec3(0.0f, 0.0f, 0.0f)
+					, glm::vec3(0.0f)
+					, glm::quat(glm::vec3(0)));
+
+    Entity_Group_View rg2_view = add_entity_group(rg2
+						  , get_entity_group("entity.group.rotate"_hash)
+						  , 5);
+
+    Entity re2 = construct_entity("entity.rotating2"_hash
+				       , Entity::Is_Group::IS_NOT_GROUP
+				       , glm::vec3(0.0f, 10.0f, 0.0f)
+				       , glm::vec3(0.0f)
+				       , glm::quat(0, 0, 0, 0));
+
+    Entity_View rev2 = add_entity(re2
+				  , get_entity_group("entity.group.rotate2"_hash));
+
+    auto *rev2_ptr = get_entity(rev2);
+    make_entity_renderable(rev2_ptr
+			   , Vulkan_API::get_object("vulkan_model.test_model"_hash)
+			   , "renderer.other_material_renderer"_hash);
+
 
 
     load_pipelines_from_json(&vk->gpu
 			     , &vk->swapchain);
+
+    load_framebuffers_from_json(&vk->gpu
+				, &vk->swapchain);
 }
 
 internal void
@@ -488,7 +517,7 @@ render_frame(Rendering::Rendering_State *rendering_objects
 	     , Scene *scene)
 {
     // rotate group
-    angle += 0.01f;
+    angle += 0.15f;
     if (angle > 359.0f)
     {
 	angle = 0.0f;
@@ -497,7 +526,11 @@ render_frame(Rendering::Rendering_State *rendering_objects
     Entity_Group *rg = get_entity_group("entity.group.rotate"_hash);
     
     rg->gs_r = glm::quat(glm::radians(glm::vec3(angle, 0.0f, 0.0f)));
+
+    Entity_Group *rg2 = get_entity_group("entity.group.rotate2"_hash);
     
+    rg2->gs_r = glm::quat(glm::radians(glm::vec3(angle * 2.0f, angle * 1.0f, 0.0f)));
+
     update_scene_graph();
     
     persist u32 current_frame = 0;

@@ -48,3 +48,7 @@ load_pipelines_from_json(Vulkan_API::GPU *gpu
 void
 load_renderers_from_json(Vulkan_API::GPU *gpu
 			 , VkCommandPool *command_pool);
+
+void
+load_framebuffers_from_json(Vulkan_API::GPU *gpu
+			    , Vulkan_API::Swapchain *swapchain);

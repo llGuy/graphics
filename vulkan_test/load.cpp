@@ -1,3 +1,4 @@
+
 #include <nlohmann/json.hpp>
 #include <array>
 #include <vector>
@@ -710,3 +711,154 @@ load_renderers_from_json(Vulkan_API::GPU *gpu
 	Rendering::add_renderer(&d, command_pool, gpu);
     }
 }	
+
+void
+load_framebuffers_from_json(Vulkan_API::GPU *gpu
+			    , Vulkan_API::Swapchain *swapchain)
+{
+    persist const char *filename = "config/fbos.json";
+    File_Contents file = read_file(filename);
+    nlohmann::json json = nlohmann::json::parse(file.content);
+    for (auto i = json.begin(); i != json.end(); ++i)
+    {
+	std::string fbo_name = i.key();
+	bool insert_swapchain_imgs_at_0 = i.value().find("insert_swapchain_imgs_at_0").value();
+	u32 fbos_to_create = (insert_swapchain_imgs_at_0 ? swapchain->imgs.count : 1);
+	// create color attachments and depth attachments
+	struct Attachment {Vulkan_API::Registered_Image2D img; u32 index;};
+	Memory_Buffer_View<Attachment> color_imgs = {};
+	allocate_memory_buffer(color_imgs, i.value().find("color_attachment_count").value());
+	auto color_attachment_node = i.value().find("color_attachments");
+
+	persist auto create_attachment = [&gpu, &swapchain](const Constant_String &name
+							    , VkFormat format
+							    , VkImageUsageFlags usage
+							    , u32 width
+							    , u32 height
+							    , u32 index) -> Attachment
+	{
+	    Vulkan_API::Registered_Image2D img = Vulkan_API::register_object(name, sizeof(Vulkan_API::Image2D));
+	    Vulkan_API::init_framebuffer_attachment(width
+						    , height
+						    , format
+						    , usage
+						    , gpu
+						    , img.p);
+	    return(Attachment{img, index});
+	};
+	
+	persist auto create_usage_flags = [](std::string &s) -> VkImageUsageFlags
+	{
+	    VkImageUsageFlags u = 0;
+	    for (u32 c = 0; c < s.length(); ++c)
+	    {
+		switch(s[c])
+		{
+		case 'c': {u |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT; break;}
+		case 'i': {u |= VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT; break;}
+		case 'd': {u |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT; break;}
+		}
+	    }
+	    return(u);
+	};
+
+	// if these are 0, use swapchain format
+	u32 width = i.value().find("width").value();
+	u32 height = i.value().find("width").value();
+	if (!width || !height) {width = swapchain->extent.width; height = swapchain->extent.height;};
+	
+	u32 attachment = (insert_swapchain_imgs_at_0 ? 1 : 0);
+	for (auto c = color_attachment_node.value().begin(); c != color_attachment_node.value().end(); ++c, ++attachment)
+	{
+	    std::string img_name = c.key();
+	    // fetch data from nodes
+	    bool to_create = c.value().find("to_create").value();
+	    u32 index = c.value().find("index").value();
+	    u32 format = c.value().find("format").value();
+	    std::string usage = c.value().find("usage").value();
+
+	    if (to_create)
+	    {
+		VkFormat f;
+		switch(format)
+		{
+		case 8: {f = VK_FORMAT_R8G8B8A8_UNORM; break;}
+		case 16: {f = VK_FORMAT_R16G16B16A16_SFLOAT; break;}
+		}
+		VkImageUsageFlags u = create_usage_flags(usage);
+	    
+		// use data from nodes
+		if (to_create)
+		{
+		    color_imgs[attachment] = create_attachment(init_const_str(img_name.c_str(), img_name.length())
+							       , f
+							       , u
+							       , width
+							       , height
+							       , index);
+		}
+	    }
+	}
+
+	Attachment depth = {};
+	auto depth_att_info = i.value().find("depth_attachment");
+	bool enable_depth = depth_att_info.value().find("enable").value();
+	if (enable_depth)
+	{
+	    std::string depth_att_name = depth_att_info.value().find("name").value();
+	    bool depth_att_to_create = depth_att_info.value().find("to_create").value();
+	    u32 depth_att_index = depth_att_info.value().find("index").value();
+	    std::string depth_att_usage = depth_att_info.value().find("usage").value();
+
+	    if (depth_att_to_create)
+	    {
+		depth = create_attachment(init_const_str(depth_att_name.c_str(), depth_att_name.length())
+					  , gpu->supported_depth_format
+					  , create_usage_flags(depth_att_usage)
+					  , width
+					  , height
+					  , depth_att_index);
+	    }
+	    else
+	    {
+		depth.img = Vulkan_API::get_object(init_const_str(depth_att_name.c_str(), depth_att_name.length()));
+		depth.index = depth_att_index;
+	    }
+	}
+	
+	std::string compatible_render_pass_name = i.value().find("compatible_render_pass").value();
+	Vulkan_API::Registered_Render_Pass compatible_render_pass = Vulkan_API::get_object(init_const_str(compatible_render_pass_name.c_str(), compatible_render_pass_name.length()));
+	// actual creation of the FBO
+	u32 fbo_count = (insert_swapchain_imgs_at_0 ? swapchain->imgs.count /*is for presenting*/ : 1);
+	Vulkan_API::Registered_Framebuffer fbos = Vulkan_API::register_object(init_const_str(fbo_name.c_str(), fbo_name.length())
+									      , sizeof(Vulkan_API::Framebuffer) * fbo_count);
+	for (u32 fbo = 0; fbo < fbo_count; ++fbo)
+	{
+	    allocate_memory_buffer(fbos.p[fbo].color_attachments
+				   , color_imgs.count);
+
+	    for (u32 color = 0; color < color_imgs.count; ++color)
+	    {
+		if (insert_swapchain_imgs_at_0 && color == 0)
+		{
+		    fbos.p[fbo].color_attachments[color] = swapchain->views[fbo];
+		}
+		else
+		{
+		    fbos.p[fbo].color_attachments[color] = color_imgs[color].img.p->image_view;
+		}
+	    }
+
+	    if (enable_depth)
+	    {
+		fbos.p[fbo].depth_attachment = depth.img.p->image_view;
+	    }
+	    
+	    Vulkan_API::init_framebuffer(compatible_render_pass.p
+					 , width
+					 , height
+					 , gpu
+					 , &fbos.p[fbo]);
+	}
+    }
+}
