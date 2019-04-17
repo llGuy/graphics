@@ -868,7 +868,7 @@ namespace Rendering
 	references[ALBEDO_REFERENCE] = Vulkan_API::init_attachment_reference(ALBEDO_ATTACHMENT, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 	
 	subpasses[LIGHTING] = Vulkan_API::init_subpass_description(Memory_Buffer_View<VkAttachmentReference>{1, references}
-								   , &references[DEPTH_REFERENCE]
+								   , nullptr
 								   , Memory_Buffer_View<VkAttachmentReference>{1, &references[1]});
 
 	VkSubpassDependency dependencies[3] = {};
@@ -889,7 +889,7 @@ namespace Rendering
 							      , VK_ACCESS_SHADER_READ_BIT
 							      , VK_DEPENDENCY_BY_REGION_BIT);
 
-	dependencies[2] = Vulkan_API::init_subpass_dependency(0
+	dependencies[2] = Vulkan_API::init_subpass_dependency(1
 							      , VK_SUBPASS_EXTERNAL
 							      , VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
 							      , VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT
@@ -1123,7 +1123,8 @@ namespace Rendering
 
 	// init depth stencil info
 	VkPipelineDepthStencilStateCreateInfo depth_stencil_info = {};
-	Vulkan_API::init_pipeline_depth_stencil_info(VK_TRUE, VK_TRUE, 0.0f, 1.0f, VK_FALSE, &depth_stencil_info);
+	//	Vulkan_API::init_pipeline_depth_stencil_info(VK_TRUE, VK_TRUE, 0.0f, 1.0f, VK_FALSE, &depth_stencil_info);
+	Vulkan_API::init_pipeline_depth_stencil_info(VK_FALSE, VK_FALSE, 0.0f, 1.0f, VK_FALSE, &depth_stencil_info);
 
 	// init pipeline object
 	Vulkan_API::Registered_Render_Pass render_pass = rndr_sys.deferred_rndr_pass;

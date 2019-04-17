@@ -30,6 +30,8 @@ typedef u8 byte;
 
 #define MAX(x, y) (((x) > (y)) ? (x) : (y))
 #define MIN(x, y) (((x) < (y)) ? (x) : (y))
+#define ALLOCA_T(t, c) (t *)alloca(sizeof(t) * c)
+#define ALLOCA_B(s) alloca(s)
 
 #define VK_CHECK(f, ...) \
     if (f != VK_SUCCESS) \
@@ -56,7 +58,7 @@ struct Memory_Buffer_View
 {
     u32 count;
     T *buffer;
-
+    
     void
     zero(void)
     {

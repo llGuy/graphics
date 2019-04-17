@@ -35,37 +35,44 @@ read_image(39,1021
 read_file_data(62,1663
 destroy_file_data(74,1932
 
-load.cpp,1551
-process_vertex(13,183
-split(41,1068
-break_face_line(52,1333
-create_model(91,2902
-    enum :u32 u32100,3217
-    enum :u32 {POSITION,POSITION100,3217
-    enum :u32 {POSITION, NORMAL,100,3217
-    enum :u32 {POSITION, NORMAL, UVS,100,3217
-    enum :u32 {POSITION, NORMAL, UVS, TANGENT}TANGENT100,3217
-load_model_from_obj(179,6965
-get_terrain_index(274,9223
-load_3D_terrain_mesh(280,9313
-    enum :u32 u32338,11937
-    enum :u32 {GROUND_BASE_XY_VALUES_BND GROUND_BASE_XY_VALUES_BND338,11937
-    enum :u32 {GROUND_BASE_XY_VALUES_BND = 0, HEIGHT_BND 338,11937
-    enum :u32 {GROUND_BASE_XY_VALUES_BND = 0, HEIGHT_BND = 1, GROUND_BASE_XY_VALUES_ATT 338,11937
-    enum :u32 {GROUND_BASE_XY_VALUES_BND = 0, HEIGHT_BND = 1, GROUND_BASE_XY_VALUES_ATT = 0, HEIGHT_ATT 338,11937
-load_3D_terrain_mesh_instance(353,13095
-    enum :u32 u32370,13851
-    enum :u32 {GROUND_BASE_XY_VALUES_BND GROUND_BASE_XY_VALUES_BND370,13851
-    enum :u32 {GROUND_BASE_XY_VALUES_BND = 0, HEIGHT_BND 370,13851
-    enum :u32 {GROUND_BASE_XY_VALUES_BND = 0, HEIGHT_BND = 1, GROUND_BASE_XY_VALUES_ATT 370,13851
-    enum :u32 {GROUND_BASE_XY_VALUES_BND = 0, HEIGHT_BND = 1, GROUND_BASE_XY_VALUES_ATT = 0, HEIGHT_ATT 370,13851
-load_3D_terrain_mesh_graphics_pipeline(378,14091
-load_pipelines_from_json(512,20191
-load_renderers_from_json(677,27704
-load_framebuffers_from_json(716,29244
-	struct Attachment 728,29827
-	struct Attachment {Vulkan_API::Registered_Image2D img;728,29827
-	struct Attachment {Vulkan_API::Registered_Image2D img; u32 index;728,29827
+load.cpp,1824
+process_vertex(12,181
+split(40,1066
+break_face_line(51,1331
+create_model(90,2900
+    enum :u32 u3299,3215
+    enum :u32 {POSITION,POSITION99,3215
+    enum :u32 {POSITION, NORMAL,99,3215
+    enum :u32 {POSITION, NORMAL, UVS,99,3215
+    enum :u32 {POSITION, NORMAL, UVS, TANGENT}TANGENT99,3215
+load_model_from_obj(178,6963
+get_terrain_index(273,9221
+load_3D_terrain_mesh(279,9311
+    enum :u32 u32337,11935
+    enum :u32 {GROUND_BASE_XY_VALUES_BND GROUND_BASE_XY_VALUES_BND337,11935
+    enum :u32 {GROUND_BASE_XY_VALUES_BND = 0, HEIGHT_BND 337,11935
+    enum :u32 {GROUND_BASE_XY_VALUES_BND = 0, HEIGHT_BND = 1, GROUND_BASE_XY_VALUES_ATT 337,11935
+    enum :u32 {GROUND_BASE_XY_VALUES_BND = 0, HEIGHT_BND = 1, GROUND_BASE_XY_VALUES_ATT = 0, HEIGHT_ATT 337,11935
+load_3D_terrain_mesh_instance(352,13093
+    enum :u32 u32369,13849
+    enum :u32 {GROUND_BASE_XY_VALUES_BND GROUND_BASE_XY_VALUES_BND369,13849
+    enum :u32 {GROUND_BASE_XY_VALUES_BND = 0, HEIGHT_BND 369,13849
+    enum :u32 {GROUND_BASE_XY_VALUES_BND = 0, HEIGHT_BND = 1, GROUND_BASE_XY_VALUES_ATT 369,13849
+    enum :u32 {GROUND_BASE_XY_VALUES_BND = 0, HEIGHT_BND = 1, GROUND_BASE_XY_VALUES_ATT = 0, HEIGHT_ATT 369,13849
+load_3D_terrain_mesh_graphics_pipeline(377,14089
+load_pipelines_from_json(511,20189
+load_renderers_from_json(676,27702
+make_format_from_code(715,29255
+load_framebuffers_from_json(728,29626
+	struct Attachment 740,30209
+	struct Attachment {Vulkan_API::Registered_Image2D img;740,30209
+	struct Attachment {Vulkan_API::Registered_Image2D img; u32 index;740,30209
+make_load_op_from_code(875,34873
+make_store_op_from_code(886,35137
+make_image_layout_from_code(897,35399
+make_pipeline_stage_flags_from_code(910,35804
+make_gpu_memory_access_flags_from_code(926,36207
+load_render_passes_from_json(962,37055
 
 rendering.cpp,3902
 namespace Rendering9,186
@@ -141,21 +148,21 @@ namespace Rendering9,186
 	enum Subpass_Stage :u32 {G_BUFFER_INIT,G_BUFFER_INIT861,31318
 	enum Subpass_Stage :u32 {G_BUFFER_INIT, LIGHTING,861,31318
 	enum Subpass_Stage :u32 {G_BUFFER_INIT, LIGHTING, INVALID_STAGE}INVALID_STAGE861,31318
-    init_deferred_fbos(912,33655
-	enum class G_Buffer_Attachment 916,33810
-	enum class G_Buffer_Attachment :u32 {FINAL,FINAL916,33810
-	enum class G_Buffer_Attachment :u32 {FINAL, ALBEDO,916,33810
-	enum class G_Buffer_Attachment :u32 {FINAL, ALBEDO, POSITION,916,33810
-	enum class G_Buffer_Attachment :u32 {FINAL, ALBEDO, POSITION, NORMAL,916,33810
-	enum class G_Buffer_Attachment :u32 {FINAL, ALBEDO, POSITION, NORMAL, DEPTH,916,33810
-	enum class G_Buffer_Attachment :u32 {FINAL, ALBEDO, POSITION, NORMAL, DEPTH, INVALID}INVALID916,33810
-    init_deferred_ppln(977,36039
-    init_rendering_system(1151,44906
-    add_renderer(1161,45253
-    update_renderers(1167,45424
-    init_material(1177,45782
+    init_deferred_fbos(912,33634
+	enum class G_Buffer_Attachment 916,33789
+	enum class G_Buffer_Attachment :u32 {FINAL,FINAL916,33789
+	enum class G_Buffer_Attachment :u32 {FINAL, ALBEDO,916,33789
+	enum class G_Buffer_Attachment :u32 {FINAL, ALBEDO, POSITION,916,33789
+	enum class G_Buffer_Attachment :u32 {FINAL, ALBEDO, POSITION, NORMAL,916,33789
+	enum class G_Buffer_Attachment :u32 {FINAL, ALBEDO, POSITION, NORMAL, DEPTH,916,33789
+	enum class G_Buffer_Attachment :u32 {FINAL, ALBEDO, POSITION, NORMAL, DEPTH, INVALID}INVALID916,33789
+    init_deferred_ppln(977,36018
+    init_rendering_system(1152,44999
+    add_renderer(1162,45346
+    update_renderers(1168,45517
+    init_material(1178,45875
 
-scene.cpp,1920
+scene.cpp,1921
 #define MAX_ENTITIES_UNDER_TOP 12,289
 #define MAX_ENTITIES_UNDER_PLANET 13,324
 constexpr f32 PI 15,365
@@ -168,51 +175,51 @@ typedef struct Entity_View18,424
 } Entity_View, Entity_Group_View;27,739
 #define MAX_ENTITIES 29,776
 typedef struct Entity31,804
-    enum Is_Group 33,830
-    enum Is_Group { IS_NOT_GROUP 33,830
-		    , IS_GROUP 34,872
-    } push_k;47,1239
-    Entity_View above;50,1360
-    Entity_View index;51,1384
-    using Entity_State_Flags 53,1410
-    enum {GROUP_PHYSICS_INFO_HAS_BEEN_UPDATED_BIT GROUP_PHYSICS_INFO_HAS_BEEN_UPDATED_BIT54,1447
-    Entity_State_Flags flags{flags55,1509
-	    Rendering::Material_Access mtrl_access;63,1668
-	    u32 below_count;68,1734
-	    Memory_Buffer_View<Entity_View> below;69,1757
-} Entity, Entity_Group;72,1815
-construct_entity(75,1850
-global_var struct Entities90,2137
-    s32 count_singles 92,2168
-    Entity list_singles[list_singles93,2197
-    s32 count_groups 95,2244
-    Entity_Group list_groups[list_groups96,2272
-    Hash_Table_Inline<Hash_Table_Inline98,2314
-} entities;101,2444
-global_var Entity_View scene_graph;104,2502
-get_entity(107,2560
-get_entity(114,2733
-get_entity_group(120,2830
-get_entity_group(127,3002
-add_entity(133,3113
-add_entity_group(161,3818
-init_scene_graph(194,4718
-make_entity_renderable(208,5184
-make_entity_instanced_renderable(223,5675
-update_entity_group(231,5955
-update_scene_graph(251,6599
-Camera::set_default(set_default282,7323
-Camera::compute_projection(compute_projection296,7581
-Camera::compute_view(compute_view302,7674
-init_scene(308,7753
-update_ubo(438,12054
-    struct Uniform_Buffer_Object444,12230
-record_cmd(480,13434
-internal f32 angle 512,14690
-render_frame(515,14735
-update_scene(595,17746
-handle_input(608,18024
-#define SENSITIVITY 614,18132
+    enum Is_Group 35,865
+    enum Is_Group { IS_NOT_GROUP 35,865
+		    , IS_GROUP 36,907
+    } push_k;49,1274
+    Entity_View above;52,1395
+    Entity_View index;53,1419
+    using Entity_State_Flags 55,1445
+    enum {GROUP_PHYSICS_INFO_HAS_BEEN_UPDATED_BIT GROUP_PHYSICS_INFO_HAS_BEEN_UPDATED_BIT56,1482
+    Entity_State_Flags flags{flags57,1544
+	    Rendering::Material_Access mtrl_access;65,1703
+	    u32 below_count;70,1769
+	    Memory_Buffer_View<Entity_View> below;71,1792
+} Entity, Entity_Group;74,1850
+construct_entity(77,1885
+global_var struct Entities92,2172
+    s32 count_singles 94,2203
+    Entity list_singles[list_singles95,2232
+    s32 count_groups 97,2279
+    Entity_Group list_groups[list_groups98,2307
+    Hash_Table_Inline<Hash_Table_Inline100,2349
+} entities;103,2479
+global_var Entity_View scene_graph;106,2537
+get_entity(109,2595
+get_entity(116,2768
+get_entity_group(122,2865
+get_entity_group(129,3037
+add_entity(135,3148
+add_entity_group(163,3853
+init_scene_graph(196,4753
+make_entity_renderable(210,5219
+make_entity_instanced_renderable(225,5710
+update_entity_group(233,5990
+update_scene_graph(253,6634
+Camera::set_default(set_default284,7358
+Camera::compute_projection(compute_projection298,7616
+Camera::compute_view(compute_view304,7709
+init_scene(310,7788
+update_ubo(440,12093
+    struct Uniform_Buffer_Object446,12269
+record_cmd(482,13473
+internal f32 angle 514,14729
+render_frame(517,14774
+update_scene(597,17785
+handle_input(610,18063
+#define SENSITIVITY 616,18171
 
 vulkan.cpp,2727
 #define GLFW_INCLUDE_VULKAN2,21
@@ -288,7 +295,7 @@ namespace Vulkan_API10,171
     destroy_debug_utils_messenger_ext(1475,48621
     destroy_state(1487,49006
 
-core.hpp,3466
+core.hpp,3518
 #define DEBUG 8,100
 typedef int8_t s8;10,122
 typedef int16_t s16;11,142
@@ -305,104 +312,106 @@ typedef u8 byte;23,345
 #define FORCEINLINE 28,417
 #define MAX(31,462
 #define MIN(32,507
-#define VK_CHECK(34,554
-#define OUTPUT_DEBUG_LOG(45,840
-#define persist 50,1028
-#define internal 51,1052
-#define global_var 52,1077
-struct Memory_Buffer_View55,1129
-    u32 count;57,1159
-    T *buffer;buffer58,1175
-    zero(61,1203
-left_shift(80,1455
-extern struct Debug_Output85,1502
-    FILE *fp;fp87,1533
-} output_file;88,1548
-struct Window_Data94,1622
-    s32 w,96,1645
-    s32 w, h;96,1645
-    struct GLFWwindow *window;window97,1660
-    f32 dt 98,1692
-    Memory_Buffer_View<bool> key_map;100,1714
-    Memory_Buffer_View<bool> mb_map;101,1753
-    s32 m_x 103,1793
-    s32 m_y 104,1811
-    bool m_moved 106,1831
-    bool window_resized 107,1858
-using Alignment 110,1898
-extern struct Linear_Allocator112,1923
-    void *start start114,1958
-    void *current current115,1986
-    u32 capacity;117,2018
-} linear_allocator_global;118,2037
-struct Stack_Allocation_Header129,2306
-    const char *allocation_name;allocation_name132,2356
-    u32 size;135,2408
-    void *prev;prev136,2423
-extern struct Stack_Allocator139,2446
-    void *start start141,2480
-    void *current current142,2508
-    u32 allocation_count 144,2544
-    u32 capacity;145,2575
-} stack_allocator_global;146,2594
-struct Free_Block_Header163,3106
-    Free_Block_Header *next_free_block next_free_block165,3135
-    u32 free_block_size 166,3186
-struct Free_List_Allocation_Header169,3222
-    u32 size;171,3261
-    const char *name;name173,3287
-extern struct Free_List_Allocator177,3324
-    Free_Block_Header *free_block_head;free_block_head179,3362
-    void *start;start181,3409
-    u32 available_bytes;182,3427
-    u32 allocation_count 184,3455
-} free_list_allocator_global;185,3486
-struct File_Contents197,3819
-    u32 size;199,3844
-    byte *content;content200,3859
-read_file(204,3909
-get_alignment_adjust(231,4506
-destroy(243,4809
-kilobytes(255,4954
-megabytes(261,5027
-struct Bitset_32270,5138
-    u32 bitset 272,5159
-    pop_count(275,5198
-    set1(285,5351
-    set0(291,5432
-    get(297,5516
-struct Constant_String303,5589
-    const char* str;305,5616
-    u32 size;306,5638
-    u32 hash;307,5653
-    operator==(operator==310,5687
-compile_hash(314,5806
-operator""_hasoperator""_ha320,5997
-init_const_str(326,6170
-template <typename T332,6331
-	  , u32 Bucket_Count333,6353
-	  , u32 Bucket_Size334,6376
-	  , u32 Bucket_Search_Count> struct Hash_Table_Inline335,6398
-    enum { UNINITIALIZED_HASH 337,6457
-    enum { ITEM_POUR_LIMIT 338,6504
-    struct Item340,6562
-    struct Bucket346,6646
-    const char *map_debug_name;map_debug_name352,6744
-    Bucket buckets[buckets353,6777
-    Hash_Table_Inline(355,6819
-    insert(358,6898
-    remove(387,7808
-    get(410,8352
-null_buffer(436,9067
-single_buffer(439,9197
-allocate_memory_buffer(442,9299
-allocate_memory_buffer_tmp(449,9487
-struct Memory_Byte_Buffer455,9648
-    u32 size;457,9678
-    void *ptr;ptr458,9693
-template <typename T,462,9748
-loop_through_memory(463,9791
-const glm::mat4x4 IDENTITY_MAT4X4 474,9977
+#define ALLOCA_T(33,552
+#define ALLOCA_B(34,603
+#define VK_CHECK(36,636
+#define OUTPUT_DEBUG_LOG(47,922
+#define persist 52,1110
+#define internal 53,1134
+#define global_var 54,1159
+struct Memory_Buffer_View57,1211
+    u32 count;59,1241
+    T *buffer;buffer60,1257
+    zero(63,1289
+left_shift(82,1541
+extern struct Debug_Output87,1588
+    FILE *fp;fp89,1619
+} output_file;90,1634
+struct Window_Data96,1708
+    s32 w,98,1731
+    s32 w, h;98,1731
+    struct GLFWwindow *window;window99,1746
+    f32 dt 100,1778
+    Memory_Buffer_View<bool> key_map;102,1800
+    Memory_Buffer_View<bool> mb_map;103,1839
+    s32 m_x 105,1879
+    s32 m_y 106,1897
+    bool m_moved 108,1917
+    bool window_resized 109,1944
+using Alignment 112,1984
+extern struct Linear_Allocator114,2009
+    void *start start116,2044
+    void *current current117,2072
+    u32 capacity;119,2104
+} linear_allocator_global;120,2123
+struct Stack_Allocation_Header131,2392
+    const char *allocation_name;allocation_name134,2442
+    u32 size;137,2494
+    void *prev;prev138,2509
+extern struct Stack_Allocator141,2532
+    void *start start143,2566
+    void *current current144,2594
+    u32 allocation_count 146,2630
+    u32 capacity;147,2661
+} stack_allocator_global;148,2680
+struct Free_Block_Header165,3192
+    Free_Block_Header *next_free_block next_free_block167,3221
+    u32 free_block_size 168,3272
+struct Free_List_Allocation_Header171,3308
+    u32 size;173,3347
+    const char *name;name175,3373
+extern struct Free_List_Allocator179,3410
+    Free_Block_Header *free_block_head;free_block_head181,3448
+    void *start;start183,3495
+    u32 available_bytes;184,3513
+    u32 allocation_count 186,3541
+} free_list_allocator_global;187,3572
+struct File_Contents199,3905
+    u32 size;201,3930
+    byte *content;content202,3945
+read_file(206,3995
+get_alignment_adjust(233,4592
+destroy(245,4895
+kilobytes(257,5040
+megabytes(263,5113
+struct Bitset_32272,5224
+    u32 bitset 274,5245
+    pop_count(277,5284
+    set1(287,5437
+    set0(293,5518
+    get(299,5602
+struct Constant_String305,5675
+    const char* str;307,5702
+    u32 size;308,5724
+    u32 hash;309,5739
+    operator==(operator==312,5773
+compile_hash(316,5892
+operator""_hasoperator""_ha322,6083
+init_const_str(328,6256
+template <typename T334,6417
+	  , u32 Bucket_Count335,6439
+	  , u32 Bucket_Size336,6462
+	  , u32 Bucket_Search_Count> struct Hash_Table_Inline337,6484
+    enum { UNINITIALIZED_HASH 339,6543
+    enum { ITEM_POUR_LIMIT 340,6590
+    struct Item342,6648
+    struct Bucket348,6732
+    const char *map_debug_name;map_debug_name354,6830
+    Bucket buckets[buckets355,6863
+    Hash_Table_Inline(357,6905
+    insert(360,6984
+    remove(389,7894
+    get(412,8438
+null_buffer(438,9153
+single_buffer(441,9283
+allocate_memory_buffer(444,9385
+allocate_memory_buffer_tmp(451,9573
+struct Memory_Byte_Buffer457,9734
+    u32 size;459,9764
+    void *ptr;ptr460,9779
+template <typename T,464,9834
+loop_through_memory(465,9877
+const glm::mat4x4 IDENTITY_MAT4X4 476,10063
 
 file_system.hpp,725
 enum File_Format7,166

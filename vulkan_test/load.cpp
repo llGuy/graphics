@@ -1,4 +1,3 @@
-
 #include <nlohmann/json.hpp>
 #include <array>
 #include <vector>
@@ -712,6 +711,19 @@ load_renderers_from_json(Vulkan_API::GPU *gpu
     }
 }	
 
+internal VkFormat
+make_format_from_code(u32 code, Vulkan_API::Swapchain *swapchain, Vulkan_API::GPU *gpu)
+{
+    switch(code)
+    {
+    case 0: {return(swapchain->format);}
+    case 1: {return(gpu->supported_depth_format);}
+    case 8: {return(VK_FORMAT_R8G8B8A8_UNORM);}
+    case 16: {return(VK_FORMAT_R16G16B16A16_SFLOAT);}
+    default: {return((VkFormat)0);};
+    }
+}
+
 void
 load_framebuffers_from_json(Vulkan_API::GPU *gpu
 			    , Vulkan_API::Swapchain *swapchain)
@@ -779,12 +791,8 @@ load_framebuffers_from_json(Vulkan_API::GPU *gpu
 
 	    if (to_create)
 	    {
-		VkFormat f;
-		switch(format)
-		{
-		case 8: {f = VK_FORMAT_R8G8B8A8_UNORM; break;}
-		case 16: {f = VK_FORMAT_R16G16B16A16_SFLOAT; break;}
-		}
+		VkFormat f = make_format_from_code(format, swapchain, gpu);
+
 		VkImageUsageFlags u = create_usage_flags(usage);
 	    
 		// use data from nodes
@@ -801,10 +809,10 @@ load_framebuffers_from_json(Vulkan_API::GPU *gpu
 	}
 
 	Attachment depth = {};
-	auto depth_att_info = i.value().find("depth_attachment");
-	bool enable_depth = depth_att_info.value().find("enable").value();
+	bool enable_depth = i.value().find("depth_attachment") != i.value().end();
 	if (enable_depth)
 	{
+	    auto depth_att_info = i.value().find("depth_attachment");
 	    std::string depth_att_name = depth_att_info.value().find("name").value();
 	    bool depth_att_to_create = depth_att_info.value().find("to_create").value();
 	    u32 depth_att_index = depth_att_info.value().find("index").value();
@@ -860,5 +868,255 @@ load_framebuffers_from_json(Vulkan_API::GPU *gpu
 					 , gpu
 					 , &fbos.p[fbo]);
 	}
+    }
+}
+
+internal VkAttachmentLoadOp
+make_load_op_from_code(char code)
+{
+    switch(code)
+    {
+    case 'c': {return(VK_ATTACHMENT_LOAD_OP_CLEAR);}
+    case 'd': {return(VK_ATTACHMENT_LOAD_OP_DONT_CARE);}
+    default: {return((VkAttachmentLoadOp)0);}
+    }
+}
+
+internal VkAttachmentStoreOp
+make_store_op_from_code(char code)
+{
+    switch(code)
+    {
+    case 's': {return(VK_ATTACHMENT_STORE_OP_STORE);}
+    case 'd': {return(VK_ATTACHMENT_STORE_OP_DONT_CARE);}
+    default: {return((VkAttachmentStoreOp)0);}
+    }
+}
+
+internal VkImageLayout
+make_image_layout_from_code(char code)
+{
+    switch(code)
+    {
+    case 'u': {return(VK_IMAGE_LAYOUT_UNDEFINED);}
+    case 'p': {return(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);}
+    case 'c': {return(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);}
+    case 'd': {return(VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);}
+    default: {return((VkImageLayout)0);}
+    }
+}
+
+internal VkPipelineStageFlags
+make_pipeline_stage_flags_from_code(const char *s, u32 len)
+{
+    VkPipelineStageFlags f = 0;
+    for (u32 i = 0; i < len; ++i)
+    {
+	switch(s[i])
+	{
+	case 'b': {f = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT; break;}
+	case 'o': {f = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT; break;}
+	case 'f': {f = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT; break;}
+	}
+    }
+    return(f);
+}
+
+internal u32
+make_gpu_memory_access_flags_from_code(const char *s, u32 len)
+{
+    u32 f = 0;
+    
+    char type = s[0];
+    persist auto get_correct_read_flag = [&type, &f](void)
+    {
+	switch(type)
+	{
+	case 'c': {f |= VK_ACCESS_COLOR_ATTACHMENT_READ_BIT; break;}
+	case 's': {f |= VK_ACCESS_SHADER_READ_BIT; break;}
+	case 'm': {f |= VK_ACCESS_MEMORY_READ_BIT; break;}
+	}
+    };
+    persist auto get_correct_write_flag = [&type, &f](void)
+    {
+	switch(type)
+	{
+	case 'c': {f |= VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT; break;}
+	case 's': {f |= VK_ACCESS_SHADER_WRITE_BIT; break;}
+	case 'm': {f |= VK_ACCESS_MEMORY_WRITE_BIT; break;}
+	}
+    };
+    
+    for (u32 i = i; i < len; ++i)
+    {
+	switch(s[i])
+	{
+	case 'r': {get_correct_read_flag(); break;}
+	case 'w': {get_correct_write_flag(); break;}
+	}
+    }
+    return(f);
+}
+
+void
+load_render_passes_from_json(Vulkan_API::GPU *gpu
+			     , Vulkan_API::Swapchain *swapchain)
+{
+    persist const char *filename = "config/rndr_pass.json";
+    File_Contents file = read_file(filename);
+    nlohmann::json json = nlohmann::json::parse(file.content);
+    for (auto i = json.begin(); i != json.end(); ++i)
+    {
+	std::string rndr_pass_name = i.key();
+	u32 color_attachment_count = i.value().find("attachment_count").value();
+	VkAttachmentDescription *att_descriptions = ALLOCA_T(VkAttachmentDescription, color_attachment_count);
+
+	u32 current_att = 0;
+	auto color_attachments_info = i.value().find("color_attachments");
+
+	persist auto make_attachment_description = [&att_descriptions, &swapchain, &gpu, &current_att](auto a) -> void
+	{
+	    u32 format_code = a.value().find("format").value();
+	    std::string color_load_str = a.value().find("color_load").value();
+	    std::string color_store_str = a.value().find("color_store").value();
+	    std::string depth_load_str = a.value().find("depth_load").value();
+	    std::string depth_store_str = a.value().find("depth_store").value();
+	    std::string initial_layout_str = a.value().find("initial_layout").value();
+	    std::string final_layout_str = a.value().find("final_layout").value();
+
+	    VkFormat format = make_format_from_code(format_code, swapchain, gpu);
+	    VkAttachmentLoadOp color_load_op = make_load_op_from_code(color_load_str[0]);
+	    VkAttachmentStoreOp color_store_op = make_store_op_from_code(color_store_str[0]);
+	    VkAttachmentLoadOp depth_load_op = make_load_op_from_code(depth_load_str[0]);
+	    VkAttachmentStoreOp depth_store_op = make_store_op_from_code(depth_store_str[0]);
+	    VkImageLayout initial_layout = make_image_layout_from_code(initial_layout_str[0]);
+	    VkImageLayout final_layout = make_image_layout_from_code(final_layout_str[0]);
+
+	    att_descriptions[current_att] = Vulkan_API::init_attachment_description(format
+										    , VK_SAMPLE_COUNT_1_BIT
+										    , color_load_op
+										    , color_store_op
+										    , depth_load_op
+										    , depth_store_op
+										    , initial_layout
+										    , final_layout);
+	};
+	
+	if (color_attachments_info != i.value().end())
+	{
+	    // has color attachments
+	    for (auto a = color_attachments_info.value().begin(); a != color_attachments_info.value().end(); ++a, ++current_att)
+	    {
+		make_attachment_description(a);
+	    }
+	}
+	auto depth_attachment_info = i.value().find("depth_attachment");
+	if (depth_attachment_info != i.value().end())
+	{
+	    // has depth attachment
+	    make_attachment_description(depth_attachment_info);
+	    ++current_att;
+	}
+
+	// start making the subpass descriptions
+	auto subpass_descriptions_info = i.value().find("subpasses");
+	u32 subpass_count = subpass_descriptions_info.value().size();
+	VkSubpassDescription *subpass_descriptions = ALLOCA_T(VkSubpassDescription, subpass_count);
+	u32 current_subpass = 0;
+	for (auto s = subpass_descriptions_info.value().begin(); s != subpass_descriptions_info.value().end(); ++s, ++current_subpass)
+	{
+	    persist auto make_attachment_reference = [](auto info) -> VkAttachmentReference
+	    {
+		u32 index = info.value().find("index").value();
+		std::string layout_str = info.value().find("layout").value();
+		VkImageLayout layout = make_image_layout_from_code(layout_str[0]);
+		return(Vulkan_API::init_attachment_reference(index, layout));
+	    };
+	    
+	    auto color_out = s.value().find("color_out");
+	    auto depth_out = s.value().find("depth_out");
+	    auto in = s.value().find("in");
+
+	    Memory_Buffer_View<VkAttachmentReference> c = {}, d = {}, i = {};
+	    if (color_out != s.value().end())
+	    {
+		// subpass references color attachments
+		c.count = color_out.value().size();
+		c.buffer = ALLOCA_T(VkAttachmentReference, c.count);
+		u32 current_c = 0;
+		for (auto c_info = color_out.value().begin(); c_info != color_out.value().end(); ++c_info, ++current_c)
+		{
+		    c[current_c] = make_attachment_reference(c_info);
+		}
+	    }
+	    if (depth_out != s.value().end())
+	    {
+		// subpass references depth attachment
+		d.count = 1;
+		d.buffer = ALLOCA_T(VkAttachmentReference, 1);
+		d[0] = make_attachment_reference(depth_out);
+	    }
+	    if (in != s.value().end())
+	    {
+		// subpass references input attachments
+		i.count = in.value().size();
+		i.buffer = ALLOCA_T(VkAttachmentReference, i.count);
+		u32 current_i = 0;
+		for (auto i_info = in.value().begin(); i_info != in.value().end(); ++i_info, ++current_i)
+		{
+		    i[current_i] = make_attachment_reference(i_info);
+		}
+	    }
+
+	    // make the subpass description
+	    subpass_descriptions[current_subpass] = Vulkan_API::init_subpass_description(c
+											 , d.buffer
+											 , i);
+	}
+
+	// start making the dependencies
+	auto dependency_info = i.value().find("dependencies");
+	u32 dependency_count = dependency_info.value().size();
+	u32 current_d = 0;
+	VkSubpassDependency *dependencies = ALLOCA_T(VkSubpassDependency, dependency_count);
+	for (auto d = dependency_info.value().begin(); d != dependency_info.value().end(); ++d, ++current_d)
+	{
+	    u32 src = d.value().find("src").value();
+	    if (src == -1)
+	    {
+		src = VK_SUBPASS_EXTERNAL;
+	    }
+	    u32 dst = d.value().find("dst").value();
+	    if (dst == -1)
+	    {
+		dst = VK_SUBPASS_EXTERNAL;
+	    }
+	    std::string src_access = d.value().find("src_access").value();
+	    std::string dst_access = d.value().find("dst_access").value();
+	    u32 src_access_mask = make_gpu_memory_access_flags_from_code(src_access.c_str(), src_access.length());
+	    u32 dst_access_mask = make_gpu_memory_access_flags_from_code(dst_access.c_str(), dst_access.length());
+	    std::string src_stage_str = d.value().find("src_stage").value();
+	    std::string dst_stage_str = d.value().find("dst_stage").value();
+	    VkPipelineStageFlags src_stage = make_pipeline_stage_flags_from_code(src_stage_str.c_str(), src_stage_str.length());
+	    VkPipelineStageFlags dst_stage = make_pipeline_stage_flags_from_code(dst_stage_str.c_str(), dst_stage_str.length());
+
+	    // to parameterise later - too tired
+	    VkDependencyFlagBits f = VK_DEPENDENCY_BY_REGION_BIT;
+	    
+	    dependencies[current_d] = Vulkan_API::init_subpass_dependency(src
+									  , dst
+									  , src_stage
+									  , src_access_mask
+									  , dst_stage
+									  , dst_access_mask
+									  , f);
+	}
+	Vulkan_API::Registered_Render_Pass new_rndr_pass = Vulkan_API::register_object(init_const_str(rndr_pass_name.c_str(), rndr_pass_name.length())
+										       , sizeof(Vulkan_API::Render_Pass));
+	Vulkan_API::init_render_pass(Memory_Buffer_View<VkAttachmentDescription>{color_attachment_count, att_descriptions}
+				     , Memory_Buffer_View<VkSubpassDescription>{subpass_count, subpass_descriptions}
+				     , Memory_Buffer_View<VkSubpassDependency>{dependency_count, dependencies}
+				     , gpu
+				     , new_rndr_pass.p);
     }
 }

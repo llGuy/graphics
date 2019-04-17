@@ -14,6 +14,7 @@
 	    }
 	},
 	"depth_attachment": {
+	    "enable": true,
 	    "name": "image2D.fbo_depth_test",
 	    "to_create": true,
 	    "index": 3,

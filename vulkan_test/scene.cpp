@@ -30,6 +30,8 @@ typedef struct Entity_View
 
 typedef struct Entity
 {
+    Entity(void) = default;
+    
     enum Is_Group { IS_NOT_GROUP = false
 		    , IS_GROUP = true } is_group{};
 
@@ -431,7 +433,7 @@ init_scene(Scene *scene
 			     , &vk->swapchain);
 
     load_framebuffers_from_json(&vk->gpu
-				, &vk->swapchain);
+    				, &vk->swapchain);
 }
 
 internal void
