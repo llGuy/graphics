@@ -52,3 +52,7 @@ load_renderers_from_json(Vulkan_API::GPU *gpu
 void
 load_framebuffers_from_json(Vulkan_API::GPU *gpu
 			    , Vulkan_API::Swapchain *swapchain);
+
+void
+load_render_passes_from_json(Vulkan_API::GPU *gpu
+			     , Vulkan_API::Swapchain *swapchain);

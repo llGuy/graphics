@@ -902,6 +902,7 @@ make_image_layout_from_code(char code)
     case 'p': {return(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);}
     case 'c': {return(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);}
     case 'd': {return(VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);}
+    case 'r': {return(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);}
     default: {return((VkImageLayout)0);}
     }
 }
@@ -947,7 +948,7 @@ make_gpu_memory_access_flags_from_code(const char *s, u32 len)
 	}
     };
     
-    for (u32 i = i; i < len; ++i)
+    for (u32 i = 1; i < len; ++i)
     {
 	switch(s[i])
 	{

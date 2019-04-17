@@ -70,9 +70,9 @@ load_framebuffers_from_json(728,29626
 make_load_op_from_code(875,34873
 make_store_op_from_code(886,35137
 make_image_layout_from_code(897,35399
-make_pipeline_stage_flags_from_code(910,35804
-make_gpu_memory_access_flags_from_code(926,36207
-load_render_passes_from_json(962,37055
+make_pipeline_stage_flags_from_code(911,35871
+make_gpu_memory_access_flags_from_code(927,36274
+load_render_passes_from_json(963,37122
 
 rendering.cpp,3902
 namespace Rendering9,186
@@ -212,14 +212,14 @@ Camera::set_default(set_default284,7358
 Camera::compute_projection(compute_projection298,7616
 Camera::compute_view(compute_view304,7709
 init_scene(310,7788
-update_ubo(440,12093
-    struct Uniform_Buffer_Object446,12269
-record_cmd(482,13473
-internal f32 angle 514,14729
-render_frame(517,14774
-update_scene(597,17785
-handle_input(610,18063
-#define SENSITIVITY 616,18171
+update_ubo(443,12167
+    struct Uniform_Buffer_Object449,12343
+record_cmd(485,13547
+internal f32 angle 517,14803
+render_frame(520,14848
+update_scene(600,17859
+handle_input(613,18137
+#define SENSITIVITY 619,18245
 
 vulkan.cpp,2727
 #define GLFW_INCLUDE_VULKAN2,21
